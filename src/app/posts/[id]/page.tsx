@@ -1,6 +1,17 @@
-import Post from '@/components/Post';
+// app/posts/[id]/page.tsx
+import React from 'react';
 
-const mockPosts = [
+interface Post {
+  id: number;
+  title: string;
+  date: string;
+  author: string;
+  group: string;
+  description: string;
+  videoUrl: string;
+}
+
+const mockPosts: Post[] = [
   {
     id: 1,
     title: 'How to Build a Next.js App',
@@ -28,27 +39,31 @@ const mockPosts = [
     description: 'A deep dive into React Hooks, including useState, useEffect, and custom hooks.',
     videoUrl: 'https://www.youtube.com/embed/dpw9EHDh2bM',
   },
-  // 添加更多帖子...
 ];
 
-export default function HomePage() {
+export default function PostDetailPage({ params }: { params: { id: string } }) {
+  const post = mockPosts.find((p) => p.id === Number(params.id));
+
+  if (!post) {
+    return <div>Post not found</div>;
+  }
+
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6 mt-6 flex justify-center align-middle">Home</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {mockPosts.map((post) => (
-          <Post
-            key={post.id}
-            id={post.id}
-            title={post.title}
-            date={post.date}
-            author={post.author}
-            group={post.group}
-            description={post.description}
-            videoUrl={post.videoUrl}
-          />
-        ))}
+      <h1 className="text-2xl font-bold mb-6">{post.title}</h1>
+      <div className="aspect-w-16 aspect-h-9 mb-4">
+        <iframe
+          src={post.videoUrl}
+          title={post.title}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          className="w-full h-full rounded-lg"
+        ></iframe>
       </div>
+      <div className="text-sm text-gray-600 mb-4">
+        <span>{post.date}</span> • <span>{post.author}</span> • <span>{post.group}</span>
+      </div>
+      <p className="text-gray-700">{post.description}</p>
     </div>
   );
 }
