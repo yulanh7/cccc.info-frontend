@@ -24,8 +24,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const isLoggedIn = false;
+  const isLoggedIn = true;
   const userName = 'John Doe';
+  const unreadCount = 3;
   return (
     <html lang="en">
       <body
@@ -34,7 +35,7 @@ export default function RootLayout({
         <header className="flex items-center justify-between p-4 border-b-border border-b">
           <Logo />
           <h1 className="text-2xl font-bold text-center flex-1">Canberra Christian Church</h1>
-          <Menu isLoggedIn={isLoggedIn} userName={userName} />
+          <Menu isLoggedIn={isLoggedIn} userName={userName} unreadCount={unreadCount} />
         </header>
         <main>
           {children}
