@@ -1,18 +1,18 @@
 import Link from 'next/link';
-import { BellIcon } from '@heroicons/react/24/outline'; // 导入铃铛图标
+import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline'; // 导入铃铛图标
 
 
 export default function Menu({ isLoggedIn, userName, unreadCount }: { isLoggedIn: boolean; userName?: string; unreadCount?: number }) {
   return (
     <nav className="flex items-center space-x-4">
-      <div className="flex space-x-4">
-        <Link href="/" className="text-gray-700 hover:text-gray-900">
+      <div className="flex space-x-4 text-xl">
+        <Link href="/" className="text-dark-gray hover:text-dark-green">
           Home
         </Link>
-        <Link href="/about" className="text-gray-700 hover:text-gray-900">
+        <Link href="/about" className="text-dark-gray hover:text-dark-green">
           Groups
         </Link>
-        <Link href="/contact" className="text-gray-700 hover:text-gray-900">
+        <Link href="/contact" className="text-dark-gray hover:text-dark-green">
           Admin
         </Link>
       </div>
@@ -30,7 +30,7 @@ export default function Menu({ isLoggedIn, userName, unreadCount }: { isLoggedIn
       </div>
 
       <div className="relative">
-        <BellIcon className="h-6 w-6 text-gray-700" />
+        <ChatBubbleLeftRightIcon className="h-6 w-6 text-gray-700" />
         {unreadCount && unreadCount > 0 && (
           <span className="absolute -top-2 -right-2 bg-light-red text-white text-xs rounded-full px-1.5 py-0.5">
             {unreadCount}

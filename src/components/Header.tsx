@@ -34,7 +34,6 @@ export default function Header({
       className="hidden md:flex fixed top-0 left-0 right-0 z-10 items-center justify-between p-4 border-b border-b-border bg-white transition-all duration-300 scrolled:p-2"
     >
       <Logo />
-      <h1 className="text-2xl font-bold text-center flex-1">Canberra Christian Church</h1>
       <Menu isLoggedIn={isLoggedIn} userName={userName} unreadCount={unreadCount} />
     </header>
   );

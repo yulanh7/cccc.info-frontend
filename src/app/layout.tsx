@@ -24,11 +24,9 @@ export default function RootLayout({
           <Logo />
           <MagnifyingGlassIcon className="h-6 w-6 text-gray-700" />
         </div>
-
-        <main className="flex-1 pt-16 md:pt-20 lg:pt-20 pb-24 md:pb-0 overflow-y-auto md:overflow-y-visible">
+        <main className="flex-1 pt-16 md:pt-40 pb-30 md:pb-0 overflow-y-auto md:overflow-y-visible">
           {children}
         </main>
-
         <BottomNav unreadCount={unreadCount} />
       </body>
     </html>
