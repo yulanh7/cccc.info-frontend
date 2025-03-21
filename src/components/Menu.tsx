@@ -30,9 +30,9 @@ export default function Menu({ isLoggedIn, userName, unreadCount }: { isLoggedIn
       </div>
 
       <div className="relative">
-        <BellIcon className="h-6 w-6 text-gray-700" /> {/* 铃铛图标 */}
+        <BellIcon className="h-6 w-6 text-gray-700" />
         {unreadCount && unreadCount > 0 && (
-          <span className="absolute -top-2 -right-2 bg-red-500 text-purple text-xs rounded-full px-1.5 py-0.5">
+          <span className="absolute -top-2 -right-2 bg-light-red text-white text-xs rounded-full px-1.5 py-0.5">
             {unreadCount}
           </span>
         )}
