@@ -1,13 +1,13 @@
-import { ApiResponse } from './api';
+import { ApiResponseProps } from './api';
 
-export interface User {
+export interface UserProps {
   id: number;
   email: string;
   first_name: string;
 }
 
-export type LoginResponse = ApiResponse<User>;
+export type LoginResponse = ApiResponseProps<UserProps>;
 
-export type SignupResponse = ApiResponse<User>;
+export type SignupResponse = ApiResponseProps<UserProps>;
 
-export type CurrentUserResponse = ApiResponse<User>;
+export type CurrentUserResponse = ApiResponseProps<UserProps>;

@@ -1,7 +1,7 @@
-import { ApiResponse } from './api';
+import { ApiResponseProps } from './api';
 import { User } from './user';
 
-export interface Group {
+export interface GroupProps {
   id: number;
   title: string;
   requiresInvitation?: boolean;
@@ -9,9 +9,9 @@ export interface Group {
   createdAt: string;
 }
 
-export interface GroupList {
-  Groups: Group[];
+export interface GroupListProps {
+  Groups: GroupProps[];
 }
-export type GroupListResponse = ApiResponse<GroupList>;
+export type GroupListResponse = ApiResponseProps<GroupListProps>;
 
-export type GroupDetailResponse = ApiResponse<Group>;
+export type GroupDetailResponse = ApiResponseProps<GroupProps>;

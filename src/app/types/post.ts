@@ -1,6 +1,6 @@
-import { ApiResponse } from './api';
+import { ApiResponseProps } from './api';
 
-export interface Post {
+export interface PostProps {
   id: number;
   title: string;
   date: string;
@@ -10,9 +10,9 @@ export interface Post {
   videoUrl: string;
 }
 
-export interface PostList {
-  posts: Post[];
+export interface PostListProps {
+  posts: PostProps[];
 }
-export type PostListResponse = ApiResponse<PostList>;
+export type PostListResponse = ApiResponseProps<PostListProps>;
 
-export type PostDetailResponse = ApiResponse<Post>;
+export type PostDetailResponse = ApiResponseProps<PostProps>;
