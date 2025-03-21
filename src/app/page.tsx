@@ -1,42 +1,13 @@
 import Post from '@/components/Post';
+import { mockPostList } from '@/app/data/mockData'
 
-const mockPosts = [
-  {
-    id: 1,
-    title: 'How to Build a Next.js App',
-    date: '2023-10-01',
-    author: 'John Doe',
-    group: 'Next.js Developers',
-    description: 'In this video, we will learn how to build a Next.js app from scratch. We will cover everything from setting up the project to deploying it.',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ', // YouTube 嵌入链接
-  },
-  {
-    id: 2,
-    title: 'Tailwind CSS Tutorial',
-    date: '2023-09-25',
-    author: 'Jane Smith',
-    group: 'Frontend Designers',
-    description: 'Learn how to use Tailwind CSS to create beautiful and responsive designs with minimal effort.',
-    videoUrl: 'https://www.youtube.com/embed/UBOj6rqRUME',
-  },
-  {
-    id: 3,
-    title: 'React Hooks Explained',
-    date: '2023-09-15',
-    author: 'Alice Johnson',
-    group: 'React Enthusiasts',
-    description: 'A deep dive into React Hooks, including useState, useEffect, and custom hooks.',
-    videoUrl: 'https://www.youtube.com/embed/dpw9EHDh2bM',
-  },
-  // 添加更多帖子...
-];
 
 export default function HomePage() {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-6 mt-6 flex justify-center align-middle">Home</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {mockPosts.map((post) => (
+        {mockPostList.map((post) => (
           <Post
             key={post.id}
             id={post.id}
