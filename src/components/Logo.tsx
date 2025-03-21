@@ -3,17 +3,16 @@ import Link from 'next/link';
 
 export default function Logo() {
   return (
-    <Link href="/" className='bg-sky-50'>
+    <Link href="/">
       <Image
         src="/images/logo.png"
         alt="Logo"
-        width={120}
-        height={0}
-        className="w-[40px] h-auto md:w-[80px] lg:w-[120px]"
-        sizes="(max-width: 767px) 60px, (max-width: 1023px) 80px, 120px"
+        width={0}
+        height={50}
+        className="h-[40px] w-auto md:h-[80px] lg:h-[120px] scrolled:h-[40px] transition-all duration-300"
+        sizes="(max-width: 767px) 40px, (max-width: 1023px) 80px, 120px"
         priority
       />
-
     </Link>
   );
 }

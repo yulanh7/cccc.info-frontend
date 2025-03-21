@@ -14,3 +14,13 @@
   --color-bg: #FFFEF8;
   --color-border: #ECECEC;
 }
+
+
+header.scrolled {
+  padding: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.scrolled img {
+  height: 60px;
+}
