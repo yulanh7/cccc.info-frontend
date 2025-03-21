@@ -1,11 +1,11 @@
 import { ApiResponseProps } from './api';
-import { User } from './user';
+import { UserProps } from './user';
 
 export interface GroupProps {
   id: number;
   title: string;
   requiresInvitation?: boolean;
-  creator: User;
+  creator: UserProps;
   createdAt: string;
 }
 

@@ -1,6 +1,6 @@
-import { Post } from "@/app/types";
+import { PostProps } from "@/app/types";
 
-export const mockPostList: Post[] = [
+export const mockPostList: PostProps[] = [
   {
     id: 1,
     title: 'How to Build a Next.js App',
