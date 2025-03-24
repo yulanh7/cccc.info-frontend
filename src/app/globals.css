@@ -105,6 +105,10 @@ header.scrolled {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.scrolled img {
+.scrolled .md-header img {
   height: 60px;
+}
+
+.scrolled .sm-header img {
+  height: 30px;
 }

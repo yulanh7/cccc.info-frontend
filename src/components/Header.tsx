@@ -34,13 +34,13 @@ export default function Header({
 
   return (
     <header ref={headerRef} >
-      <div className="hidden md:flex fixed top-0 left-0 right-0 z-10 items-center justify-between px-6 py-4 bg-bg  transition-all duration-300 scrolled:py-2 shadow-md" >
+      <div className="md-header hidden md:flex fixed top-0 left-0 right-0 z-10 items-center justify-between px-6 py-4 bg-bg  transition-all duration-300 scrolled:py-2 shadow-md" >
         <Logo />
         <Menu isLoggedIn={isLoggedIn} userName={userName} unreadCount={unreadCount} />
       </div>
-      <div className="md:hidden fixed top-0 left-0 right-0 z-10 flex items-center justify-between p-4 border-b border-b-border bg-bg h-16">
+      <div className="sm-header md:hidden fixed top-0 left-0 right-0 z-10 flex items-center justify-between p-2 border-b border-b-border bg-bg">
         <Logo />
-        <MagnifyingGlassIcon className="h-6 w-6 text-gray-700" />
+        <MagnifyingGlassIcon className="h-5 w-5 text-dark-gray" />
       </div>
     </header>
   );
