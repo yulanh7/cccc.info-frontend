@@ -18,7 +18,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="bg-bg text-dark-gray min-h-screen flex flex-col">
         <Header isLoggedIn={isLoggedIn} userName={userName} unreadCount={unreadCount} />
-        <main className="flex-1 overflow-y-auto md:overflow-y-visible mt-16 md:mt-40 bg-bg">
+        <main className="flex-1 overflow-y-auto md:overflow-y-visible mt-16 md:mt-30 bg-bg">
           {children}
         </main>
         <BottomNav unreadCount={unreadCount} />
