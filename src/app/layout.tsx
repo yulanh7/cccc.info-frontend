@@ -17,7 +17,7 @@ export default function RootLayout({
 
   return (
     <html lang="en">
-      <body className="bg-white text-gray-900 min-h-screen flex flex-col">
+      <body className="bg-bg text-dark-gray min-h-screen flex flex-col">
         <Header isLoggedIn={isLoggedIn} userName={userName} unreadCount={unreadCount} />
 
         <div className="md:hidden fixed top-0 left-0 right-0 z-10 flex items-center justify-between p-4 border-b border-b-border bg-white h-16">
