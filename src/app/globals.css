@@ -1,24 +1,87 @@
 @import "tailwindcss";
 
-
-@theme {
-  --color-*: initial;
-  --color-white: #fff;
-  --color-purple: #9400D2;
-  --color-light-purple: #8F6BC8;
-  --color-dark-green: #006400;
-  --color-green: #81D203;
-  --color-light-green: #7DBE69;
-  --color-red: #800000;
-  --color-light-red: #E85358;
-  --color-yellow: #FFD700;
-  --color-light-yellow: #EED081;
-  --color-bg: #FFFEF8;
-  --color-border: #ECECEC;
-  --color-gray: #666666;
-  --color-dark-gray: #3E434F;
+@layer base {
+  :root {
+    --color-white: #fff;
+    --color-dark-purple: #5A1880;
+    --color-purple: #9429d2;
+    --color-light-purple: #C89DE7;
+    --color-dark-green: #4A7502;
+    --color-green: #84d303;
+    --color-light-green: #B8E67A;
+    --color-dark-red: #8C1200;
+    --color-red: #ea1f00;
+    --color-light-red: #F58F80;
+    --color-dark-yellow: #B39500;
+    --color-yellow: #fbd402;
+    --color-light-yellow: #FDF3A6;
+    --color-bg: #FFFEF8;
+    --color-border: #ECECEC;
+    --color-gray: #666666;
+    --color-dark-gray: #3E434F;
+    --color-light-gray: #f2f2f2;
+    --color-gray-50: #f2f2f26b;
+  }
 }
 
+@theme {
+  --color-white: var(--color-white);
+  --color-dark-purple: var(--color-dark-purple);
+  --color-purple: var(--color-purple);
+  --color-light-purple: var(--color-light-purple);
+  --color-dark-green: var(--color-dark-green);
+  --color-green: var(--color-green);
+  --color-light-green: var(--color-light-green);
+  --color-dark-red: var(--color-dark-red);
+  --color-red: var(--color-red);
+  --color-light-red: var(--color-light-red);
+  --color-dark-yellow: var(--color-dark-yellow);
+  --color-yellow: var(--color-yellow);
+  --color-light-yellow: var(--color-light-yellow);
+  --color-bg: var(--color-bg);
+  --color-border: var(--color-border);
+  --color-gray: var(--color-gray);
+  --color-dark-gray: var(--color-dark-gray);
+  --color-light-gray: var(--color-light-gray);
+  --color-gray-50: var(--color-gray-50);
+}
+
+@layer utilities {
+  .bg-purple-gradient {
+    background: linear-gradient(to right, var(--color-light-purple), var(--color-purple));
+  }
+
+  .bg-yellow-gradient {
+    background: linear-gradient(to right, var(--color-light-yellow), var(--color-yellow));
+  }
+
+  .bg-yellow-diagonal {
+    background-image: linear-gradient(to bottom right, var(--color-yellow), var(--color-light-yellow));
+  }
+
+  .bg-dark-yellow-diagonal {
+    background-image: linear-gradient(to bottom right, var(--color-dark-yellow), var(--color-light-yellow));
+  }
+
+
+
+  .bg-yellow-radial {
+    background: radial-gradient(circle at center, var(--color-light-yellow), var(--color-yellow));
+  }
+
+  .bg-green-gradient {
+    background: linear-gradient(to right, var(--color-light-green), var(--color-green));
+  }
+
+  .bg-green-diagonal {
+    background: linear-gradient(to bottom right, var(--color-light-green), var(--color-green));
+  }
+
+  .bg-green-radial {
+    background: radial-gradient(circle at center, var(--color-light-green), var(--color-green));
+  }
+
+}
 
 header.scrolled {
   padding: 0.5rem;
