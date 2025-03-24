@@ -65,7 +65,7 @@ export default function Post({ post }: { post: PostProps }) {
                     rel="noopener noreferrer"
                     className="flex items-center text-xs md:text-sm text-dark-green hover:text-green underline"
                   >
-                    <EyeIcon className="hidden md:inline-block h-5 w-5 mr-2" />
+                    {/* <EyeIcon className="hidden md:inline-block h-5 w-5 mr-2" /> */}
                     {file.name}
                   </a>
                 </li>
@@ -73,12 +73,12 @@ export default function Post({ post }: { post: PostProps }) {
             </ul>
           </div>
         )}
-        <div className='flex justify-between items-center mt-2'>
+        <div className='flex justify-between items-center mt-2 md:mt-4'>
           <span className='flex items-center text-[10px] md:text-sm text-gray'>
             <UserCircleIcon className="h-4 w-4 mr-1 text-gray" /> {author}
           </span>
-          <Link href={`/posts/${id}`} className="text-under-line text-dark-green text-sm">
-            <ArrowRightCircleIcon className=" h-5 w-5" />
+          <Link href={`/posts/${id}`} className="text-under-line text-green text-sm">
+            <ArrowRightCircleIcon className="h-6 md:h-8 w-6 md:w-8" />
           </Link>
         </div>
       </div>
