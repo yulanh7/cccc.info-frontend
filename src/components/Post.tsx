@@ -20,13 +20,23 @@ export default function Post({ post }: { post: PostProps }) {
   return (
     <div className="bg-white shadow-md md:shadow-md relative rounded-xs md:rounded-sm">
       <div className="aspect-w-16 aspect-h-9 mb-1.5 md:mb-4">
-        <iframe
-          src={videoUrl}
-          title={title}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          className="w-full h-40 md:h-60 rounded-t-xs md:rounded-t-sm"
-        ></iframe>
+        {videoUrl ? (
+          <iframe
+            src={videoUrl}
+            title={title}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            className="w-full h-40 md:h-60 rounded-t-xs md:rounded-t-sm"
+          ></iframe>
+        ) : (
+          <div
+            className="w-full h-40 md:h-50 bg-[url('/images/bg-for-homepage.png')] bg-cover bg-center rounded-t-xs md:rounded-t-sm flex items-center justify-center"
+          >
+            <h2 className="text-dark-gray text-xl md:text-2xl font-'Apple Color Emoji' font-semibold text-center px-4">
+              {title}
+            </h2>
+          </div>
+        )}
       </div>
       <div className='p-1.5 md:p-3'>
         <h2 className="text-sm md:text-xl mb-1 md:mb-2">{title}</h2>
@@ -40,12 +50,12 @@ export default function Post({ post }: { post: PostProps }) {
         </div>
         <p className="hidden md:block text-gray md:mb-4">{truncatedDescription}</p>
 
-        <div className="absolute left-2 top-28 md:top-47 transform -translate-x-1/2 -translate-y-1/2 -rotate-90 bg-yellow text-dark-gray text-xs md:text-sm flex items-center justify-center px-2 py-0">
+        <div className="absolute left-2 top-28 md:top-1/3 transform -translate-x-1/2 -translate-y-1/2 -rotate-90 bg-yellow text-dark-gray text-xs md:text-sm flex items-center justify-center px-2 py-0">
           <CalendarIcon className="h-4 w-4 mr-1" /> {date}
         </div>
 
         {files && files.length > 0 && (
-          <div className="mt-1 md:mt-4 p-2 shadow-sm">
+          <div className="md:mt-2 p-1 shadow-sm">
             <ul className="space-y-2">
               {files.map((file, index) => (
                 <li key={index} className="flex items-center space-x-4">

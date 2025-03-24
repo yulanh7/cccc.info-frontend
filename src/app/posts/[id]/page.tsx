@@ -13,13 +13,23 @@ export default function PostDetailPage({ params }: { params: { id: string } }) {
   return (
     <div className="container mx-auto p-4 md:mt-20">
       <div className="aspect-w-16 aspect-h-9 mb-4">
-        <iframe
-          src={post.videoUrl}
-          title={post.title}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          className="w-full max-w-[600px] h-[200px] md:h-[400px] rounded-sm"
-        ></iframe>
+        {post.videoUrl ? (
+
+          <iframe
+            src={post.videoUrl}
+            title={post.title}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            className="w-full max-w-[600px] h-[200px] md:h-[400px] rounded-sm"
+          ></iframe>) : (
+          <div
+            className="w-full min-h-30 md:min-h-60 bg-[url('/images/bg-for-homepage.png')] bg-cover bg-center rounded-t-xs md:rounded-t-sm flex items-center justify-center"
+          >
+            <h2 className="text-dark-gray text-xl md:text-5xl font-'Apple Color Emoji' font-semibold text-center px-4">
+              {post.title}
+            </h2>
+          </div>
+        )}
       </div>
       <h1 className="text-2xl mb-2">{post.title}</h1>
       <div className="text-xs text-dark-green md:text-sm mb-1 flex items-center">

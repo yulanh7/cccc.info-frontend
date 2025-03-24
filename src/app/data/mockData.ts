@@ -8,7 +8,7 @@ export const mockPostList: PostProps[] = [
     author: 'John Doe',
     group: 'Next.js Developers',
     description: 'In this video, we will learn how to build a Next.js app from scratch. We will cover everything from setting up the project to deploying it.',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    videoUrl: '',
     files: [
       { url: "/files/peter.pdf", name: "彼得前書 第四課 2:11-3:12 課件.pdf" },
       { url: "/files/church-cross.png", name: "Image 1.png" },
