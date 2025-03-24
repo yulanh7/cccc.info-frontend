@@ -11,7 +11,7 @@ export default function PostDetailPage({ params }: { params: { id: string } }) {
   }
 
   return (
-    <div className="container mx-auto p-4 shadow-md">
+    <div className="container mx-auto p-4 md:mt-20">
       <div className="aspect-w-16 aspect-h-9 mb-4">
         <iframe
           src={post.videoUrl}
@@ -34,7 +34,7 @@ export default function PostDetailPage({ params }: { params: { id: string } }) {
       <p className="text-gray">{post.description}</p>
 
       {post.files && post.files.length > 0 && (
-        <div className="mt-4">
+        <div className="mt-4 shadow-md p-4">
           <h3 className="text-lg font-semibold text-dark-gray mb-2">「課件」</h3>
           <ul className="space-y-2">
             {post.files.map((file, index) => (

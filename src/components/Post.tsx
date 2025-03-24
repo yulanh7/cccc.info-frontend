@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { PostProps } from '@/app/types/post';
-import { CalendarIcon, UserCircleIcon, UserGroupIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, UserCircleIcon, UserGroupIcon, EyeIcon, ArrowRightCircleIcon } from '@heroicons/react/24/outline';
 
 
 
@@ -25,7 +25,7 @@ export default function Post({ post }: { post: PostProps }) {
           title={title}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
-          className="w-full h-[160px] md:h-[200px] rounded-t-xs md:rounded-t-sm"
+          className="w-full h-40 md:h-60 rounded-t-xs md:rounded-t-sm"
         ></iframe>
       </div>
       <div className='p-1.5 md:p-3'>
@@ -33,18 +33,19 @@ export default function Post({ post }: { post: PostProps }) {
         <div className="text-xs text-dark-gray md:text-sm mb-1 flex items-center">
           <UserGroupIcon className="h-4 w-4 mr-1 text-dark-gray" />{group}
         </div>
-        <div className="text-xs text-dark-gray md:text-sm mb-1 flex items-center">
+        {/* <div className="text-xs text-dark-gray md:text-sm mb-1 flex items-center">
           <UserCircleIcon className="h-4 w-4 mr-1 text-dark-gray" /> {author}
+        </div> */}
+        <div className="text-xs text-gray md:text-sm md:mb-2 flex items-center">
         </div>
-        <div className="text-xs text-gray md:text-sm text-gray-600 md:mb-2 flex items-center">
-        </div>
-        <p className="hidden md:block text-gray md:mb-4 md:mb-4">{truncatedDescription}</p>
+        <p className="hidden md:block text-gray md:mb-4">{truncatedDescription}</p>
 
-        <div className="absolute left-2.5 top-1/3 transform -translate-x-1/2 -translate-y-1/2 -rotate-90 bg-yellow text-dark-gray text-xs md:text-sm flex items-center justify-center px-2 py-0">
+        <div className="absolute left-2 top-28 md:top-47 transform -translate-x-1/2 -translate-y-1/2 -rotate-90 bg-yellow text-dark-gray text-xs md:text-sm flex items-center justify-center px-2 py-0">
           <CalendarIcon className="h-4 w-4 mr-1" /> {date}
         </div>
+
         {files && files.length > 0 && (
-          <div className="mt-4">
+          <div className="mt-1 md:mt-4 p-2 shadow-sm">
             <ul className="space-y-2">
               {files.map((file, index) => (
                 <li key={index} className="flex items-center space-x-4">
@@ -52,9 +53,9 @@ export default function Post({ post }: { post: PostProps }) {
                     href={file.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center text-dark-green hover:text-green underline"
+                    className="flex items-center text-xs md:text-sm text-dark-green hover:text-green underline"
                   >
-                    <EyeIcon className="h-5 w-5 mr-2" />
+                    <EyeIcon className="hidden md:inline-block h-5 w-5 mr-2" />
                     {file.name}
                   </a>
                 </li>
@@ -62,11 +63,14 @@ export default function Post({ post }: { post: PostProps }) {
             </ul>
           </div>
         )}
-        <Link href={`/posts/${id}`} className="block mt-4">
-          <button className="w-full py-2 cursor-pointer rounded-md text-white bg-yellow hover:bg-dark-yellow" >
-            Read More
-          </button>
-        </Link>
+        <div className='flex justify-between items-center mt-2'>
+          <span className='flex items-center text-[10px] md:text-sm text-gray'>
+            <UserCircleIcon className="h-4 w-4 mr-1 text-gray" /> {author}
+          </span>
+          <Link href={`/posts/${id}`} className="text-under-line text-dark-green text-sm">
+            <ArrowRightCircleIcon className=" h-5 w-5" />
+          </Link>
+        </div>
       </div>
     </div>
   );
