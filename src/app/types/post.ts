@@ -8,6 +8,7 @@ export interface PostProps {
   group: string;
   description: string;
   videoUrl: string;
+  files?: { url: string; name: string }[];
 }
 
 export interface PostListProps {

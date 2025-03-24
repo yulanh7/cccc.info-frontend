@@ -8,7 +8,11 @@ export const mockPostList: PostProps[] = [
     author: 'John Doe',
     group: 'Next.js Developers',
     description: 'In this video, we will learn how to build a Next.js app from scratch. We will cover everything from setting up the project to deploying it.',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ', // YouTube 嵌入链接
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    files: [
+      { url: "/files/peter.pdf", name: "彼得前書 第四課 2:11-3:12 課件.pdf" },
+      { url: "/files/church-cross.png", name: "Image 1.png" },
+    ],
   },
   {
     id: 2,
@@ -18,6 +22,10 @@ export const mockPostList: PostProps[] = [
     group: 'Frontend Designers',
     description: 'Learn how to use Tailwind CSS to create beautiful and responsive designs with minimal effort.',
     videoUrl: 'https://www.youtube.com/embed/UBOj6rqRUME',
+    files: [
+      { url: "/files/peter.pdf", name: "彼得前書 第四課 2:11-3:12 課件.pdf" },
+      { url: "/files/church-cross.png", name: "Image 1.png" },
+    ],
   },
   {
     id: 3,
@@ -27,6 +35,9 @@ export const mockPostList: PostProps[] = [
     group: 'React Enthusiasts',
     description: 'A deep dive into React Hooks, including useState, useEffect, and custom hooks.',
     videoUrl: 'https://www.youtube.com/embed/dpw9EHDh2bM',
+    files: [
+      { url: "/files/peter.pdf", name: "彼得前書 第四課 2:11-3:12 課件.pdf" },
+    ],
   },
   {
     id: 4,
@@ -35,7 +46,11 @@ export const mockPostList: PostProps[] = [
     author: 'John Doe',
     group: 'Next.js Developers',
     description: 'In this video, we will learn how to build a Next.js app from scratch. We will cover everything from setting up the project to deploying it.',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ', // YouTube 嵌入链接
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    files: [
+      { url: "/files/peter.pdf", name: "彼得前書 第四課 2:11-3:12 課件.pdf" },
+      { url: "/files/church-cross.png", name: "Image 1.png" },
+    ],
   },
   {
     id: 5,
@@ -45,6 +60,10 @@ export const mockPostList: PostProps[] = [
     group: 'Frontend Designers',
     description: 'Learn how to use Tailwind CSS to create beautiful and responsive designs with minimal effort.',
     videoUrl: 'https://www.youtube.com/embed/UBOj6rqRUME',
+    files: [
+      { url: "/files/peter.pdf", name: "彼得前書 第四課 2:11-3:12 課件.pdf" },
+      { url: "/files/church-cross.png", name: "Image 1.png" },
+    ],
   },
   {
     id: 6,
@@ -54,6 +73,10 @@ export const mockPostList: PostProps[] = [
     group: 'React Enthusiasts',
     description: 'A deep dive into React Hooks, including useState, useEffect, and custom hooks.',
     videoUrl: 'https://www.youtube.com/embed/dpw9EHDh2bM',
+    files: [
+      { url: "/files/peter.pdf", name: "彼得前書 第四課 2:11-3:12 課件.pdf" },
+      { url: "/files/church-cross.png", name: "Image 1.png" },
+    ],
   },
   {
     id: 7,
@@ -62,7 +85,11 @@ export const mockPostList: PostProps[] = [
     author: 'John Doe',
     group: 'Next.js Developers',
     description: 'In this video, we will learn how to build a Next.js app from scratch. We will cover everything from setting up the project to deploying it.',
-    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ', // YouTube 嵌入链接
+    videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+    files: [
+      { url: "/files/peter.pdf", name: "彼得前書 第四課 2:11-3:12 課件.pdf" },
+      { url: "/files/church-cross.png", name: "Image 1.png" },
+    ],
   },
   {
     id: 8,
@@ -72,6 +99,10 @@ export const mockPostList: PostProps[] = [
     group: 'Frontend Designers',
     description: 'Learn how to use Tailwind CSS to create beautiful and responsive designs with minimal effort.',
     videoUrl: 'https://www.youtube.com/embed/UBOj6rqRUME',
+    files: [
+      { url: "/files/peter.pdf", name: "彼得前書 第四課 2:11-3:12 課件.pdf" },
+      { url: "/files/church-cross.png", name: "Image 1.png" },
+    ],
   },
   {
     id: 9,
@@ -81,6 +112,10 @@ export const mockPostList: PostProps[] = [
     group: 'React Enthusiasts',
     description: 'A deep dive into React Hooks, including useState, useEffect, and custom hooks.',
     videoUrl: 'https://www.youtube.com/embed/dpw9EHDh2bM',
+    files: [
+      { url: "/files/peter.pdf", name: "彼得前書 第四課 2:11-3:12 課件.pdf" },
+      { url: "/files/church-cross.png", name: "Image 1.png" },
+    ],
   },
 ];
 
