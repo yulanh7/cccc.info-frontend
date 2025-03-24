@@ -44,7 +44,7 @@ export default function Menu({ isLoggedIn, userName, unreadCount }: { isLoggedIn
       <div className="relative">
         <ChatBubbleLeftRightIcon className="h-6 w-6 text-dark-gray hover:text-dark-green" />
         {unreadCount && unreadCount > 0 && (
-          <span className="absolute -top-2 -right-2 bg-light-red text-white text-xs rounded-full px-1.5 py-0.5">
+          <span className="absolute -top-2 -right-2 bg-red text-white text-xs rounded-full px-1.5 py-0.5">
             {unreadCount}
           </span>
         )}

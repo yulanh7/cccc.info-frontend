@@ -50,7 +50,7 @@ export default function BottomNav({ unreadCount }: BottomNavProps) {
           >
             <Icon className="h-6 w-6" />
             {item.unreadCount !== undefined && item.unreadCount > 0 && (
-              <span className="absolute top-0 right-0 bg-light-red text-white text-xs rounded-full px-1.5 py-0.5">
+              <span className="absolute top-0 right-0 bg-red text-white text-xs rounded-full px-1.5 py-0.5">
                 {item.unreadCount}
               </span>
             )}
