@@ -63,8 +63,6 @@
     background-image: linear-gradient(to bottom right, var(--color-dark-yellow), var(--color-light-yellow));
   }
 
-
-
   .bg-yellow-radial {
     background: radial-gradient(circle at center, var(--color-light-yellow), var(--color-yellow));
   }
@@ -81,6 +79,25 @@
     background: radial-gradient(circle at center, var(--color-light-green), var(--color-green));
   }
 
+  .bg-page-title-bg {
+    background-image: url('/images/page-title-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  .waterdrop-shape {
+    border-radius: 0 50% 50%;
+    /* 尖端在上方，底部圆润 */
+    transform: rotate(45deg);
+    background: var(--color-yellow);
+    width: 70px;
+    height: 70px;
+    position: absolute;
+    bottom: -40px;
+    z-index: 1;
+    border: 6px solid #ffffff;
+  }
 }
 
 header.scrolled {
