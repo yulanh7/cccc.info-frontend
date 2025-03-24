@@ -1,4 +1,4 @@
-import { PostProps } from "@/app/types";
+import { PostProps, GroupProps } from "@/app/types";
 
 export const mockPostList: PostProps[] = [
   {
@@ -81,5 +81,39 @@ export const mockPostList: PostProps[] = [
     group: 'React Enthusiasts',
     description: 'A deep dive into React Hooks, including useState, useEffect, and custom hooks.',
     videoUrl: 'https://www.youtube.com/embed/dpw9EHDh2bM',
+  },
+];
+
+
+export const mockGroups: GroupProps[] = [
+  {
+    id: 1,
+    title: "Tech Enthusiasts",
+    description: "A group for tech lovers to share ideas.",
+    createdDate: "2025-01-15",
+    creator: { id: 1, email: "alice@example.com", first_name: "Alice" },
+    subscribed: true,
+    editable: true,
+    inviteOnly: false,
+  },
+  {
+    id: 2,
+    title: "Book Club",
+    description: "Discuss your favorite books here.",
+    createdDate: "2025-02-10",
+    creator: { id: 2, email: "bob@example.com", first_name: "Bob" },
+    subscribed: false,
+    editable: false,
+    inviteOnly: true,
+  },
+  {
+    id: 3,
+    title: "Fitness Freaks",
+    description: "Stay motivated with workout tips.",
+    createdDate: "2025-03-01",
+    creator: { id: 3, email: "charlie@example.com", first_name: "Charlie" },
+    subscribed: true,
+    editable: true,
+    inviteOnly: false,
   },
 ];

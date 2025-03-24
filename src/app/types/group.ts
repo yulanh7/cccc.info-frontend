@@ -4,9 +4,12 @@ import { UserProps } from './user';
 export interface GroupProps {
   id: number;
   title: string;
-  requiresInvitation?: boolean;
+  description: string;
+  createdDate: string;
   creator: UserProps;
-  createdAt: string;
+  subscribed: boolean;
+  editable: boolean;
+  inviteOnly: boolean;
 }
 
 export interface GroupListProps {
