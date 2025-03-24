@@ -19,9 +19,8 @@ export default function Menu({ isLoggedIn, userName, unreadCount }: { isLoggedIn
     <nav className="flex items-center space-x-4">
       {navItems.map(item => {
         const isActive = pathname === item.href;
-
         return (
-          <div className="flex space-x-4 text-xl">
+          <div className="flex space-x-4 text-xl" key={item.label}>
             <Link href={item.href} className={`text-dark-gray ${isActive ? 'text-dark-green' : 'text-dark-gray'
               }  hover:text-dark-green`}>
               {item.label}

@@ -37,7 +37,7 @@ export default function BottomNav({ unreadCount }: BottomNavProps) {
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-13 left-0 right-0 z-10 bg-white border border-border rounded-lg shadow-lg flex justify-around items-center h-16">
+    <nav className="md:hidden fixed bottom-13 left-0 right-0 z-10 bg-bg border border-border rounded-lg shadow-lg flex justify-around items-center h-16">
       {navItems.map((item) => {
         const isActive = pathname === item.href;
         const Icon = isActive ? item.solidIcon : item.outlineIcon;
