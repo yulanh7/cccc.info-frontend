@@ -39,21 +39,19 @@ export default function Post({ post }: { post: PostProps }) {
         )}
       </div>
       <div className='p-1.5 md:p-3'>
-        <h2 className="text-sm md:text-xl mb-1 md:mb-2">{title}</h2>
+        <Link href={`/posts/${id}`}>
+          <h2 className="text-sm md:text-xl mb-1 md:mb-2 hover:underline">{title}</h2>
+        </Link>
         <div className="text-xs text-dark-gray md:text-sm mb-1 flex items-center">
           <UserGroupIcon className="h-4 w-4 mr-1 text-dark-gray" />{group}
         </div>
         {/* <div className="text-xs text-dark-gray md:text-sm mb-1 flex items-center">
           <UserCircleIcon className="h-4 w-4 mr-1 text-dark-gray" /> {author}
         </div> */}
-        <div className="text-xs text-gray md:text-sm md:mb-2 flex items-center">
-        </div>
         <p className="hidden md:block text-gray md:mb-4">{truncatedDescription}</p>
-
         <div className="absolute left-2 top-28 md:top-1/3 transform -translate-x-1/2 -translate-y-1/2 -rotate-90 bg-yellow text-dark-gray text-xs md:text-sm flex items-center justify-center px-2 py-0">
           <CalendarIcon className="h-4 w-4 mr-1" /> {date}
         </div>
-
         {files && files.length > 0 && (
           <div className="md:mt-2 p-1 shadow-sm">
             <ul className="space-y-2">
@@ -77,7 +75,7 @@ export default function Post({ post }: { post: PostProps }) {
           <span className='flex items-center text-[10px] md:text-sm text-gray'>
             <UserCircleIcon className="h-4 w-4 mr-1 text-gray" /> {author}
           </span>
-          <Link href={`/posts/${id}`} className="text-under-line text-green text-sm">
+          <Link href={`/posts/${id}`} className="text-under-line text-green text-sm hover:text-dark-green">
             <ArrowRightCircleIcon className="h-6 md:h-8 w-6 md:w-8" />
           </Link>
         </div>
