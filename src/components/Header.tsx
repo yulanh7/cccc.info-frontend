@@ -40,7 +40,7 @@ export default function Header({
 
   return (
     <header ref={headerRef} >
-      <div className="md-header hidden md:flex fixed top-0 left-0 right-0 z-10 items-center justify-between px-6 py-4 bg-bg  transition-all duration-300 scrolled:py-2 shadow-md" >
+      <div className="md-header hidden md:flex fixed top-0 left-0 right-0 z-10 items-center justify-between px-6 py-4 bg-bg  transition-all duration-300" >
         <Logo />
         <Menu isLoggedIn={isLoggedIn} userName={userName} unreadCount={unreadCount} />
       </div>
