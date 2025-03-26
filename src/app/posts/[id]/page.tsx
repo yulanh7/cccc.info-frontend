@@ -38,7 +38,7 @@ export default function PostDetailPage({ params: paramsPromise }: { params: Prom
   };
 
   return (
-    <div className="container mx-auto p-4 mt-16">
+    <div className="container mx-auto p-4 -mt-16">
       <CustomHeader
         item={post}
         showEdit={true}
