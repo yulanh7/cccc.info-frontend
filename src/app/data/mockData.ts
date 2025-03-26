@@ -173,6 +173,63 @@ export const mockMessages: MessageProps[] = [
       { senderId: 2, content: "Hello!", timestamp: "2025-03-25T12:01:00Z" },
     ],
   },
+  {
+    id: 3,
+    title: "Chat with Alice",
+    participants: [1, 2], // 当前用户 (假设 ID 2) 和 Alice (ID 1)
+    messages: [
+      { senderId: 1, content: "Hi, how are you?Hi, how are you?Hi, how are you?Hi, how are you?Hi, how are you?", timestamp: "2025-03-25T10:00:00Z" },
+      { senderId: 2, content: "I'm good, thanks!", timestamp: "2025-03-25T10:01:00Z" },
+      { senderId: 2, content: "This is a new message!", timestamp: "2025-03-26T10:01:00Z" },
+    ],
+  },
+  {
+    id: 4,
+    title: "Chat with Charlie",
+    participants: [2, 3], // 当前用户 (ID 2) 和 Charlie (ID 3)
+    messages: [
+      { senderId: 3, content: "Hey there!", timestamp: "2025-03-25T12:00:00Z" },
+      { senderId: 2, content: "Hello!", timestamp: "2025-03-25T12:01:00Z" },
+    ],
+  },
+  {
+    id: 5,
+    title: "Chat with Alice",
+    participants: [1, 2], // 当前用户 (假设 ID 2) 和 Alice (ID 1)
+    messages: [
+      { senderId: 1, content: "Hi, how are you?Hi, how are you?Hi, how are you?Hi, how are you?Hi, how are you?", timestamp: "2025-03-25T10:00:00Z" },
+      { senderId: 2, content: "I'm good, thanks!", timestamp: "2025-03-25T10:01:00Z" },
+      { senderId: 2, content: "This is a new message!", timestamp: "2025-03-26T10:01:00Z" },
+    ],
+  },
+  {
+    id: 6,
+    title: "Chat with Charlie",
+    participants: [2, 3], // 当前用户 (ID 2) 和 Charlie (ID 3)
+    messages: [
+      { senderId: 3, content: "Hey there!", timestamp: "2025-03-25T12:00:00Z" },
+      { senderId: 2, content: "Hello!", timestamp: "2025-03-25T12:01:00Z" },
+    ],
+  },
+  {
+    id: 7,
+    title: "Chat with Alice",
+    participants: [1, 2], // 当前用户 (假设 ID 2) 和 Alice (ID 1)
+    messages: [
+      { senderId: 1, content: "Hi, how are you?Hi, how are you?Hi, how are you?Hi, how are you?Hi, how are you?", timestamp: "2025-03-25T10:00:00Z" },
+      { senderId: 2, content: "I'm good, thanks!", timestamp: "2025-03-25T10:01:00Z" },
+      { senderId: 2, content: "This is a new message!", timestamp: "2025-03-26T10:01:00Z" },
+    ],
+  },
+  {
+    id: 8,
+    title: "Chat with Charlie",
+    participants: [2, 3], // 当前用户 (ID 2) 和 Charlie (ID 3)
+    messages: [
+      { senderId: 3, content: "Hey there!", timestamp: "2025-03-25T12:00:00Z" },
+      { senderId: 2, content: "Hello!", timestamp: "2025-03-25T12:01:00Z" },
+    ],
+  },
 ];
 
 export const mockUsers: UserProps[] = [
