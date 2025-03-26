@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from 'react';
-import { ChevronLeftIcon, TrashIcon, PencilIcon, PlusIcon, UserCircleIcon } from '@heroicons/react/24/outline';
+import {
+  ChevronLeftIcon, TrashIcon, PencilIcon, PlusIcon, UserCircleIcon
+} from '@heroicons/react/24/outline';
+import DeleteConfirmModal from './DeleteConfirmModal';
 
 interface CustomHeaderProps {
   item?: any;
@@ -91,29 +94,12 @@ export default function CustomHeader({
         </div>
       </header>
 
-      {isDeleteConfirmOpen && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-30">
-          <div className="bg-white p-4 rounded-sm shadow-lg w-full max-w-sm">
-            <p className="text-dark-gray mb-4">
-              Are you sure you want to delete this post?
-            </p>
-            <div className="flex justify-end space-x-4">
-              <button
-                onClick={cancelDelete}
-                className="px-4 py-2 text-dark-gray hover:text-dark-green"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-sm hover:bg-red-700"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteConfirmModal
+        isOpen={isDeleteConfirmOpen}
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+        message="Are you sure you want to delete this item?"
+      />
     </>
   );
 }
