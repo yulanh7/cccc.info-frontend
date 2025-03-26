@@ -5,8 +5,9 @@ import Logo from '@/components/Logo';
 import Menu from '@/components/Menu';
 import {
   MagnifyingGlassIcon,
+  ChevronLeftIcon
 } from '@heroicons/react/24/outline';
-
+import { usePathname } from 'next/navigation';
 
 export default function Header({
   isLoggedIn,
@@ -18,6 +19,8 @@ export default function Header({
   unreadCount: number;
 }) {
   const headerRef = useRef<HTMLElement>(null);
+  const pathname = usePathname();
+  const hideHeader = pathname.startsWith('/posts/') || pathname.startsWith('/messages/');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -31,6 +34,9 @@ export default function Header({
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  if (hideHeader) return null;
+
 
   return (
     <header ref={headerRef} >
