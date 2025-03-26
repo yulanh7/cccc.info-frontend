@@ -28,6 +28,7 @@ interface BottomNavProps {
 
 export default function BottomNav({ unreadCount }: BottomNavProps) {
   const pathname = usePathname();
+  const hideBottomNav = pathname.startsWith('/posts/') || pathname.startsWith('/messages/');
 
   const navItems: NavItem[] = [
     { href: '/', label: 'Home', outlineIcon: OutlineHomeIcon, solidIcon: SolidHomeIcon },
@@ -35,6 +36,7 @@ export default function BottomNav({ unreadCount }: BottomNavProps) {
     { href: '/messages', label: 'Message', outlineIcon: OutlineBellIcon, solidIcon: SolidBellIcon, unreadCount },
     { href: '/me', label: 'Me', outlineIcon: OutlineUserIcon, solidIcon: SolidUserIcon },
   ];
+  if (hideBottomNav) return null;
 
   return (
     <nav className="md:hidden fixed bottom-13 left-0 right-0 z-10 bg-bg border border-border rounded-lg shadow-lg flex justify-around items-center h-16">

@@ -1,4 +1,4 @@
-import { PostProps, GroupProps } from "@/app/types";
+import { PostProps, GroupProps, MessageProps, UserProps } from "@/app/types";
 
 export const mockPostList: PostProps[] = [
   {
@@ -151,4 +151,32 @@ export const mockGroups: GroupProps[] = [
     editable: true,
     inviteOnly: false,
   },
+];
+
+export const mockMessages: MessageProps[] = [
+  {
+    id: 1,
+    title: "Chat with Alice",
+    participants: [1, 2], // 当前用户 (假设 ID 2) 和 Alice (ID 1)
+    messages: [
+      { senderId: 1, content: "Hi, how are you?Hi, how are you?Hi, how are you?Hi, how are you?Hi, how are you?", timestamp: "2025-03-25T10:00:00Z" },
+      { senderId: 2, content: "I'm good, thanks!", timestamp: "2025-03-25T10:01:00Z" },
+      { senderId: 2, content: "This is a new message!", timestamp: "2025-03-26T10:01:00Z" },
+    ],
+  },
+  {
+    id: 2,
+    title: "Chat with Charlie",
+    participants: [2, 3], // 当前用户 (ID 2) 和 Charlie (ID 3)
+    messages: [
+      { senderId: 3, content: "Hey there!", timestamp: "2025-03-25T12:00:00Z" },
+      { senderId: 2, content: "Hello!", timestamp: "2025-03-25T12:01:00Z" },
+    ],
+  },
+];
+
+export const mockUsers: UserProps[] = [
+  { id: 1, first_name: "Alice", email: "alice@example.com" },
+  { id: 2, first_name: "Bob", email: "bob@example.com" },
+  { id: 3, first_name: "Charlie", email: "charlie@example.com" },
 ];

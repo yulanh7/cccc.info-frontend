@@ -8,6 +8,7 @@ interface CustomHeaderProps {
   showEdit?: boolean;
   showDelete?: boolean;
   showAdd?: boolean;
+  pageTitle?: string;
   onDelete?: (id: number) => void;
   onEdit?: () => void; // 改为无参数，触发打开模态框
   onAdd?: () => void; // 改为无参数，触发新增
@@ -18,6 +19,7 @@ export default function CustomHeader({
   showEdit = false,
   showDelete = true,
   showAdd = false,
+  pageTitle,
   onDelete,
   onEdit,
   onAdd,
@@ -46,12 +48,12 @@ export default function CustomHeader({
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-10 flex items-center justify-between p-4 border-b border-b-border bg-bg">
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2">
           <button
             onClick={handleBack}
-            className="flex items-center text-dark-gray hover:text-dark-green focus:outline-none"
+            className="text-dark-gray hover:text-dark-green focus:outline-none"
           >
-            <ChevronLeftIcon className="h-6 w-6 mr-2" />
+            <ChevronLeftIcon className="h-6 w-6 mr-1" />
           </button>
           {item?.author && (
             <span className="flex items-center text-dark-gray text-sm">
@@ -60,6 +62,7 @@ export default function CustomHeader({
             </span>
           )}
         </div>
+        <div>{pageTitle}</div>
         <div className="flex items-center space-x-4">
           {showDelete && onDelete && item && (
             <button

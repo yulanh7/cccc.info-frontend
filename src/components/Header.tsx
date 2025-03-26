@@ -5,7 +5,6 @@ import Logo from '@/components/Logo';
 import Menu from '@/components/Menu';
 import {
   MagnifyingGlassIcon,
-  ChevronLeftIcon
 } from '@heroicons/react/24/outline';
 import { usePathname } from 'next/navigation';
 
