@@ -65,8 +65,13 @@ export default function GroupsPage() {
   return (
     <>
       <PageTitle title="Groups" showPageTitle={true} />
+      <button
+        onClick={handleAdd}
+        className="fixed md:hidden bottom-23  z-20 left-1/2 -translate-x-1/2 bg-yellow px-3 py-3 rounded-[50%]"          >
+        <PlusIcon className="h-7 w-7 text-white" />
+      </button>
       <div className="container mx-auto p-4">
-        <div className='flex justify-end mr-4'>
+        <div className='hidden md:flex justify-end mr-4'>
           <button
             onClick={handleAdd}
             className="mb-4 flex items-center px-4 py-2 bg-dark-green text-white rounded-sm hover:bg-green"
