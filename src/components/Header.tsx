@@ -19,7 +19,7 @@ export default function Header({
 }) {
   const headerRef = useRef<HTMLElement>(null);
   const pathname = usePathname();
-  const hideHeader = pathname.startsWith('/posts/') || pathname.startsWith('/messages/');
+  const hideHeader = pathname.startsWith('/posts/') || pathname.startsWith('/messages/') || pathname.startsWith('/auth');
 
   useEffect(() => {
     const handleScroll = () => {
