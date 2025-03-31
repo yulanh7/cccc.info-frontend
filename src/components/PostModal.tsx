@@ -102,7 +102,7 @@ export default function EditModal({
         <button
           ref={closeButtonRef}
           onClick={handleCloseClick}
-          className="absolute top-2 right-2 text-dark-gray hover:text-dark-green focus:outline-none"
+          className="absolute top-6 right-4 text-dark-gray hover:text-dark-green focus:outline-none"
         >
           <XMarkIcon className="h-6 w-6" />
         </button>
