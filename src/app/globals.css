@@ -88,7 +88,6 @@
 
   .waterdrop-shape {
     border-radius: 0 50% 50%;
-    /* 尖端在上方，底部圆润 */
     transform: rotate(45deg);
     background: var(--color-yellow);
     width: 70px;
@@ -98,4 +97,8 @@
     z-index: 1;
     border: 6px solid #ffffff;
   }
+}
+
+button {
+  cursor: pointer;
 }
