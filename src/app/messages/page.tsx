@@ -35,7 +35,7 @@ export default function MessagesPage() {
       <PageTitle title="Messages" showPageTitle={true} />
 
       <div className="container mx-auto p-4 mt-0 md:mt-16">
-        <button className='fixed bottom-32 right-10 z-99 shadow-lg rounded-[50%] bg-bg p-3 cursor-pointer onClick={() => setIsNewChatOpen(true)}'>
+        <button className='fixed bottom-32 right-10 z-99 shadow-lg rounded-[50%] bg-bg p-3' onClick={() => setIsNewChatOpen(true)}>
           <PencilIcon className="h-7 w-7 text-green" />
         </button>
         <ul className="space-y-2">
