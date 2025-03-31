@@ -7,17 +7,39 @@ import CustomHeader from '@/components/CustomHeader';
 export default function MessageDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
   const params = React.use(paramsPromise);
   const id = Number(params.id);
-  const initialMessage = mockMessages.find((p) => p.id === Number(params.id));
-
-  const [message, setMessage] = useState(initialMessage);
-  const [newMessage, setNewMessage] = useState('');
+  const initialMessage = mockMessages.find((p) => p.id === id);
   const currentUserId = 2;
 
+  const [message, setMessage] = useState(initialMessage);
+  const [newMessageContent, setNewMessageContent] = useState('');
+
   useEffect(() => {
-  }, [id]);
+    if (!initialMessage) {
+      const otherUserId = id > 1000000000 ? mockUsers.find(u => u.id !== currentUserId)?.id : undefined;
+      if (otherUserId) {
+        setMessage({
+          id,
+          title: `Chat with ${mockUsers.find(u => u.id === otherUserId)?.first_name}`,
+          participants: [currentUserId, otherUserId],
+          messages: [],
+        });
+      }
+    }
+  }, [id, initialMessage]);
 
   const handleSend = () => {
-
+    if (newMessageContent.trim() && message) {
+      const newMsg = {
+        senderId: currentUserId,
+        content: newMessageContent,
+        timestamp: new Date().toISOString(),
+      };
+      setMessage({
+        ...message,
+        messages: [...message.messages, newMsg],
+      });
+      setNewMessageContent('');
+    }
   };
 
   if (!message) {
@@ -28,7 +50,7 @@ export default function MessageDetailPage({ params: paramsPromise }: { params: P
   const otherUser = mockUsers.find((u) => u.id === otherUserId);
 
   return (
-    <>
+    <div className="max-w-[760px] mx-auto">
       <CustomHeader
         item={{ author: otherUser?.first_name }}
         showEdit={false}
@@ -43,11 +65,13 @@ export default function MessageDetailPage({ params: paramsPromise }: { params: P
               key={index}
               className={`flex mb-3 ${msg.senderId === currentUserId ? 'justify-end' : 'justify-start'}`}
             >
-              <div className=""
-
-              >
-                <p className={` p-2 rounded-sm ${msg.senderId === currentUserId ? 'bg-green text-white' : 'bg-light-gray text-dark-gray'
-                  }`}>{msg.content}</p>
+              <div>
+                <p
+                  className={`p-2 rounded-sm ${msg.senderId === currentUserId ? 'bg-green text-white' : 'bg-light-gray text-dark-gray'
+                    }`}
+                >
+                  {msg.content}
+                </p>
                 <span className="block text-xs mt-1 opacity-70">
                   {new Date(msg.timestamp).toLocaleTimeString()}
                 </span>
@@ -55,11 +79,11 @@ export default function MessageDetailPage({ params: paramsPromise }: { params: P
             </div>
           ))}
         </div>
-        <div className="fixed bottom-0 left-0 right-0 md:left-10 md:right-10  flex items-center p-4 bg-bg">
+        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 z-10 w-full max-w-[769px]  flex items-center p-4 bg-bg">
           <input
             type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            value={newMessageContent}
+            onChange={(e) => setNewMessageContent(e.target.value)}
             className="flex-1 p-2 border border-border rounded-sm mr-2"
             placeholder="Type a message..."
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
@@ -72,6 +96,6 @@ export default function MessageDetailPage({ params: paramsPromise }: { params: P
           </button>
         </div>
       </div>
-    </>
+    </div>
   );
 }
