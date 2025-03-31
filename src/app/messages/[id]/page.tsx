@@ -36,7 +36,7 @@ export default function MessageDetailPage({ params: paramsPromise }: { params: P
         showAdd={false}
         pageTitle={message.title}
       />
-      <div className="max-w-[760px] mx-auto p-4  flex flex-col">
+      <div className="max-w-[760px] mx-auto p-4 flex flex-col mt-16">
         <div>
           {message.messages.map((msg, index) => (
             <div
@@ -55,7 +55,7 @@ export default function MessageDetailPage({ params: paramsPromise }: { params: P
             </div>
           ))}
         </div>
-        <div className="fixed bottom-13 left-0 right-0 md:left-10 md:right-10  flex items-center p-4 bg-bg">
+        <div className="fixed bottom-0 left-0 right-0 md:left-10 md:right-10  flex items-center p-4 bg-bg">
           <input
             type="text"
             value={newMessage}

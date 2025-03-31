@@ -67,7 +67,7 @@ export default function GroupsPage() {
       <PageTitle title="Groups" showPageTitle={true} />
       <button
         onClick={handleAdd}
-        className="fixed md:hidden bottom-23  z-20 left-1/2 -translate-x-1/2 bg-yellow px-3 py-3 rounded-[50%]"          >
+        className="fixed md:hidden bottom-8  z-20 left-1/2 -translate-x-1/2 bg-yellow px-3 py-3 rounded-[50%]"          >
         <PlusIcon className="h-7 w-7 text-white" />
       </button>
       <div className="container mx-auto p-4 min-h-screen">
@@ -80,7 +80,6 @@ export default function GroupsPage() {
             New Group
           </button>
         </div>
-        {/* Table for medium and larger screens */}
         <div className="hidden md:block overflow-x-auto p-4">
           <table className="min-w-full bg-bg   shadow-lg">
             <thead>
