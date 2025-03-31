@@ -95,7 +95,6 @@ export default function PostDetailPage({ params: paramsPromise }: { params: Prom
         </div>
       )}
 
-      {/* 编辑模态框 */}
       {isPostModalOpen && (
         <PostModal
           item={post}
@@ -105,7 +104,6 @@ export default function PostDetailPage({ params: paramsPromise }: { params: Prom
         />
       )}
 
-      {/* 新增模态框 */}
       {isNewModalOpen && (
         <PostModal
           item={undefined}

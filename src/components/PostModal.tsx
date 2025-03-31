@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { PostProps } from '@/app/types/post';
-import { TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { TrashIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import SaveConfirmModal from './SaveConfirmModal';
 
 interface EditModalProps {
   item?: PostProps | any;
@@ -28,6 +29,8 @@ export default function EditModal({
     date: new Date().toISOString().split('T')[0],
   };
   const [editedItem, setEditedItem] = useState(isNew ? defaultItem : { ...item });
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleChange = (field: string, value: any) => {
     setEditedItem((prev: PostProps) => ({ ...prev, [field]: value }));
@@ -38,34 +41,19 @@ export default function EditModal({
     if (files && files.length > 0) {
       const newFile = {
         name: files[0].name,
-        url: '', // 模拟 URL，真实场景需上传后返回
-        file: files[0], // 临时存储文件对象
+        url: '',
+        file: files[0],
       };
       handleChange('files', [...(editedItem.files || []), newFile]);
-      e.target.value = ''; // 清空输入
+      e.target.value = '';
     }
   };
-
-  // 将来可以用 FormData 上传文件：
-  // const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const files = e.target.files;
-  //   if (files && files.length > 0) {
-  //     const formData = new FormData();
-  //     formData.append('file', files[0]);
-  //     const response = await fetch('/api/upload', { method: 'POST', body: formData });
-  //     const { url } = await response.json();
-  //     const newFile = { name: files[0].name, url };
-  //     handleChange('files', [...(editedItem.files || []), newFile]);
-  //     e.target.value = '';
-  //   }
-  // };
 
   const handleDeleteFile = (index: number) => {
     handleChange('files', (editedItem.files || []).filter((_: any, i: number) => i !== index));
   };
 
   const handleSave = () => {
-    // 移除 file 对象，仅保存 name 和 url（模拟 API 结果）
     const cleanedItem = {
       ...editedItem,
       files: editedItem.files.map(({ name, url }: { name: string; url: string }) => ({ name, url })),
@@ -74,11 +62,51 @@ export default function EditModal({
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-20">
-      <div className="bg-white p-6 rounded-sm shadow-lg w-full max-w-md">
-        <h2 className="text-xl mb-4">{isNew ? 'Add New Item' : 'Edit Item'}</h2>
+  const handleCloseClick = () => {
+    const hasChanges = JSON.stringify(editedItem) !== JSON.stringify(isNew ? defaultItem : item);
+    if (hasChanges) {
+      setIsConfirmOpen(true);
+    } else {
+      onClose();
+    }
+  };
 
+  const confirmSaveAndClose = () => {
+    handleSave();
+    setIsConfirmOpen(false);
+  };
+
+  const confirmCancel = () => {
+    setIsConfirmOpen(false);
+  };
+
+  const confirmCloseWithoutSaving = () => {
+    onClose();
+    setIsConfirmOpen(false);
+  };
+
+  const getConfirmPosition = () => {
+    if (closeButtonRef.current) {
+      const rect = closeButtonRef.current.getBoundingClientRect();
+      return {
+        top: rect.bottom - rect.top + 8,
+        right: 8,
+      };
+    }
+    return { top: 0, right: 0 };
+  };
+
+  return (
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-20 overflow-y-auto">
+      <div className="bg-white p-6 rounded-sm shadow-lg w-full md:max-w-[80vw] max-h-[90vh] overflow-y-auto relative">
+        <button
+          ref={closeButtonRef}
+          onClick={handleCloseClick}
+          className="absolute top-2 right-2 text-dark-gray hover:text-dark-green focus:outline-none"
+        >
+          <XMarkIcon className="h-6 w-6" />
+        </button>
+        <h2 className="text-xl mb-4">{isNew ? 'Add New Item' : 'Edit Item'}</h2>
         <input
           type="text"
           value={editedItem.title || ''}
@@ -89,7 +117,7 @@ export default function EditModal({
         <textarea
           value={editedItem.description || ''}
           onChange={(e) => handleChange('description', e.target.value)}
-          className="w-full p-2 mb-4 border border-border rounded-sm"
+          className="w-full p-2 mb-4 border border-border rounded-sm min-h-[100px] resize-y overflow-y-auto"
           placeholder="Description"
         />
         <input
@@ -101,7 +129,7 @@ export default function EditModal({
         />
         <div className="mb-4">
           <label className="block text-sm text-dark-gray mb-2">Files</label>
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-[150px] overflow-y-auto">
             {(editedItem.files || []).map((file: { name: string; url: string }, index: number) => (
               <div key={index} className="flex items-center justify-between p-2 bg-gray-100 rounded-sm">
                 <span>{file.name}</span>
@@ -122,7 +150,7 @@ export default function EditModal({
                 type="file"
                 onChange={handleFileUpload}
                 className="hidden"
-                accept=".pdf,.jpg,.jpeg,.png" // 限制文件类型
+                accept=".pdf,.jpg,.jpeg,.png"
               />
             </label>
           </div>
@@ -163,6 +191,14 @@ export default function EditModal({
             Save
           </button>
         </div>
+
+        <SaveConfirmModal
+          onConfirm={confirmSaveAndClose}
+          onCancel={confirmCloseWithoutSaving}
+          onOutsideClick={confirmCancel}
+          isOpen={isConfirmOpen}
+          position={getConfirmPosition()}
+        />
       </div>
     </div>
   );
