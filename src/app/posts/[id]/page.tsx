@@ -38,7 +38,7 @@ export default function PostDetailPage({ params: paramsPromise }: { params: Prom
   };
 
   return (
-    <div className="container mx-auto p-4 -mt-16">
+    <div className="container mx-auto p-4">
       <CustomHeader
         item={post}
         showEdit={true}
@@ -47,7 +47,7 @@ export default function PostDetailPage({ params: paramsPromise }: { params: Prom
         onEdit={handleEdit}
         onAdd={handleAdd}
       />
-      <div className="aspect-w-16 aspect-h-9 mb-4">
+      <div className="aspect-w-16 aspect-h-9 mb-4 mt-16">
         {post.videoUrl ? (
           <iframe
             src={post.videoUrl}
@@ -68,9 +68,7 @@ export default function PostDetailPage({ params: paramsPromise }: { params: Prom
       <div className="text-xs text-dark-green md:text-sm mb-1 flex items-center">
         <UserGroupIcon className="h-4 w-4 mr-1 text-dark-green" />{post.group}
       </div>
-      <div className="text-xs text-dark-green md:text-sm mb-1 flex items-center">
-        <UserCircleIcon className="h-4 w-4 mr-1 text-dark-green" /> {post.author}
-      </div>
+
       <div className="text-xs text-dark-green md:text-sm mb-4 flex items-center">
         <CalendarIcon className="h-4 w-4 mr-1 text-dark-green" /> {post.date}
       </div>

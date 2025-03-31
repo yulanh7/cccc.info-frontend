@@ -70,7 +70,7 @@ export default function GroupsPage() {
         className="fixed md:hidden bottom-23  z-20 left-1/2 -translate-x-1/2 bg-yellow px-3 py-3 rounded-[50%]"          >
         <PlusIcon className="h-7 w-7 text-white" />
       </button>
-      <div className="container mx-auto p-4">
+      <div className="container mx-auto p-4 min-h-screen">
         <div className='hidden md:flex justify-end mr-4'>
           <button
             onClick={handleAdd}

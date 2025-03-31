@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Logo from '@/components/Logo';
 import Menu from '@/components/Menu';
-import {
-  MagnifyingGlassIcon,
-} from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { usePathname } from 'next/navigation';
 
 export default function Header({
@@ -20,13 +18,19 @@ export default function Header({
   const headerRef = useRef<HTMLElement>(null);
   const pathname = usePathname();
   const hideHeader = pathname.startsWith('/posts/') || pathname.startsWith('/messages/') || pathname.startsWith('/auth');
+  const [isFixed, setIsFixed] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 50) {
-        headerRef.current?.classList.add('scrolled');
+      const scrollPosition = window.scrollY;
+      const documentHeight = document.documentElement.scrollHeight;
+      const windowHeight = window.innerHeight;
+      const isScrollable = documentHeight > windowHeight; // 检查页面是否可滚动
+
+      if (isScrollable && scrollPosition > 50) {
+        setIsFixed(true);
       } else {
-        headerRef.current?.classList.remove('scrolled');
+        setIsFixed(false);
       }
     };
 
@@ -36,15 +40,24 @@ export default function Header({
 
   if (hideHeader) return null;
 
-
   return (
-    <header ref={headerRef} >
-      <div className="md-header hidden md:flex fixed top-0 left-0 right-0 z-10 items-center justify-between px-6 py-4 bg-bg  transition-all duration-300" >
-        <Logo />
+    <header
+      ref={headerRef}
+      className={`transition-all duration-600 ease-in-out w-full bg-bg ${isFixed ? 'fixed top-0 left-0 right-0 z-10 shadow-md' : 'static'
+        }`}
+    >
+      <div
+        className={`md-header hidden md:flex items-center justify-between px-6 ${isFixed ? 'py-2 shadow-lg' : 'py-4'
+          }`}
+      >
+        <Logo isScrolled={isFixed} />
         <Menu isLoggedIn={isLoggedIn} userName={userName} unreadCount={unreadCount} />
       </div>
-      <div className="sm-header md:hidden fixed top-0 left-0 right-0 z-10 flex items-center justify-between p-2 border-b border-b-border bg-bg">
-        <Logo />
+      <div
+        className={`sm-header md:hidden flex items-center justify-between border-b border-b-border bg-bg ${isFixed ? 'p-2 shadow-lg' : 'p-2'
+          }`}
+      >
+        <Logo isScrolled={isFixed} />
         <MagnifyingGlassIcon className="h-5 w-5 text-dark-gray" />
       </div>
     </header>

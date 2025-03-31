@@ -13,8 +13,8 @@ interface CustomHeaderProps {
   showAdd?: boolean;
   pageTitle?: string;
   onDelete?: (id: number) => void;
-  onEdit?: () => void; // 改为无参数，触发打开模态框
-  onAdd?: () => void; // 改为无参数，触发新增
+  onEdit?: () => void;
+  onAdd?: () => void;
 }
 
 export default function CustomHeader({
