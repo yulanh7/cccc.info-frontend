@@ -14,7 +14,7 @@ export default function PageTitle({ title, showPageTitle }: { title?: string; sh
   return (
     <div className='hidden md:flex justify-center items-center relative pd-20 mb-10'>
 
-      <div className="flex justify-center items-center w-full bg-page-title-bg h-60 text-white text-5xl font-semibold px-6 relative overflow-hidden">
+      <div className="flex justify-center items-center w-full bg-page-title-bg h-50 text-white text-4xl font-semibold px-6 relative overflow-hidden">
         {title}
 
       </div>
