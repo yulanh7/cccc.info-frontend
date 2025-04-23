@@ -152,8 +152,9 @@ export default function GroupsPage() {
                 <button className={`w-28 py-1 rounded-md text-white ${group.subscribed ? 'bg-yellow hover:bg-dark-yellow' : 'bg-green hover:bg-dark-green'}`} >
                   {group.subscribed ? 'Unsubscribe' : 'Subscribe'}
                 </button>
-
-                <ArrowRightCircleIcon className="h-7 w-7 text-green hover:text-dark-green cursor-pointer" />
+                <Link href={`/groups/${group.id}`}>
+                  <ArrowRightCircleIcon className="h-7 w-7 text-green hover:text-dark-green cursor-pointer" />
+                </Link>
 
               </div>
             </div>
