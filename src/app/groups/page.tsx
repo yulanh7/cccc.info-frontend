@@ -130,11 +130,11 @@ export default function GroupsPage() {
         <div className="md:hidden space-y-4">
           {mockGroups.map((group) => (
             <div
-              className={`p-4 bg-white border border-border rounded-base shadow-md transition-all ${group.inviteOnly ? 'backdrop-blur-sm bg-opacity-80' : ''
+              className={`card p-3 ${group.inviteOnly ? 'backdrop-blur-sm bg-opacity-80' : ''
                 }`}
               key={group.id}
             >
-              <div className="absolute right-10 t-5 flex space-x-2">
+              <div className="absolute right-2 t-5 flex space-x-2">
                 {group.editable && (
                   <>
                     <PencilSquareIcon className="h-5 w-5 text-green hover:text-dark-green cursor-pointer" onClick={() => handleEdit(group)} />

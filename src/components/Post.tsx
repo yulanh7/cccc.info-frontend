@@ -18,7 +18,7 @@ export default function Post({ post }: { post: PostProps }) {
   const truncatedDescription = description.length > 100 ? `${description.slice(0, 100)}...` : description;
 
   return (
-    <div className="bg-white shadow-md md:shadow-md relative rounded-xs md:rounded-sm">
+    <div className="card">
       <div className="aspect-w-16 aspect-h-9 mb-1.5 md:mb-4">
         {videoUrl ? (
           <iframe

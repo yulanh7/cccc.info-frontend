@@ -99,6 +99,12 @@
   }
 }
 
+@layer components {
+  .card {
+    @apply bg-white shadow-md md:shadow-md relative rounded-xs md:rounded-sm
+  }
+}
+
 button {
   cursor: pointer;
 }
