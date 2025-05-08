@@ -3,10 +3,12 @@ import { ApiResponseProps } from './api';
 export interface PostProps {
   id: number;
   title: string;
-  content: string;
-  group_id: number;
-  user_id: number;
-  created_at: string;
+  date: string;
+  author: string;
+  group: string;
+  description: string;
+  videoUrl: string;
+  files?: { url: string; name: string }[];
 }
 
 export interface CreatePostCredentials {
@@ -24,3 +26,4 @@ export type FetchPostsResponse = ApiResponseProps<PostProps[]>;
 export type GetPostResponse = ApiResponseProps<PostProps>;
 export type EditPostResponse = ApiResponseProps<PostProps>;
 export type DeletePostResponse = ApiResponseProps<null>;
+
