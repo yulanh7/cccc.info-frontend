@@ -3,11 +3,13 @@ import { ApiResponseProps } from './api';
 export interface UserProps {
   id: number;
   email: string;
-  username: string;
+  firstName: string;
+  admin: boolean;
 }
 
-export interface AuthUserProps extends UserProps {
-  token: string;
+export interface AuthResponseData extends UserProps {
+  access_token: string;
+  refresh_token: string;
 }
 
-export type AuthResponse = ApiResponseProps<AuthUserProps>;
+export type AuthResponse = ApiResponseProps<AuthResponseData>;

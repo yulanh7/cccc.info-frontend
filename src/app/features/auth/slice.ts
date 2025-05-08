@@ -1,17 +1,19 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { login, signup } from './api';
-import { AuthUserProps } from '@/app/types/user';
+import { AuthResponse, AuthResponseData } from '@/app/types/user';
 
 interface AuthState {
-  user: AuthUserProps | null;
-  token: string | null;
+  user: AuthResponseData | null;
+  accessToken: string | null;
+  refreshToken: string | null;
   status: 'idle' | 'loading' | 'succeeded' | 'failed';
   error: string | null;
 }
 
 const initialState: AuthState = {
   user: null,
-  token: null,
+  accessToken: null,
+  refreshToken: null,
   status: 'idle',
   error: null,
 };
@@ -22,21 +24,21 @@ export const loginThunk = createAsyncThunk('auth/login', async (credentials: { e
     if (!response.success || !response.data) {
       throw new Error(response.message || 'Login failed');
     }
-    return { user: response.data, token: response.data.token };
+    return { user: response.data, accessToken: response.data.access_token, refreshToken: response.data.refresh_token };
   } catch (error: any) {
-    return rejectWithValue(error.message);
+    return rejectWithValue(error.message || 'Login failed');
   }
 });
 
-export const signupThunk = createAsyncThunk('auth/signup', async (credentials: { email: string; username: string; password: string }, { rejectWithValue }) => {
+export const signupThunk = createAsyncThunk('auth/signup', async (credentials: { email: string; firstName: string; password: string }, { rejectWithValue }) => {
   try {
     const response = await signup(credentials);
     if (!response.success || !response.data) {
       throw new Error(response.message || 'Signup failed');
     }
-    return { user: response.data, token: response.data.token };
+    return { user: response.data, accessToken: response.data.access_token, refreshToken: response.data.refresh_token };
   } catch (error: any) {
-    return rejectWithValue(error.message);
+    return rejectWithValue(error.message || 'Signup failed');
   }
 });
 
@@ -46,19 +48,23 @@ const authSlice = createSlice({
   reducers: {
     logout: (state) => {
       state.user = null;
-      state.token = null;
-      localStorage.removeItem('token');
+      state.accessToken = null;
+      state.refreshToken = null;
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
     },
   },
   extraReducers: (builder) => {
     builder
       .addCase(loginThunk.pending, (state) => {
         state.status = 'loading';
+        state.error = null;
       })
       .addCase(loginThunk.fulfilled, (state, action) => {
         state.status = 'succeeded';
         state.user = action.payload.user;
-        state.token = action.payload.token;
+        state.accessToken = action.payload.accessToken;
+        state.refreshToken = action.payload.refreshToken;
       })
       .addCase(loginThunk.rejected, (state, action) => {
         state.status = 'failed';
@@ -66,11 +72,13 @@ const authSlice = createSlice({
       })
       .addCase(signupThunk.pending, (state) => {
         state.status = 'loading';
+        state.error = null;
       })
       .addCase(signupThunk.fulfilled, (state, action) => {
         state.status = 'succeeded';
         state.user = action.payload.user;
-        state.token = action.payload.token;
+        state.accessToken = action.payload.accessToken;
+        state.refreshToken = action.payload.refreshToken;
       })
       .addCase(signupThunk.rejected, (state, action) => {
         state.status = 'failed';

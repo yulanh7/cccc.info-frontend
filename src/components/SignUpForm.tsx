@@ -1,12 +1,18 @@
-"use client";
+'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAppDispatch, useAppSelector } from '@/app/features/hooks';
+import { signupThunk } from '@/app/features/auth/slice';
 
 export default function SignUpForm() {
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+  const { status, error } = useAppSelector((state) => state.auth);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -15,23 +21,15 @@ export default function SignUpForm() {
       return;
     }
 
-    const response = await fetch('/api/auth/signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, firstName, password }),
-    });
-
-    const data = await response.json();
-    if (data.success) {
+    const result = await dispatch(signupThunk({ email, firstName, password }));
+    if (signupThunk.fulfilled.match(result)) {
       alert('注册成功');
-    } else {
-      alert('注册失败: ' + data.message);
+      router.push('/groups');
     }
   };
 
   return (
     <form onSubmit={handleSubmit} className="max-w-md mx-auto p-4 space-y-4">
-      {/* <h2 className="text-xl  text-dark-gray">Sign Up</h2> */}
       <input
         type="email"
         value={email}
@@ -67,9 +65,11 @@ export default function SignUpForm() {
       <button
         type="submit"
         className="w-full p-2 bg-dark-green text-white rounded-sm hover:bg-green"
+        disabled={status === 'loading'}
       >
-        Sign Up
+        {status === 'loading' ? 'Signing up...' : 'Sign Up'}
       </button>
+      {error && <p className="text-red-500 mt-2">{error}</p>}
     </form>
   );
 }

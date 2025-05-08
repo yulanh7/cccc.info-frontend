@@ -35,17 +35,24 @@ const apiRequest = async <T>(
       }
     }
 
-    const response: AxiosResponse<ApiResponseProps<T>> = await axios(config);
+    const response: AxiosResponse = await axios(config);
 
     return {
       success: response.data.success,
-      code: response.data.code,
+      code: response.data.code || 200,
       message: response.data.message,
-      data: response.data.data,
+      data: {
+        ...response.data.user,
+        access_token: response.data.access_token,
+        refresh_token: response.data.refresh_token,
+      } as T,
     };
   } catch (error: any) {
     const code = error.response?.status || 500;
-    const message = error.response?.data?.message || 'Request failed';
+    let message = error.response?.data?.message || 'Request failed';
+    if (error.code === 'ECONNREFUSED') {
+      message = `Cannot connect to ${BASE_URL}${endpoint}. Ensure the backend server is running on port 5000.`;
+    }
     throw { code, message } as ErrorResponse;
   }
 };
