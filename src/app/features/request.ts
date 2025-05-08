@@ -1,16 +1,12 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
-import { getToken } from '@/app/features/auth/token';
+import { getToken } from './auth/token';
+import { ApiResponseProps } from '@/app/types/api';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
-interface ApiResponse<T> {
-  data: T;
-  status: number;
-}
-
 interface ErrorResponse {
   message: string;
-  status: number;
+  code: number;
 }
 
 const apiRequest = async <T>(
@@ -18,7 +14,7 @@ const apiRequest = async <T>(
   endpoint: string,
   data?: any,
   requireAuth: boolean = true
-): Promise<ApiResponse<T>> => {
+): Promise<ApiResponseProps<T>> => {
   try {
     const config: AxiosRequestConfig = {
       method,
@@ -39,16 +35,18 @@ const apiRequest = async <T>(
       }
     }
 
-    const response: AxiosResponse<T> = await axios(config);
+    const response: AxiosResponse<ApiResponseProps<T>> = await axios(config);
 
     return {
-      data: response.data,
-      status: response.status,
+      success: response.data.success,
+      code: response.data.code,
+      message: response.data.message,
+      data: response.data.data,
     };
   } catch (error: any) {
-    const status = error.response?.status || 500;
+    const code = error.response?.status || 500;
     const message = error.response?.data?.message || 'Request failed';
-    throw { status, message } as ErrorResponse;
+    throw { code, message } as ErrorResponse;
   }
 };
 
