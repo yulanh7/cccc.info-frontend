@@ -72,7 +72,7 @@ export default function PostDetailPage({ params: paramsPromise }: { params: Prom
       <div className="text-xs text-dark-green md:text-sm mb-4 flex items-center">
         <CalendarIcon className="h-4 w-4 mr-1 text-dark-green" /> {post.date}
       </div>
-      <p className="text-gray">{post.description}</p>
+      <p className="text-gray whitespace-pre-wrap"></p>
 
       {post.files && post.files.length > 0 && (
         <div className="mt-4 shadow-md p-4">
