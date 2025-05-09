@@ -6,11 +6,14 @@ import { mockPostList } from '@/app/data/mockData'
 import PageTitle from '@/components/PageTitle';
 import PostModal from '@/components/PostModal';
 import { PlusIcon } from '@heroicons/react/24/outline';
+import { PostProps } from '@/app/types';
 
-export default function HomePage() {
+export default function GroupPage({ params }: { params: Promise<{ id: string }> }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const handleSave = () => {
-    console.log('Saved post:', "yes");
+  const { id } = React.use(params);
+
+  const handleSave = (item: PostProps) => {
+    console.log('Saved post:', { ...item, group: id });
     setIsModalOpen(false);
   };
   const handleAdd = () => {
