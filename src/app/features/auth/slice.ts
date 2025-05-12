@@ -26,7 +26,7 @@ const AUTH_ENDPOINTS = {
 } as const;
 
 export const loginThunk = createAsyncThunk(
-  `auth${AUTH_ENDPOINTS.LOGIN}`,
+  `${AUTH_ENDPOINTS.LOGIN}`,
   async (credentials: LoginCredentials, { rejectWithValue }) => {
     try {
       const response = await apiRequest<AuthResponseData>('POST', AUTH_ENDPOINTS.LOGIN, credentials, false);
@@ -46,7 +46,7 @@ export const loginThunk = createAsyncThunk(
 );
 
 export const signupThunk = createAsyncThunk(
-  `auth${AUTH_ENDPOINTS.SIGNUP}`,
+  `${AUTH_ENDPOINTS.SIGNUP}`,
   async (credentials: SignupCredentials, { rejectWithValue }) => {
     try {
       const response = await apiRequest<AuthResponseData>('POST', AUTH_ENDPOINTS.SIGNUP, credentials, false);
