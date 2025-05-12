@@ -1,9 +1,20 @@
-
+### Signup
 POST http://localhost:5000/api/auth/signup HTTP/1.1
 Content-Type: application/json
 
 {
   "email": "bo1@cccc.info",
   "firstName": "Bo",
+  "password": "123456789"
+}
+
+
+### test
+POST  http://localhost:5000/api/auth/login HTTP/1.1
+Content-Type: application/json
+
+
+{
+  "email": "bo1@cccc.info",
   "password": "123456789"
 }

@@ -7,7 +7,8 @@ export interface UserProps {
   admin: boolean;
 }
 
-export interface AuthResponseData extends UserProps {
+export interface AuthResponseData {
+  user: UserProps;
   access_token: string;
   refresh_token: string;
 }

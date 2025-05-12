@@ -1,9 +1,11 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { login, signup } from './api';
-import { AuthResponse, AuthResponseData } from '@/app/types/user';
+import apiRequest from '../request';
+import { storeToken } from './token';
+import { UserProps, AuthResponse, AuthResponseData } from '@/app/types/user';
+import { LoginCredentials, SignupCredentials } from '@/app/types/auth';
 
 interface AuthState {
-  user: AuthResponseData | null;
+  user: UserProps | null;
   accessToken: string | null;
   refreshToken: string | null;
   status: 'idle' | 'loading' | 'succeeded' | 'failed';
@@ -18,29 +20,50 @@ const initialState: AuthState = {
   error: null,
 };
 
-export const loginThunk = createAsyncThunk('auth/login', async (credentials: { email: string; password: string }, { rejectWithValue }) => {
-  try {
-    const response = await login(credentials);
-    if (!response.success || !response.data) {
-      throw new Error(response.message || 'Login failed');
-    }
-    return { user: response.data, accessToken: response.data.access_token, refreshToken: response.data.refresh_token };
-  } catch (error: any) {
-    return rejectWithValue(error.message || 'Login failed');
-  }
-});
+const AUTH_ENDPOINTS = {
+  LOGIN: '/auth/login',
+  SIGNUP: '/auth/signup',
+} as const;
 
-export const signupThunk = createAsyncThunk('auth/signup', async (credentials: { email: string; firstName: string; password: string }, { rejectWithValue }) => {
-  try {
-    const response = await signup(credentials);
-    if (!response.success || !response.data) {
-      throw new Error(response.message || 'Signup failed');
+export const loginThunk = createAsyncThunk(
+  `auth${AUTH_ENDPOINTS.LOGIN}`,
+  async (credentials: LoginCredentials, { rejectWithValue }) => {
+    try {
+      const response = await apiRequest<AuthResponseData>('POST', AUTH_ENDPOINTS.LOGIN, credentials, false);
+      if (!response.success || !response.data) {
+        throw new Error(response.message || '登录失败');
+      }
+      storeToken(response.data.access_token, response.data.refresh_token);
+      return {
+        user: response.data.user,
+        accessToken: response.data.access_token,
+        refreshToken: response.data.refresh_token,
+      };
+    } catch (error: any) {
+      return rejectWithValue(error.message || '登录失败');
     }
-    return { user: response.data, accessToken: response.data.access_token, refreshToken: response.data.refresh_token };
-  } catch (error: any) {
-    return rejectWithValue(error.message || 'Signup failed');
   }
-});
+);
+
+export const signupThunk = createAsyncThunk(
+  `auth${AUTH_ENDPOINTS.SIGNUP}`,
+  async (credentials: SignupCredentials, { rejectWithValue }) => {
+    try {
+      const response = await apiRequest<AuthResponseData>('POST', AUTH_ENDPOINTS.SIGNUP, credentials, false);
+      if (!response.success || !response.data) {
+        throw new Error(response.message || '注册失败');
+      }
+      storeToken(response.data.access_token, response.data.refresh_token);
+      return {
+        user: response.data.user,
+        accessToken: response.data.access_token,
+        refreshToken: response.data.refresh_token,
+      };
+    } catch (error: any) {
+      return rejectWithValue(error.message || '注册失败');
+    }
+  }
+);
 
 const authSlice = createSlice({
   name: 'auth',

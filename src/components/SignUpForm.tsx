@@ -23,7 +23,7 @@ export default function SignUpForm() {
 
     const result = await dispatch(signupThunk({ email, firstName, password }));
     if (signupThunk.fulfilled.match(result)) {
-      alert('注册成功');
+      alert(`${firstName} 注册成功`);
       router.push('/groups');
     }
   };
