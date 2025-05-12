@@ -35,7 +35,7 @@ export default function Menu({ isLoggedIn, userName, unreadCount }: { isLoggedIn
         {isLoggedIn ? (
           <span className="text-dark-gray hover:text-dark-green">{userName}</span>
         ) : (
-          <Link href="/login" className="text-dark-gray hover:text-dark-green">
+          <Link href="/auth" className="text-dark-gray hover:text-dark-green">
             Login
           </Link>
         )}
