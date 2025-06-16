@@ -13,6 +13,7 @@ import {
   UserIcon as SolidUserIcon,
 } from '@heroicons/react/24/solid';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface NavItem {
   href: string;
@@ -22,13 +23,11 @@ interface NavItem {
   unreadCount?: number;
 }
 
-interface BottomNavProps {
-  unreadCount: number;
-}
-
-export default function BottomNav({ unreadCount }: BottomNavProps) {
+export default function BottomNav() {
   const pathname = usePathname();
   const hideBottomNav = pathname.startsWith('/posts/') || pathname.startsWith('/messages/');
+  // TODO: Implement unread count functionality
+  const unreadCount = 0;
 
   const navItems: NavItem[] = [
     { href: '/', label: 'Home', outlineIcon: OutlineHomeIcon, solidIcon: SolidHomeIcon },

@@ -5,21 +5,17 @@ import Logo from '@/components/Logo';
 import Menu from '@/components/Menu';
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
-export default function Header({
-  isLoggedIn,
-  userName,
-  unreadCount,
-}: {
-  isLoggedIn: boolean;
-  userName: string;
-  unreadCount: number;
-}) {
+export default function Header() {
+  const { user, isAuthenticated } = useAuth();
   const headerRef = useRef<HTMLElement>(null);
   const pathname = usePathname();
   const hideHeader = pathname.startsWith('/posts/') || pathname.startsWith('/messages/') || pathname.startsWith('/auth');
   const [isFixed, setIsFixed] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
+  // TODO: Implement unread count functionality
+  const unreadCount = 0;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -57,7 +53,7 @@ export default function Header({
             }`}
         >
           <Logo isScrolled={isFixed} />
-          <Menu isLoggedIn={isLoggedIn} userName={userName} unreadCount={unreadCount} />
+          <Menu isLoggedIn={isAuthenticated} userName={user?.firstName || ''} unreadCount={unreadCount} />
         </div>
         <div
           className={`sm-header md:hidden flex items-center justify-between border-b border-b-border bg-bg ${isFixed ? 'p-2 shadow-lg' : 'p-2'
