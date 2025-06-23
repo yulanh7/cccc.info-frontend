@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import apiRequest from '../request';
-import { storeToken } from './token';
-import { UserProps, AuthResponse, AuthResponseData } from '@/app/types/user';
+import { clearAuth, storeToken } from './token';
+import { UserProps, AuthResponseData } from '@/app/types/user';
 import { LoginCredentials, SignupCredentials } from '@/app/types/auth';
 
 interface AuthState {
@@ -33,7 +33,7 @@ export const loginThunk = createAsyncThunk(
       if (!response.success || !response.data) {
         throw new Error(response.message || '登录失败');
       }
-      storeToken(response.data.access_token, response.data.refresh_token);
+      storeToken(response.data);
       return {
         user: response.data.user,
         accessToken: response.data.access_token,
@@ -53,7 +53,7 @@ export const signupThunk = createAsyncThunk(
       if (!response.success || !response.data) {
         throw new Error(response.message || '注册失败');
       }
-      storeToken(response.data.access_token, response.data.refresh_token);
+      storeToken(response.data);
       return {
         user: response.data.user,
         accessToken: response.data.access_token,
@@ -73,8 +73,7 @@ const authSlice = createSlice({
       state.user = null;
       state.accessToken = null;
       state.refreshToken = null;
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
+      clearAuth();
     },
   },
   extraReducers: (builder) => {
