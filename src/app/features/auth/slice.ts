@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import apiRequest from '../request';
-import { clearAuth, storeToken } from './token';
+import { clearAuth, storeToken, getToken, getUser } from './token';
 import { UserProps, AuthResponseData } from '@/app/types/user';
 import { LoginCredentials, SignupCredentials } from '@/app/types/auth';
 
@@ -75,6 +75,15 @@ const authSlice = createSlice({
       state.refreshToken = null;
       clearAuth();
     },
+    rehydrateAuth: (state) => {
+      const user = getUser();
+      const accessToken = getToken();
+      if (user && accessToken) {
+        state.user = user;
+        state.accessToken = accessToken;
+        // 可选：refreshToken 也可以加上
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -109,5 +118,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout } = authSlice.actions;
+export const { logout, rehydrateAuth } = authSlice.actions;
 export default authSlice.reducer;
