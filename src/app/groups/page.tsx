@@ -5,20 +5,16 @@ import { PencilSquareIcon, TrashIcon, ArrowRightCircleIcon, PlusIcon } from '@he
 import PageTitle from '@/components/PageTitle';
 import GroupModal from '@/components/GroupModal';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
-
-// ✅ add imports
-import { useAppDispatch } from '@/app/features/hooks';
-import { createGroup } from '@/app/features/groups/slice';
+import { useAppDispatch, useAppSelector } from '@/app/features/hooks';
+import { createGroup, fetchAvailableGroups } from '@/app/features/groups/slice';
 import type { CreateOrUpdateGroupBody } from '@/app/types/group';
-
-import { mockGroups } from '@/app/data/mockData';
-import { GroupProps } from '@/app/types';
+import type { GroupProps } from '@/app/types';
 
 export default function GroupsPage() {
   const dispatch = useAppDispatch();
-
-  // use component state for rendering; start with mock, but render from `groups`
-  const [groups, setGroups] = useState<GroupProps[]>(mockGroups);
+  const availableGroups = useAppSelector((s) => s.groups.availableGroups);
+  const user = useAppSelector((s) => s.auth.user);
+  const canEdit = (g: GroupProps) => !!user && (user.admin || g.creator.id === user.id);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isNew, setIsNew] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<GroupProps | undefined>(undefined);
@@ -26,9 +22,8 @@ export default function GroupsPage() {
   const [groupToDelete, setGroupToDelete] = useState<number | null>(null);
 
   useEffect(() => {
-    // TODO: later replace mock with fetchUserGroups / fetchAvailableGroups
-    // dispatch(fetchUserGroups({...}))
-  }, []);
+    dispatch(fetchAvailableGroups({ page: 1, per_page: 10 }));
+  }, [dispatch]);
 
   const handleEdit = (group: GroupProps) => {
     setSelectedGroup(group);
@@ -42,7 +37,7 @@ export default function GroupsPage() {
     setIsModalOpen(true);
   };
 
-  // ✅ wire createGroup thunk when adding a new group
+  // ✅ when saving a new group, call createGroup then refresh available list
   const handleSave = async (updatedGroup: GroupProps) => {
     if (isNew) {
       const body: CreateOrUpdateGroupBody = {
@@ -51,19 +46,16 @@ export default function GroupsPage() {
         isPrivate: updatedGroup.inviteOnly,
       };
       const action = await dispatch(createGroup(body));
-
       if (createGroup.fulfilled.match(action)) {
-        const created = action.payload; // GroupProps (UI-shaped)
-        setGroups((prev) => [...prev, created]);
+        // refresh available groups after creation
+        dispatch(fetchAvailableGroups({ page: 1, per_page: 10 }));
       } else {
         const errMsg = (action.payload as string) ?? 'Create group failed';
         console.error(errMsg);
         alert(errMsg);
       }
     } else {
-      // TODO: when updateGroup thunk is ready, call it here
-      // const action = await dispatch(updateGroup({ groupId: updatedGroup.id, body: {...} }))
-      // if (updateGroup.fulfilled.match(action)) { ... }
+      // TODO: wire updateGroup when ready
     }
     setIsModalOpen(false);
   };
@@ -75,11 +67,8 @@ export default function GroupsPage() {
 
   const confirmDelete = () => {
     // TODO: replace with deleteGroup thunk later
-    if (groupToDelete !== null) {
-      setGroups(groups.filter((g) => g.id !== groupToDelete));
-      setIsDeleteConfirmOpen(false);
-      setGroupToDelete(null);
-    }
+    setIsDeleteConfirmOpen(false);
+    setGroupToDelete(null);
   };
 
   const cancelDelete = () => {
@@ -107,7 +96,7 @@ export default function GroupsPage() {
           </button>
         </div>
 
-        {/* ✅ render from `groups` instead of mockGroups */}
+        {/* Desktop table */}
         <div className="hidden md:block overflow-x-auto p-4">
           <table className="min-w-full bg-bg shadow-lg">
             <thead>
@@ -122,7 +111,7 @@ export default function GroupsPage() {
               </tr>
             </thead>
             <tbody>
-              {groups.map((group, index) => (
+              {availableGroups.map((group, index) => (
                 <tr key={group.id} className={`${index % 2 === 0 ? '' : 'bg-gray-50'}`}>
                   <td className="py-2 px-4 text-gray">{group.title}</td>
                   <td className="py-2 px-4 text-gray">{group.description}</td>
@@ -134,7 +123,7 @@ export default function GroupsPage() {
                     </button>
                   </td>
                   <td className="py-2 px-4 flex justify-center items-center space-x-2 min-h-[60px]">
-                    {group.editable && (
+                    {canEdit(group) && (
                       <>
                         <PencilSquareIcon className="h-5 w-5 text-green hover:text-dark-green cursor-pointer" onClick={() => handleEdit(group)} />
                         <TrashIcon className="h-5 w-5 text-green hover:text-dark-green cursor-pointer" onClick={() => handleDeleteClick(group.id)} />
@@ -152,15 +141,15 @@ export default function GroupsPage() {
           </table>
         </div>
 
-        {/* mobile list: also render from `groups` */}
+        {/* Mobile cards */}
         <div className="md:hidden space-y-4">
-          {groups.map((group) => (
+          {availableGroups.map((group) => (
             <div
               className={`card p-3 ${group.inviteOnly ? 'backdrop-blur-sm bg-opacity-80' : ''}`}
               key={group.id}
             >
               <div className="absolute right-2 t-5 flex space-x-2">
-                {group.editable && (
+                {canEdit(group) && (
                   <>
                     <PencilSquareIcon className="h-5 w-5 text-green hover:text-dark-green cursor-pointer" onClick={() => handleEdit(group)} />
                     <TrashIcon className="h-5 w-5 text-green hover:text-dark-green cursor-pointer" />

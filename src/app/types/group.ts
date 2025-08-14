@@ -1,17 +1,16 @@
-// app/types/groups.ts
 import type { ApiResponseProps } from './api';
 import type { UserProps } from './user';
 
-/** ===================== UI Model (keep your existing shape) ===================== */
+/** ===================== UI Model (unchanged) ===================== */
 export interface GroupProps {
   id: number;
   title: string;
   description: string;
-  createdDate: string;      // ISO
-  creator: UserProps;       // UserProps
-  subscribed: boolean;      // is_member
-  editable: boolean;        // is_creator or admin
-  inviteOnly: boolean;      // isPrivate
+  createdDate: string;
+  creator: UserProps;
+  subscribed: boolean;
+  editable: boolean;
+  inviteOnly: boolean;
 }
 
 export interface GroupListProps {
@@ -20,7 +19,7 @@ export interface GroupListProps {
 export type GroupListResponse = ApiResponseProps<GroupListProps>;
 export type GroupDetailResponse = ApiResponseProps<GroupProps>;
 
-/** ===================== API Model (matches backend JSON) ===================== */
+/** ===================== API Model (UPDATED) ===================== */
 export interface Pagination {
   page: number;
   per_page: number;
@@ -28,18 +27,13 @@ export interface Pagination {
   pages: number;
 }
 
-export interface CreatorApi {
-  id: number;
-  firstName: string;
-  email: string;
-}
-
 export interface GroupApi {
   id: number;
   name: string;
   description: string;
-  creator: CreatorApi;      // <-- changed to object
-  time: string;             // ISO
+  creator: number;
+  creator_name: string;
+  time: string;
   isPrivate: boolean;
   subscriber_count: number;
   is_member: boolean;
@@ -84,6 +78,7 @@ export interface CreateOrUpdateGroupBody {
   isPrivate: boolean;
 }
 
+/** API response wrappers */
 export type CreateGroupResponse = ApiResponseProps<{ group: GroupApi }>;
 export type UpdateGroupResponse = ApiResponseProps<{ group: GroupApi }>;
 export type GroupsListResponseApi = ApiResponseProps<GroupsListData>;
@@ -91,17 +86,17 @@ export type GroupDetailResponseApi = ApiResponseProps<GroupDetailData>;
 export type MembersListResponseApi = ApiResponseProps<MembersListData>;
 export type GroupStatsResponseApi = ApiResponseProps<GroupStats>;
 
-/** ===================== Mapping: API -> UI ===================== */
+/** ===================== Mapping: API -> UI (UPDATED) ===================== */
 export const mapGroupApiToProps = (g: GroupApi): GroupProps => ({
   id: g.id,
   title: g.name,
   description: g.description,
   createdDate: g.time,
   creator: {
-    id: g.creator.id,
-    email: g.creator.email,
-    firstName: g.creator.firstName,
-    admin: false, // backend doesn't provide this; default to false
+    id: g.creator,
+    firstName: g.creator_name,
+    email: '',
+    admin: false,
   },
   subscribed: g.is_member,
   editable: g.is_creator,
