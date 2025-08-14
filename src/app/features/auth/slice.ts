@@ -1,6 +1,6 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import apiRequest from '../request';
-import { clearAuth, storeToken, getToken, getUser } from './token';
+import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { apiRequest } from '../request';
+import { clearAuth, storeToken, getToken, getUser, getRefreshToken } from './token';
 import { UserProps, AuthResponseData } from '@/app/types/user';
 import { LoginCredentials, SignupCredentials } from '@/app/types/auth';
 
@@ -30,9 +30,7 @@ export const loginThunk = createAsyncThunk(
   async (credentials: LoginCredentials, { rejectWithValue }) => {
     try {
       const response = await apiRequest<AuthResponseData>('POST', AUTH_ENDPOINTS.LOGIN, credentials, false);
-      if (!response.success || !response.data) {
-        throw new Error(response.message || '登录失败');
-      }
+      if (!response.success || !response.data) throw new Error(response.message || '登录失败');
       storeToken(response.data);
       return {
         user: response.data.user,
@@ -50,9 +48,7 @@ export const signupThunk = createAsyncThunk(
   async (credentials: SignupCredentials, { rejectWithValue }) => {
     try {
       const response = await apiRequest<AuthResponseData>('POST', AUTH_ENDPOINTS.SIGNUP, credentials, false);
-      if (!response.success || !response.data) {
-        throw new Error(response.message || '注册失败');
-      }
+      if (!response.success || !response.data) throw new Error(response.message || '注册失败');
       storeToken(response.data);
       return {
         user: response.data.user,
@@ -78,11 +74,14 @@ const authSlice = createSlice({
     rehydrateAuth: (state) => {
       const user = getUser();
       const accessToken = getToken();
-      if (user && accessToken) {
-        state.user = user;
-        state.accessToken = accessToken;
-        // 可选：refreshToken 也可以加上
-      }
+      const refreshToken = getRefreshToken(); // 👈 新增：把 refresh token 也恢复
+      if (user) state.user = user;
+      if (accessToken) state.accessToken = accessToken;
+      if (refreshToken) state.refreshToken = refreshToken;
+    },
+    // 👇 新增：在“刷新 token 成功”时同步 Redux 中的 accessToken
+    accessTokenRefreshed: (state, action: PayloadAction<string>) => {
+      state.accessToken = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -118,5 +117,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, rehydrateAuth } = authSlice.actions;
+export const { logout, rehydrateAuth, accessTokenRefreshed } = authSlice.actions;
 export default authSlice.reducer;

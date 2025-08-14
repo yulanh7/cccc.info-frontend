@@ -1,4 +1,3 @@
-
 import { UserProps, AuthResponseData } from '@/app/types/user';
 
 export const storeToken = (data: AuthResponseData) => {
@@ -7,33 +6,23 @@ export const storeToken = (data: AuthResponseData) => {
   localStorage.setItem('user', JSON.stringify(data.user));
 };
 
+export const setAccessToken = (accessToken: string) => {
+  localStorage.setItem('access_token', accessToken);
+};
+
 export const getToken = (): string | null => {
-  try {
-    return localStorage.getItem('access_token');
-  } catch (error) {
-    console.error('Error accessing token:', error);
-    return null;
-  }
+  try { return localStorage.getItem('access_token'); } catch { return null; }
 };
 
 export const getRefreshToken = (): string | null => {
-  try {
-
-    return localStorage.getItem('refresh_token');
-  } catch (error) {
-    console.error('Error accessing refresh token:', error);
-    return null;
-  }
+  try { return localStorage.getItem('refresh_token'); } catch { return null; }
 };
 
 export const getUser = (): UserProps | null => {
   try {
     const user = localStorage.getItem('user');
     return user ? JSON.parse(user) : null;
-  } catch (error) {
-    console.error('Error accessing user:', error);
-    return null;
-  }
+  } catch { return null; }
 };
 
 export const clearAuth = () => {
@@ -42,6 +31,4 @@ export const clearAuth = () => {
   localStorage.removeItem('user');
 };
 
-export const hasToken = (): boolean => {
-  return !!getToken();
-};
+export const hasToken = (): boolean => !!getToken();
