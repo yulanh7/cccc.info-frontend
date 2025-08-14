@@ -15,6 +15,7 @@ type LoadStatus = 'idle' | 'loading' | 'succeeded' | 'failed';
 const GROUP_ENDPOINTS = {
   CREATE_GROUP: '/groups',
   AVAILABLE_GROUPS: '/groups/available',
+  USER_GROUPS: '/groups',
   UPDATE_GROUP: (id: number) => `/groups/${id}`,
 } as const;
 
@@ -22,6 +23,9 @@ interface GroupsState {
   currentGroup: GroupProps | null;
   availableGroups: GroupProps[];
   availableGroupsPagination: Pagination | null;
+  userGroups: GroupProps[];
+  userGroupsPagination: Pagination | null;
+  userMembership: Record<number, true>; // quick lookup for subscribed group ids
   status: Record<string, LoadStatus>;
   error: Record<string, string | null>;
 }
@@ -30,6 +34,9 @@ const initialState: GroupsState = {
   currentGroup: null,
   availableGroups: [],
   availableGroupsPagination: null,
+  userGroups: [],
+  userGroupsPagination: null,
+  userMembership: {},
   status: {},
   error: {},
 };
@@ -77,6 +84,29 @@ export const fetchAvailableGroups = createAsyncThunk<
   }
 });
 
+/** 2.1 Get user subscribed groups */
+export const fetchUserGroups = createAsyncThunk<
+  { groups: GroupProps[]; pagination: Pagination; membership: Record<number, true> },
+  { page?: number; per_page?: number } | undefined
+>('groups/fetchUserGroups', async (params, { rejectWithValue }) => {
+  try {
+    const qs = new URLSearchParams();
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.per_page) qs.set('per_page', String(params.per_page));
+    const url = GROUP_ENDPOINTS.USER_GROUPS + (qs.toString() ? `?${qs.toString()}` : '');
+    const res = await apiRequest<GroupsListData>('GET', url);
+    if (!res.success || !res.data) throw new Error(res.message || 'Fetch user groups failed');
+
+    const groups = res.data.groups.map(mapGroupApiToProps);
+    const membership: Record<number, true> = {};
+    for (const g of groups) membership[g.id] = true;
+
+    return { groups, pagination: res.data.pagination, membership };
+  } catch (e: any) {
+    return rejectWithValue(e.message || 'Fetch user groups failed') as any;
+  }
+});
+
 /** 2.6 Update group */
 export const updateGroup = createAsyncThunk<
   GroupProps,
@@ -103,22 +133,13 @@ const groupsSlice = createSlice({
   extraReducers: (builder) => {
     // create group
     builder
-      .addCase(createGroup.pending, (s) => {
-        setStatus(s, 'createGroup', 'loading'); setError(s, 'createGroup', null);
-      })
-      .addCase(createGroup.fulfilled, (s, a) => {
-        setStatus(s, 'createGroup', 'succeeded');
-        s.currentGroup = a.payload;
-      })
-      .addCase(createGroup.rejected, (s, a) => {
-        setStatus(s, 'createGroup', 'failed'); setError(s, 'createGroup', (a.payload as string) || 'Create group failed');
-      });
+      .addCase(createGroup.pending, (s) => { setStatus(s, 'createGroup', 'loading'); setError(s, 'createGroup', null); })
+      .addCase(createGroup.fulfilled, (s, a) => { setStatus(s, 'createGroup', 'succeeded'); s.currentGroup = a.payload; })
+      .addCase(createGroup.rejected, (s, a) => { setStatus(s, 'createGroup', 'failed'); setError(s, 'createGroup', (a.payload as string) || 'Create group failed'); });
 
-    // fetch available groups
+    // available groups
     builder
-      .addCase(fetchAvailableGroups.pending, (s) => {
-        setStatus(s, 'fetchAvailableGroups', 'loading'); setError(s, 'fetchAvailableGroups', null);
-      })
+      .addCase(fetchAvailableGroups.pending, (s) => { setStatus(s, 'fetchAvailableGroups', 'loading'); setError(s, 'fetchAvailableGroups', null); })
       .addCase(fetchAvailableGroups.fulfilled, (s, a) => {
         setStatus(s, 'fetchAvailableGroups', 'succeeded');
         s.availableGroups = a.payload.groups;
@@ -129,19 +150,33 @@ const groupsSlice = createSlice({
         setError(s, 'fetchAvailableGroups', (a.payload as string) || 'Fetch available groups failed');
       });
 
+    // user groups
+    builder
+      .addCase(fetchUserGroups.pending, (s) => { setStatus(s, 'fetchUserGroups', 'loading'); setError(s, 'fetchUserGroups', null); })
+      .addCase(fetchUserGroups.fulfilled, (s, a) => {
+        setStatus(s, 'fetchUserGroups', 'succeeded');
+        s.userGroups = a.payload.groups;
+        s.userGroupsPagination = a.payload.pagination;
+        s.userMembership = a.payload.membership;
+      })
+      .addCase(fetchUserGroups.rejected, (s, a) => {
+        setStatus(s, 'fetchUserGroups', 'failed');
+        setError(s, 'fetchUserGroups', (a.payload as string) || 'Fetch user groups failed');
+      });
+
     // update group
     builder
-      .addCase(updateGroup.pending, (s) => {
-        setStatus(s, 'updateGroup', 'loading'); setError(s, 'updateGroup', null);
-      })
+      .addCase(updateGroup.pending, (s) => { setStatus(s, 'updateGroup', 'loading'); setError(s, 'updateGroup', null); })
       .addCase(updateGroup.fulfilled, (s, a) => {
         setStatus(s, 'updateGroup', 'succeeded');
         const updated = a.payload;
         if (s.currentGroup?.id === updated.id) s.currentGroup = updated;
-        replaceInList(s.availableGroups, updated); // keep list in sync
+        replaceInList(s.availableGroups, updated);
+        replaceInList(s.userGroups, updated);
       })
       .addCase(updateGroup.rejected, (s, a) => {
-        setStatus(s, 'updateGroup', 'failed'); setError(s, 'updateGroup', (a.payload as string) || 'Update group failed');
+        setStatus(s, 'updateGroup', 'failed');
+        setError(s, 'updateGroup', (a.payload as string) || 'Update group failed');
       });
   },
 });

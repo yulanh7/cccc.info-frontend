@@ -6,13 +6,14 @@ import PageTitle from '@/components/PageTitle';
 import GroupModal from '@/components/GroupModal';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 import { useAppDispatch, useAppSelector } from '@/app/features/hooks';
-import { createGroup, fetchAvailableGroups, updateGroup } from '@/app/features/groups/slice';
+import { createGroup, fetchAvailableGroups, fetchUserGroups, updateGroup } from '@/app/features/groups/slice';
 import type { CreateOrUpdateGroupBody } from '@/app/types/group';
 import type { GroupProps } from '@/app/types';
 
 export default function GroupsPage() {
   const dispatch = useAppDispatch();
   const availableGroups = useAppSelector((s) => s.groups.availableGroups);
+  const membershipMap = useAppSelector((s) => s.groups.userMembership);
   const user = useAppSelector((s) => s.auth.user);
   const canEdit = (g: GroupProps) => !!user && (user.admin || g.creator.id === user.id);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -23,6 +24,7 @@ export default function GroupsPage() {
 
   useEffect(() => {
     dispatch(fetchAvailableGroups({ page: 1, per_page: 10 }));
+    dispatch(fetchUserGroups({ page: 1, per_page: 50 }));
   }, [dispatch]);
 
   const handleEdit = (group: GroupProps) => {
@@ -110,38 +112,47 @@ export default function GroupsPage() {
                 <th className="py-2 px-4 text-left">Description</th>
                 <th className="py-2 px-4 text-left">Created Date</th>
                 <th className="py-2 px-4 text-left">Creator</th>
-                <th className="py-2 px-4 text-left">Subscription</th>
-                <th className="py-2 px-4 text-left">Actions</th>
+                <th className="py-2 px-4 text-left">Membership</th>
                 <th className="py-2 px-4 text-left">View</th>
+                <th className="py-2 px-4 text-left">Manage</th>
               </tr>
             </thead>
             <tbody>
-              {availableGroups.map((group, index) => (
-                <tr key={group.id} className={`${index % 2 === 0 ? '' : 'bg-gray-50'}`}>
-                  <td className="py-2 px-4 text-gray">{group.title}</td>
-                  <td className="py-2 px-4 text-gray">{group.description}</td>
-                  <td className="py-2 px-4 text-gray">{group.createdDate}</td>
-                  <td className="py-2 px-4 text-gray">{group.creator.firstName}</td>
-                  <td className="py-2 px-4">
-                    <button className={`w-28 py-1 rounded-md text-white ${group.subscribed ? 'bg-yellow hover:bg-dark-yellow' : 'bg-green hover:bg-dark-green'}`} >
-                      {group.subscribed ? 'Unsubscribe' : 'Subscribe'}
-                    </button>
-                  </td>
-                  <td className="py-2 px-4 flex justify-center items-center space-x-2 min-h-[60px]">
-                    {canEdit(group) && (
-                      <>
-                        <PencilSquareIcon className="h-5 w-5 text-green hover:text-dark-green cursor-pointer" onClick={() => handleEdit(group)} />
-                        <TrashIcon className="h-5 w-5 text-green hover:text-dark-green cursor-pointer" onClick={() => handleDeleteClick(group.id)} />
-                      </>
-                    )}
-                  </td>
-                  <td className="py-2 px-4">
-                    <Link href={`/groups/${group.id}`}>
-                      <ArrowRightCircleIcon className="h-7 w-7 text-green hover:text-dark-green cursor-pointer" />
-                    </Link>
-                  </td>
-                </tr>
-              ))}
+              {availableGroups.map((group, index) => {
+                const isSubscribed = !!membershipMap[group.id] || group.subscribed;
+                const canEdit = !!user && (user.admin || group.creator.id === user.id);
+
+                return (
+                  <tr key={group.id} className={`${index % 2 === 0 ? '' : 'bg-gray-50'}`}>
+                    <td className="py-2 px-4 text-gray">{group.title}</td>
+                    <td className="py-2 px-4 text-gray">{group.description}</td>
+                    <td className="py-2 px-4 text-gray">{group.createdDate}</td>
+                    <td className="py-2 px-4 text-gray">{group.creator.firstName}</td>
+                    <td className="py-2 px-4">
+                      <button
+                        className={`w-28 py-1 rounded-md text-white ${isSubscribed ? 'bg-yellow hover:bg-dark-yellow' : 'bg-green hover:bg-dark-green'
+                          }`}
+                      >
+                        {isSubscribed ? 'Unsubscribe' : 'Subscribe'}
+                      </button>
+                    </td>
+                    <td className="py-2 px-4">
+                      <Link href={`/groups/${group.id}`}>
+                        <ArrowRightCircleIcon className="h-7 w-7 text-green hover:text-dark-green cursor-pointer" />
+                      </Link>
+                    </td>
+                    <td className="py-2 px-4 flex justify-center items-center space-x-2 min-h-[60px]">
+                      {canEdit && (
+                        <>
+                          <PencilSquareIcon className="h-5 w-5 text-green hover:text-dark-green cursor-pointer" onClick={() => handleEdit(group)} />
+                          <TrashIcon className="h-5 w-5 text-green hover:text-dark-green cursor-pointer" onClick={() => handleDeleteClick(group.id)} />
+                        </>
+                      )}
+                    </td>
+
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
