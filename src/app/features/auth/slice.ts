@@ -1,6 +1,12 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { apiRequest } from '../request';
-import { clearAuth, storeToken, getToken, getUser, getRefreshToken } from './token';
+import {
+  clearAuth,
+  storeToken,
+  getToken,
+  getUser,
+  getRefreshToken,
+} from './token';
 import { UserProps, AuthResponseData } from '@/app/types/user';
 import { LoginCredentials, SignupCredentials } from '@/app/types/auth';
 
@@ -23,40 +29,75 @@ const initialState: AuthState = {
 const AUTH_ENDPOINTS = {
   LOGIN: '/auth/login',
   SIGNUP: '/auth/signup',
+  LOGOUT: '/auth/logout',
 } as const;
 
-export const loginThunk = createAsyncThunk(
+export type AuthThunkReturn = {
+  user: UserProps;
+  accessToken: string;
+  refreshToken: string;
+};
+
+// ====== Login ======
+export const loginThunk = createAsyncThunk<AuthThunkReturn, LoginCredentials>(
   `${AUTH_ENDPOINTS.LOGIN}`,
-  async (credentials: LoginCredentials, { rejectWithValue }) => {
+  async (credentials, { rejectWithValue }) => {
     try {
-      const response = await apiRequest<AuthResponseData>('POST', AUTH_ENDPOINTS.LOGIN, credentials, false);
-      if (!response.success || !response.data) throw new Error(response.message || '登录失败');
-      storeToken(response.data);
+      const res = await apiRequest<AuthResponseData>(
+        'POST',
+        AUTH_ENDPOINTS.LOGIN,
+        credentials,
+        false
+      );
+      if (!res.success || !res.data)
+        throw new Error(res.message || 'Login failed');
+      storeToken(res.data);
       return {
-        user: response.data.user,
-        accessToken: response.data.access_token,
-        refreshToken: response.data.refresh_token,
+        user: res.data.user,
+        accessToken: res.data.access_token,
+        refreshToken: res.data.refresh_token,
       };
     } catch (error: any) {
-      return rejectWithValue(error.message || '登录失败');
+      return rejectWithValue(error.message || 'Login failed') as any;
     }
   }
 );
 
-export const signupThunk = createAsyncThunk(
+// ====== Signup ======
+export const signupThunk = createAsyncThunk<AuthThunkReturn, SignupCredentials>(
   `${AUTH_ENDPOINTS.SIGNUP}`,
-  async (credentials: SignupCredentials, { rejectWithValue }) => {
+  async (credentials, { rejectWithValue }) => {
     try {
-      const response = await apiRequest<AuthResponseData>('POST', AUTH_ENDPOINTS.SIGNUP, credentials, false);
-      if (!response.success || !response.data) throw new Error(response.message || '注册失败');
-      storeToken(response.data);
+      const res = await apiRequest<AuthResponseData>(
+        'POST',
+        AUTH_ENDPOINTS.SIGNUP,
+        credentials,
+        false
+      );
+      if (!res.success || !res.data)
+        throw new Error(res.message || 'Signup failed');
+      storeToken(res.data);
       return {
-        user: response.data.user,
-        accessToken: response.data.access_token,
-        refreshToken: response.data.refresh_token,
+        user: res.data.user,
+        accessToken: res.data.access_token,
+        refreshToken: res.data.refresh_token,
       };
     } catch (error: any) {
-      return rejectWithValue(error.message || '注册失败');
+      return rejectWithValue(error.message || 'Signup failed') as any;
+    }
+  }
+);
+
+// ====== Logout (calls backend API and clears local state) ======
+export const logoutThunk = createAsyncThunk<boolean, void>(
+  `${AUTH_ENDPOINTS.LOGOUT}`,
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await apiRequest<{}>('POST', AUTH_ENDPOINTS.LOGOUT, {}, true);
+      if (!res.success) throw new Error(res.message || 'Logout failed');
+      return true;
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Logout failed') as any;
     }
   }
 );
@@ -65,27 +106,23 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    logout: (state) => {
-      state.user = null;
-      state.accessToken = null;
-      state.refreshToken = null;
-      clearAuth();
-    },
+    // Restore auth state from localStorage on app initialization
     rehydrateAuth: (state) => {
       const user = getUser();
       const accessToken = getToken();
-      const refreshToken = getRefreshToken(); // 👈 新增：把 refresh token 也恢复
+      const refreshToken = getRefreshToken();
       if (user) state.user = user;
       if (accessToken) state.accessToken = accessToken;
       if (refreshToken) state.refreshToken = refreshToken;
     },
-    // 👇 新增：在“刷新 token 成功”时同步 Redux 中的 accessToken
+    // Called when access token is refreshed successfully
     accessTokenRefreshed: (state, action: PayloadAction<string>) => {
       state.accessToken = action.payload;
     },
   },
   extraReducers: (builder) => {
     builder
+      // login
       .addCase(loginThunk.pending, (state) => {
         state.status = 'loading';
         state.error = null;
@@ -100,6 +137,7 @@ const authSlice = createSlice({
         state.status = 'failed';
         state.error = action.payload as string;
       })
+      // signup
       .addCase(signupThunk.pending, (state) => {
         state.status = 'loading';
         state.error = null;
@@ -113,9 +151,22 @@ const authSlice = createSlice({
       .addCase(signupThunk.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload as string;
+      })
+      // logout (clear state regardless of API result)
+      .addCase(logoutThunk.fulfilled, (state) => {
+        state.user = null;
+        state.accessToken = null;
+        state.refreshToken = null;
+        clearAuth();
+      })
+      .addCase(logoutThunk.rejected, (state) => {
+        state.user = null;
+        state.accessToken = null;
+        state.refreshToken = null;
+        clearAuth();
       });
   },
 });
 
-export const { logout, rehydrateAuth, accessTokenRefreshed } = authSlice.actions;
+export const { rehydrateAuth, accessTokenRefreshed } = authSlice.actions;
 export default authSlice.reducer;

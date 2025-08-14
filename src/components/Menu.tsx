@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import { useAppDispatch } from '@/app/features/hooks';
-import { logout } from '@/app/features/auth/slice';
+import { logoutThunk } from '@/app/features/auth/slice';
 
 interface TopNavItem {
   href: string;
@@ -30,7 +30,7 @@ export default function Menu({
   const dispatch = useAppDispatch();
 
   const handleLogout = () => {
-    dispatch(logout());
+    dispatch(logoutThunk());
     router.push('/auth');
   };
 
