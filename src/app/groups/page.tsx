@@ -6,7 +6,13 @@ import PageTitle from '@/components/PageTitle';
 import GroupModal from '@/components/GroupModal';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 import { useAppDispatch, useAppSelector } from '@/app/features/hooks';
-import { createGroup, fetchAvailableGroups, fetchUserGroups, updateGroup } from '@/app/features/groups/slice';
+import {
+  createGroup,
+  fetchAvailableGroups,
+  fetchUserGroups,
+  updateGroup,
+  deleteGroup
+} from '@/app/features/groups/slice';
 import type { CreateOrUpdateGroupBody } from '@/app/types/group';
 import type { GroupProps } from '@/app/types';
 
@@ -73,9 +79,18 @@ export default function GroupsPage() {
     setIsDeleteConfirmOpen(true);
   };
 
-  const confirmDelete = () => {
-    setIsDeleteConfirmOpen(false);
-    setGroupToDelete(null);
+  const confirmDelete = async () => {
+    if (groupToDelete !== null) {
+      const action = await dispatch(deleteGroup(groupToDelete));
+      if (deleteGroup.fulfilled.match(action)) {
+
+        setIsDeleteConfirmOpen(false);
+        setGroupToDelete(null);
+      } else {
+        const msg = (action.payload as string) || 'Delete group failed';
+        alert(msg);
+      }
+    }
   };
 
   const cancelDelete = () => {
@@ -168,7 +183,7 @@ export default function GroupsPage() {
                 {canEdit(group) && (
                   <>
                     <PencilSquareIcon className="h-5 w-5 text-green hover:text-dark-green cursor-pointer" onClick={() => handleEdit(group)} />
-                    <TrashIcon className="h-5 w-5 text-green hover:text-dark-green cursor-pointer" />
+                    <TrashIcon className="h-5 w-5 text-green hover:text-dark-green cursor-pointer" onClick={() => handleDeleteClick(group.id)} />
                   </>
                 )}
               </div>

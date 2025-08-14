@@ -18,8 +18,8 @@ export default function DeleteConfirmModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-30">
-      <div className="bg-white p-4 rounded-sm shadow-lg w-full max-w-sm">
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-30">
+      <div className="bg-white p-4 rounded-sm shadow-lg w-full max-w-sm mx-3">
         <p className="text-dark-gray mb-4">{message}</p>
         <div className="flex justify-end space-x-4">
           <button

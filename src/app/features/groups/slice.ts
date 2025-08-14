@@ -17,6 +17,7 @@ const GROUP_ENDPOINTS = {
   AVAILABLE_GROUPS: '/groups/available',
   USER_GROUPS: '/groups',
   UPDATE_GROUP: (id: number) => `/groups/${id}`,
+  DELETE_GROUP: (id: number) => `/groups/${id}`,
 } as const;
 
 interface GroupsState {
@@ -121,6 +122,19 @@ export const updateGroup = createAsyncThunk<
   }
 });
 
+export const deleteGroup = createAsyncThunk<
+  { id: number },
+  number
+>('groups/deleteGroup', async (groupId, { rejectWithValue }) => {
+  try {
+    const res = await apiRequest<{}>('DELETE', GROUP_ENDPOINTS.DELETE_GROUP(groupId));
+    if (!res.success) throw new Error(res.message || 'Delete group failed');
+    return { id: groupId };
+  } catch (e: any) {
+    return rejectWithValue(e.message || 'Delete group failed') as any;
+  }
+});
+
 const groupsSlice = createSlice({
   name: 'groups',
   initialState,
@@ -177,6 +191,28 @@ const groupsSlice = createSlice({
       .addCase(updateGroup.rejected, (s, a) => {
         setStatus(s, 'updateGroup', 'failed');
         setError(s, 'updateGroup', (a.payload as string) || 'Update group failed');
+      });
+
+    // delete group
+    builder
+      .addCase(deleteGroup.pending, (s) => {
+        setStatus(s, 'deleteGroup', 'loading');
+        setError(s, 'deleteGroup', null);
+      })
+      .addCase(deleteGroup.fulfilled, (s, a) => {
+        setStatus(s, 'deleteGroup', 'succeeded');
+        const id = a.payload.id;
+        s.availableGroups = s.availableGroups.filter(g => g.id !== id);
+        s.userGroups = s.userGroups.filter(g => g.id !== id);
+        if (s.currentGroup?.id === id) s.currentGroup = null;
+        if (s.userMembership[id]) {
+          const { [id]: _, ...rest } = s.userMembership;
+          s.userMembership = rest;
+        }
+      })
+      .addCase(deleteGroup.rejected, (s, a) => {
+        setStatus(s, 'deleteGroup', 'failed');
+        setError(s, 'deleteGroup', (a.payload as string) || 'Delete group failed');
       });
   },
 });
