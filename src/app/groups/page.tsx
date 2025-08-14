@@ -6,7 +6,7 @@ import PageTitle from '@/components/PageTitle';
 import GroupModal from '@/components/GroupModal';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 import { useAppDispatch, useAppSelector } from '@/app/features/hooks';
-import { createGroup, fetchAvailableGroups } from '@/app/features/groups/slice';
+import { createGroup, fetchAvailableGroups, updateGroup } from '@/app/features/groups/slice';
 import type { CreateOrUpdateGroupBody } from '@/app/types/group';
 import type { GroupProps } from '@/app/types';
 
@@ -37,7 +37,6 @@ export default function GroupsPage() {
     setIsModalOpen(true);
   };
 
-  // ✅ when saving a new group, call createGroup then refresh available list
   const handleSave = async (updatedGroup: GroupProps) => {
     if (isNew) {
       const body: CreateOrUpdateGroupBody = {
@@ -47,15 +46,22 @@ export default function GroupsPage() {
       };
       const action = await dispatch(createGroup(body));
       if (createGroup.fulfilled.match(action)) {
-        // refresh available groups after creation
         dispatch(fetchAvailableGroups({ page: 1, per_page: 10 }));
       } else {
-        const errMsg = (action.payload as string) ?? 'Create group failed';
-        console.error(errMsg);
-        alert(errMsg);
+        alert((action.payload as string) ?? 'Create group failed');
       }
     } else {
-      // TODO: wire updateGroup when ready
+      const body: CreateOrUpdateGroupBody = {
+        name: updatedGroup.title.trim(),
+        description: updatedGroup.description.trim(),
+        isPrivate: updatedGroup.inviteOnly,
+      };
+      const action = await dispatch(updateGroup({ groupId: updatedGroup.id, body }));
+      if (updateGroup.fulfilled.match(action)) {
+        dispatch(fetchAvailableGroups({ page: 1, per_page: 10 }));
+      } else {
+        alert((action.payload as string) ?? 'Update group failed');
+      }
     }
     setIsModalOpen(false);
   };
@@ -66,7 +72,6 @@ export default function GroupsPage() {
   };
 
   const confirmDelete = () => {
-    // TODO: replace with deleteGroup thunk later
     setIsDeleteConfirmOpen(false);
     setGroupToDelete(null);
   };
