@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import { mockUsers } from '@/app/data/mockData';
 import { GroupProps } from '@/app/types';
-import { TrashIcon, PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon } from '@heroicons/react/24/outline';
 import SaveConfirmModal from "./SaveConfirmModal";
 
 interface GroupEditModalProps {
@@ -19,7 +19,6 @@ export default function GroupEditModal({
   onSave,
   onClose,
 }: GroupEditModalProps) {
-
   const defaultItem: GroupProps = {
     id: isNew ? Date.now() : group?.id || 0,
     title: '',
@@ -29,27 +28,58 @@ export default function GroupEditModal({
     subscribed: false,
     editable: true,
     inviteOnly: false,
-  }
-  const [editedItem, setEditedItem] = useState(isNew ? defaultItem : { ...group });
+  };
+
+  const [editedItem, setEditedItem] = useState<GroupProps>(
+    isNew ? defaultItem : { ...group }
+  );
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+
+  // errors + refs for focusing invalid fields
+  const [errors, setErrors] = useState<{ title?: string; description?: string }>({});
+  const titleRef = useRef<HTMLInputElement>(null);
+  const descRef = useRef<HTMLTextAreaElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
-  const handleChange = (field: string, value: any) => {
-    setEditedItem((prev: GroupProps) => ({ ...prev, [field]: value }));
+  const handleChange = (field: keyof GroupProps, value: any) => {
+    setEditedItem((prev) => ({ ...prev, [field]: value }));
+    // clear error on typing
+    if (field === 'title' && errors.title) setErrors((e) => ({ ...e, title: undefined }));
+    if (field === 'description' && errors.description) setErrors((e) => ({ ...e, description: undefined }));
+  };
+
+  // Validate required fields and focus the first invalid
+  const validate = () => {
+    const next: { title?: string; description?: string } = {};
+    if (!editedItem.title.trim()) next.title = 'Title is required';
+    if (!editedItem.description.trim()) next.description = 'Description is required';
+    setErrors(next);
+
+    if (next.title && titleRef.current) {
+      titleRef.current.focus();
+    } else if (next.description && descRef.current) {
+      descRef.current.focus();
+    }
+    return Object.keys(next).length === 0;
   };
 
   const handleSave = () => {
-    onSave(editedItem);
+    if (!validate()) return; // stop submit, show errors, focus invalid
+    const cleaned: GroupProps = {
+      ...editedItem,
+      title: editedItem.title.trim(),
+      description: editedItem.description.trim(),
+    };
+    onSave(cleaned);
     onClose();
   };
 
+  const hasChanges =
+    JSON.stringify(editedItem) !== JSON.stringify(isNew ? defaultItem : group);
+
   const handleCloseClick = () => {
-    const hasChanges = JSON.stringify(editedItem) !== JSON.stringify(isNew ? defaultItem : group);
-    if (hasChanges) {
-      setIsConfirmOpen(true);
-    } else {
-      onClose();
-    }
+    if (hasChanges) setIsConfirmOpen(true);
+    else onClose();
   };
 
   const confirmSaveAndClose = () => {
@@ -69,10 +99,7 @@ export default function GroupEditModal({
   const getConfirmPosition = () => {
     if (closeButtonRef.current) {
       const rect = closeButtonRef.current.getBoundingClientRect();
-      return {
-        top: rect.bottom - rect.top + 8,
-        right: 8,
-      };
+      return { top: rect.bottom - rect.top + 8, right: 8 };
     }
     return { top: 0, right: 0 };
   };
@@ -87,45 +114,45 @@ export default function GroupEditModal({
         >
           <XMarkIcon className="h-6 w-6" />
         </button>
+
         <h2 className="text-xl mb-4">{isNew ? 'Add New Group' : 'Edit Group'}</h2>
+
+        {/* Title */}
         <input
+          ref={titleRef}
           type="text"
           value={editedItem.title}
           onChange={(e) => handleChange('title', e.target.value)}
-          className="w-full p-2 mb-4 border border-border rounded-sm"
+          className={`w-full p-2 mb-1 border rounded-sm ${errors.title ? 'border-red-500' : 'border-border'
+            }`}
           placeholder="Group Title"
+          aria-invalid={!!errors.title}
+          aria-describedby={errors.title ? 'title-error' : undefined}
         />
+        {errors.title && (
+          <p id="title-error" className="text-red-600 text-sm mb-3">
+            {errors.title}
+          </p>
+        )}
+
+        {/* Description */}
         <textarea
+          ref={descRef}
           value={editedItem.description}
           onChange={(e) => handleChange('description', e.target.value)}
-          className="w-full p-2 mb-4 border border-border rounded-sm"
+          className={`w-full p-2 mb-1 border rounded-sm ${errors.description ? 'border-red-500' : 'border-border'
+            }`}
           placeholder="Description"
+          aria-invalid={!!errors.description}
+          aria-describedby={errors.description ? 'description-error' : undefined}
         />
-        <input
-          type="date"
-          value={editedItem.createdDate}
-          onChange={(e) => handleChange('createdDate', e.target.value)}
-          className="w-full p-2 mb-4 border border-border rounded-sm"
-          placeholder="Created Date"
-          disabled={!isNew}
-        />
-        <div className="mb-4">
-          <label className="block text-sm text-dark-gray mb-2">Creator</label>
-          <select
-            value={editedItem.creator.id}
-            onChange={(e) =>
-              handleChange('creator', mockUsers.find((u) => u.id === Number(e.target.value))!)
-            }
-            className="w-full p-2 border border-border rounded-sm"
-            disabled={!isNew}
-          >
-            {mockUsers.map((user) => (
-              <option key={user.id} value={user.id}>
-                {user.first_name}
-              </option>
-            ))}
-          </select>
-        </div>
+        {errors.description && (
+          <p id="description-error" className="text-red-600 text-sm mb-3">
+            {errors.description}
+          </p>
+        )}
+
+        {/* Invite Only */}
         <div className="mb-4">
           <label className="flex items-center">
             <input
@@ -145,6 +172,7 @@ export default function GroupEditModal({
           >
             Cancel
           </button>
+          {/* Save remains visually enabled at all times */}
           <button
             onClick={handleSave}
             className="px-4 py-2 bg-dark-green text-white rounded-sm hover:bg-green"
@@ -152,6 +180,7 @@ export default function GroupEditModal({
             Save
           </button>
         </div>
+
         <SaveConfirmModal
           onConfirm={confirmSaveAndClose}
           onCancel={confirmCloseWithoutSaving}

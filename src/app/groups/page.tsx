@@ -1,15 +1,23 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { mockGroups } from '@/app/data/mockData';
-import { GroupProps } from '@/app/types'
 import Link from 'next/link';
 import { PencilSquareIcon, TrashIcon, ArrowRightCircleIcon, PlusIcon } from '@heroicons/react/24/outline';
 import PageTitle from '@/components/PageTitle';
 import GroupModal from '@/components/GroupModal';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 
-export default function GroupsPage() {
+// ✅ add imports
+import { useAppDispatch } from '@/app/features/hooks';
+import { createGroup } from '@/app/features/groups/slice';
+import type { CreateOrUpdateGroupBody } from '@/app/types/group';
 
+import { mockGroups } from '@/app/data/mockData';
+import { GroupProps } from '@/app/types';
+
+export default function GroupsPage() {
+  const dispatch = useAppDispatch();
+
+  // use component state for rendering; start with mock, but render from `groups`
   const [groups, setGroups] = useState<GroupProps[]>(mockGroups);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isNew, setIsNew] = useState(false);
@@ -18,7 +26,8 @@ export default function GroupsPage() {
   const [groupToDelete, setGroupToDelete] = useState<number | null>(null);
 
   useEffect(() => {
-    // fetchGroups().then(setGroups);
+    // TODO: later replace mock with fetchUserGroups / fetchAvailableGroups
+    // dispatch(fetchUserGroups({...}))
   }, []);
 
   const handleEdit = (group: GroupProps) => {
@@ -33,14 +42,29 @@ export default function GroupsPage() {
     setIsModalOpen(true);
   };
 
-  const handleSave = (updatedGroup: GroupProps) => {
-    // saveGroup(updatedGroup).then((savedGroup) => {
-    //   setGroups((prev) =>
-    //     updatedGroup.id === 0
-    //       ? [...prev, savedGroup]
-    //       : prev.map((g) => (g.id === savedGroup.id ? savedGroup : g))
-    //   );
-    // });
+  // ✅ wire createGroup thunk when adding a new group
+  const handleSave = async (updatedGroup: GroupProps) => {
+    if (isNew) {
+      const body: CreateOrUpdateGroupBody = {
+        name: updatedGroup.title.trim(),
+        description: updatedGroup.description.trim(),
+        isPrivate: updatedGroup.inviteOnly,
+      };
+      const action = await dispatch(createGroup(body));
+
+      if (createGroup.fulfilled.match(action)) {
+        const created = action.payload; // GroupProps (UI-shaped)
+        setGroups((prev) => [...prev, created]);
+      } else {
+        const errMsg = (action.payload as string) ?? 'Create group failed';
+        console.error(errMsg);
+        alert(errMsg);
+      }
+    } else {
+      // TODO: when updateGroup thunk is ready, call it here
+      // const action = await dispatch(updateGroup({ groupId: updatedGroup.id, body: {...} }))
+      // if (updateGroup.fulfilled.match(action)) { ... }
+    }
     setIsModalOpen(false);
   };
 
@@ -50,6 +74,7 @@ export default function GroupsPage() {
   };
 
   const confirmDelete = () => {
+    // TODO: replace with deleteGroup thunk later
     if (groupToDelete !== null) {
       setGroups(groups.filter((g) => g.id !== groupToDelete));
       setIsDeleteConfirmOpen(false);
@@ -67,9 +92,10 @@ export default function GroupsPage() {
       <PageTitle title="Groups" showPageTitle={true} />
       <button
         onClick={handleAdd}
-        className="fixed md:hidden bottom-8  z-20 left-1/2 -translate-x-1/2 bg-yellow px-3 py-3 rounded-[50%]"          >
+        className="fixed md:hidden bottom-8  z-20 left-1/2 -translate-x-1/2 bg-yellow px-3 py-3 rounded-[50%]">
         <PlusIcon className="h-7 w-7 text-white" />
       </button>
+
       <div className="container mx-auto p-4 min-h-screen">
         <div className='hidden md:flex justify-end mr-4'>
           <button
@@ -80,8 +106,10 @@ export default function GroupsPage() {
             New Group
           </button>
         </div>
+
+        {/* ✅ render from `groups` instead of mockGroups */}
         <div className="hidden md:block overflow-x-auto p-4">
-          <table className="min-w-full bg-bg   shadow-lg">
+          <table className="min-w-full bg-bg shadow-lg">
             <thead>
               <tr className="bg-light-gray text-dark-gray">
                 <th className="py-2 px-4 text-left">Title</th>
@@ -94,15 +122,12 @@ export default function GroupsPage() {
               </tr>
             </thead>
             <tbody>
-              {mockGroups.map((group, index) => (
-                <tr
-                  key={group.id}
-                  className={`${index % 2 === 0 ? '' : 'bg-gray-50'}`}
-                >
+              {groups.map((group, index) => (
+                <tr key={group.id} className={`${index % 2 === 0 ? '' : 'bg-gray-50'}`}>
                   <td className="py-2 px-4 text-gray">{group.title}</td>
                   <td className="py-2 px-4 text-gray">{group.description}</td>
                   <td className="py-2 px-4 text-gray">{group.createdDate}</td>
-                  <td className="py-2 px-4 text-gray">{group.creator.first_name}</td>
+                  <td className="py-2 px-4 text-gray">{group.creator.firstName}</td>
                   <td className="py-2 px-4">
                     <button className={`w-28 py-1 rounded-md text-white ${group.subscribed ? 'bg-yellow hover:bg-dark-yellow' : 'bg-green hover:bg-dark-green'}`} >
                       {group.subscribed ? 'Unsubscribe' : 'Subscribe'}
@@ -127,11 +152,11 @@ export default function GroupsPage() {
           </table>
         </div>
 
+        {/* mobile list: also render from `groups` */}
         <div className="md:hidden space-y-4">
-          {mockGroups.map((group) => (
+          {groups.map((group) => (
             <div
-              className={`card p-3 ${group.inviteOnly ? 'backdrop-blur-sm bg-opacity-80' : ''
-                }`}
+              className={`card p-3 ${group.inviteOnly ? 'backdrop-blur-sm bg-opacity-80' : ''}`}
               key={group.id}
             >
               <div className="absolute right-2 t-5 flex space-x-2">
@@ -145,7 +170,7 @@ export default function GroupsPage() {
               <h2 className="text-lg font-semibold text-dark-gray mt-5">{group.title}</h2>
               <p className="text-gray text-sm">{group.description}</p>
               <p className="text-xs text-gray mt-1">
-                Created: {group.createdDate} by {group.creator.first_name}
+                Created: {group.createdDate} by {group.creator.firstName}
                 {group.inviteOnly && <span className="text-dark-green"> (Invite Only)</span>}
               </p>
               <div className="mt-2 flex justify-between items-center">
@@ -155,12 +180,12 @@ export default function GroupsPage() {
                 <Link href={`/groups/${group.id}`}>
                   <ArrowRightCircleIcon className="h-7 w-7 text-green hover:text-dark-green cursor-pointer" />
                 </Link>
-
               </div>
             </div>
           ))}
         </div>
-      </div >
+      </div>
+
       {isModalOpen && (
         <GroupModal
           group={selectedGroup}
@@ -177,6 +202,5 @@ export default function GroupsPage() {
         message="Are you sure you want to delete this group?"
       />
     </>
-
   );
 }
