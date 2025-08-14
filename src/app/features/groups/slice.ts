@@ -18,6 +18,7 @@ const GROUP_ENDPOINTS = {
   USER_GROUPS: '/groups',
   UPDATE_GROUP: (id: number) => `/groups/${id}`,
   DELETE_GROUP: (id: number) => `/groups/${id}`,
+  SEARCH_GROUPS: '/groups/search',
 } as const;
 
 interface GroupsState {
@@ -26,7 +27,10 @@ interface GroupsState {
   availableGroupsPagination: Pagination | null;
   userGroups: GroupProps[];
   userGroupsPagination: Pagination | null;
-  userMembership: Record<number, true>; // quick lookup for subscribed group ids
+  userMembership: Record<number, true>;
+  searchQuery: string;
+  searchResults: GroupProps[];
+  searchPagination: Pagination | null;
   status: Record<string, LoadStatus>;
   error: Record<string, string | null>;
 }
@@ -38,6 +42,9 @@ const initialState: GroupsState = {
   userGroups: [],
   userGroupsPagination: null,
   userMembership: {},
+  searchQuery: '',
+  searchResults: [],
+  searchPagination: null,
   status: {},
   error: {},
 };
@@ -135,6 +142,32 @@ export const deleteGroup = createAsyncThunk<
   }
 });
 
+// Search group
+export const searchGroups = createAsyncThunk<
+  { q: string; groups: GroupProps[]; pagination: Pagination },
+  { q: string; page?: number; per_page?: number }
+>('groups/searchGroups', async ({ q, page, per_page }, { rejectWithValue }) => {
+  try {
+    const qs = new URLSearchParams();
+    qs.set('q', q.trim());
+    if (page) qs.set('page', String(page));
+    if (per_page) qs.set('per_page', String(per_page));
+
+    const url = `${GROUP_ENDPOINTS.SEARCH_GROUPS}?${qs.toString()}`;
+    const res = await apiRequest<GroupsListData>('GET', url);
+    if (!res.success || !res.data) throw new Error(res.message || 'Search groups failed');
+
+    return {
+      q,
+      groups: res.data.groups.map(mapGroupApiToProps),
+      pagination: res.data.pagination,
+    };
+  } catch (e: any) {
+    return rejectWithValue(e.message || 'Search groups failed') as any;
+  }
+});
+
+
 const groupsSlice = createSlice({
   name: 'groups',
   initialState,
@@ -142,6 +175,14 @@ const groupsSlice = createSlice({
     resetGroupsState: () => initialState,
     setCurrentGroup: (state, action: PayloadAction<GroupProps | null>) => {
       state.currentGroup = action.payload;
+    },
+    setSearchQuery: (state, action: PayloadAction<string>) => {
+      state.searchQuery = action.payload;
+    },
+    clearSearch: (state) => {
+      state.searchQuery = '';
+      state.searchResults = [];
+      state.searchPagination = null;
     },
   },
   extraReducers: (builder) => {
@@ -214,8 +255,25 @@ const groupsSlice = createSlice({
         setStatus(s, 'deleteGroup', 'failed');
         setError(s, 'deleteGroup', (a.payload as string) || 'Delete group failed');
       });
+
+    // Search group
+    builder
+      .addCase(searchGroups.pending, (s) => {
+        setStatus(s, 'searchGroups', 'loading');
+        setError(s, 'searchGroups', null);
+      })
+      .addCase(searchGroups.fulfilled, (s, a) => {
+        setStatus(s, 'searchGroups', 'succeeded');
+        s.searchQuery = a.payload.q;
+        s.searchResults = a.payload.groups;
+        s.searchPagination = a.payload.pagination;
+      })
+      .addCase(searchGroups.rejected, (s, a) => {
+        setStatus(s, 'searchGroups', 'failed');
+        setError(s, 'searchGroups', (a.payload as string) || 'Search groups failed');
+      });
   },
 });
 
-export const { resetGroupsState, setCurrentGroup } = groupsSlice.actions;
+export const { resetGroupsState, setCurrentGroup, setSearchQuery, clearSearch } = groupsSlice.actions;
 export default groupsSlice.reducer;
