@@ -13,7 +13,7 @@ import {
 } from '@heroicons/react/24/solid';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAppDispatch } from '@/app/features/hooks';
-import { logout } from '@/app/features/auth/slice';
+import { logoutThunk } from '@/app/features/auth/slice';
 
 interface NavItem {
   href: string;
@@ -47,7 +47,7 @@ export default function BottomNav({ unreadCount }: BottomNavProps) {
   }, []);
 
   const handleLogout = () => {
-    dispatch(logout());
+    dispatch(logoutThunk());
     router.push('/auth');
   };
 
