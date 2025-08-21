@@ -20,11 +20,13 @@ export type GroupListResponse = ApiResponseProps<GroupListProps>;
 export type GroupDetailResponse = ApiResponseProps<GroupProps>;
 
 /** ===================== API Model (UPDATED) ===================== */
-export interface Pagination {
-  page: number;
-  per_page: number;
-  total: number;
-  pages: number;
+export interface PaginationProps {
+  currentPage: number;
+  totalPages: number;
+  buildHref?: (page: number) => string;
+  onPageChange?: (page: number) => void;
+  siblingCount?: number;
+  className?: string;
 }
 
 export interface GroupApi {
@@ -42,7 +44,7 @@ export interface GroupApi {
 
 export interface GroupsListData {
   groups: GroupApi[];
-  pagination: Pagination;
+  pagination: PaginationProps;
 }
 
 export interface GroupDetailData extends GroupApi {
@@ -60,7 +62,7 @@ export interface MembersListData {
     email: string;
     is_creator: boolean;
   }>;
-  pagination: Pagination;
+  pagination: PaginationProps;
 }
 
 export interface GroupStats {

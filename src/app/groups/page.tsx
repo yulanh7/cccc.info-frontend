@@ -5,7 +5,6 @@ import { PencilSquareIcon, TrashIcon, ArrowRightCircleIcon, PlusIcon, Magnifying
 import PageTitle from '@/components/PageTitle';
 import GroupModal from '@/components/GroupModal';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
-
 import { useAppDispatch, useAppSelector } from '@/app/features/hooks';
 import {
   createGroup, fetchAvailableGroups, fetchUserGroups, updateGroup, deleteGroup, searchGroups,
@@ -13,7 +12,10 @@ import {
 } from '@/app/features/groups/slice';
 import type { CreateOrUpdateGroupBody } from '@/app/types/group';
 import type { GroupProps } from '@/app/types';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Pagination from "@/components/pagination";
+
+const PER_PAGE = 3;
 
 export default function GroupsPage() {
   const dispatch = useAppDispatch();
@@ -26,6 +28,9 @@ export default function GroupsPage() {
   const searchQuery = useAppSelector((s) => s.groups.searchQuery);
   const searchResults = useAppSelector((s) => s.groups.searchResults);
   const user = useAppSelector((s) => s.auth.user);
+  const availablePagination = useAppSelector((s) => s.groups.availableGroupsPagination);
+  const searchPagination = useAppSelector((s) => s.groups.searchPagination);
+  const pagination = searchQuery ? searchPagination : availablePagination;
 
   // UI state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -35,16 +40,17 @@ export default function GroupsPage() {
   const [groupToDelete, setGroupToDelete] = useState<number | null>(null);
   const [qInput, setQInput] = useState('');
 
-
-
   useEffect(() => {
     const q = (searchParams.get('q') || '').trim();
+    const pageParam = parseInt(searchParams.get('page') || '1', 10);
+    const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+
     if (q) {
       dispatch(setSearchQuery(q));
-      dispatch(searchGroups({ q, page: 1, per_page: 10 }));
+      dispatch(searchGroups({ q, page, per_page: PER_PAGE }));
     } else {
       dispatch(clearSearch());
-      dispatch(fetchAvailableGroups({ page: 1, per_page: 10 }));
+      dispatch(fetchAvailableGroups({ page, per_page: PER_PAGE }));
       dispatch(fetchUserGroups({ page: 1, per_page: 50 }));
     }
   }, [searchParams, dispatch]);
@@ -53,7 +59,37 @@ export default function GroupsPage() {
     setQInput(searchQuery);
   }, [searchQuery]);
 
-  // handlers
+  // Derived
+  const listToRender = searchQuery ? searchResults : availableGroups;
+
+  const currentPage = useMemo(() => {
+    const p = parseInt(searchParams.get("page") || "1", 10);
+    return Number.isFinite(p) && p > 0 ? p : 1;
+  }, [searchParams]);
+
+  const totalPages = useMemo(() => {
+    const total = Number(pagination?.total ?? 0);
+    const per = Number(pagination?.per_page ?? PER_PAGE);
+    return Math.max(1, Math.ceil(total / Math.max(1, per)));
+  }, [pagination]);
+
+  const buildHref = (page: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (page <= 1) params.delete("page");
+    else params.set("page", String(page));
+    return `/groups${params.toString() ? `?${params.toString()}` : ""}`;
+  };
+
+  // Refetch helper
+  const refreshPage = async (page: number) => {
+    if (searchQuery) {
+      await dispatch(searchGroups({ q: searchQuery, page, per_page: PER_PAGE }));
+    } else {
+      await dispatch(fetchAvailableGroups({ page, per_page: PER_PAGE }));
+    }
+  };
+
+  // Handlers
   const handleEdit = (group: GroupProps) => {
     setSelectedGroup(group);
     setIsNew(false);
@@ -72,18 +108,19 @@ export default function GroupsPage() {
       description: updatedGroup.description.trim(),
       isPrivate: updatedGroup.inviteOnly,
     };
+
     if (isNew) {
       const action = await dispatch(createGroup(body));
       if (createGroup.fulfilled.match(action)) {
-        dispatch(fetchAvailableGroups({ page: 1, per_page: 10 }));
+        await refreshPage(1);
+        if (currentPage !== 1) router.push(buildHref(1));
       } else {
         alert((action.payload as string) ?? 'Create group failed');
       }
     } else {
       const action = await dispatch(updateGroup({ groupId: updatedGroup.id, body }));
       if (updateGroup.fulfilled.match(action)) {
-        if (searchQuery) dispatch(searchGroups({ q: searchQuery, page: 1, per_page: 10 }));
-        else dispatch(fetchAvailableGroups({ page: 1, per_page: 10 }));
+        await refreshPage(currentPage); // stay on current page
       } else {
         alert((action.payload as string) ?? 'Update group failed');
       }
@@ -97,19 +134,23 @@ export default function GroupsPage() {
   };
 
   const confirmDelete = async () => {
-    if (groupToDelete !== null) {
-      const action = await dispatch(deleteGroup(groupToDelete));
-      if (deleteGroup.fulfilled.match(action)) {
-        if (searchQuery) dispatch(searchGroups({ q: searchQuery, page: 1, per_page: 10 }));
-        else {
-          dispatch(fetchAvailableGroups({ page: 1, per_page: 10 }));
-          dispatch(fetchUserGroups({ page: 1, per_page: 50 }));
-        }
-        setIsDeleteConfirmOpen(false);
-        setGroupToDelete(null);
-      } else {
-        alert((action.payload as string) || 'Delete group failed');
-      }
+    if (groupToDelete === null) return;
+
+    // Predict new last page after deletion
+    const prevTotal = Number(pagination?.total ?? 0);
+    const newTotal = Math.max(0, prevTotal - 1);
+    const newLastPage = Math.max(1, Math.ceil(newTotal / PER_PAGE));
+    const targetPage = Math.min(currentPage, newLastPage);
+
+    const action = await dispatch(deleteGroup(groupToDelete));
+    if (deleteGroup.fulfilled.match(action)) {
+      await refreshPage(targetPage); // stay or fallback to new last page
+      if (!searchQuery) await dispatch(fetchUserGroups({ page: 1, per_page: 50 }));
+      setIsDeleteConfirmOpen(false);
+      setGroupToDelete(null);
+      if (targetPage !== currentPage) router.push(buildHref(targetPage));
+    } else {
+      alert((action.payload as string) || 'Delete group failed');
     }
   };
 
@@ -119,8 +160,9 @@ export default function GroupsPage() {
   const onSubmitSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const q = qInput.trim();
-    const next = q ? `/groups?q=${encodeURIComponent(q)}` : '/groups';
-    router.push(next);
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    router.push(`/groups${params.toString() ? `?${params}` : ''}`);
   };
 
   const onClearSearch = () => {
@@ -128,9 +170,6 @@ export default function GroupsPage() {
     dispatch(clearSearch());
     router.push('/groups');
   };
-
-
-  const listToRender = searchQuery ? searchResults : availableGroups;
 
   return (
     <>
@@ -177,6 +216,7 @@ export default function GroupsPage() {
             </p>
           )}
         </div>
+
         <div className='hidden md:flex justify-start ml-4'>
           <button
             onClick={handleAdd}
@@ -204,7 +244,6 @@ export default function GroupsPage() {
               {listToRender.map((group, index) => {
                 const subbed = isUserSubscribed(group);
                 return (
-
                   <tr key={group.id} className={`${index % 2 === 0 ? '' : 'bg-gray-50'}`}>
                     <td className="py-2 px-4 text-gray">{group.title}</td>
                     <td className="py-2 px-4 text-gray">{group.description}</td>
@@ -212,11 +251,15 @@ export default function GroupsPage() {
                     <td className="py-2 px-4 text-gray">{group.creator.firstName}</td>
                     <td className="py-2 px-4">
                       <button
-                        className={`w-28 py-1 rounded-md text-white ${subbed ? 'bg-yellow hover:bg-dark-yellow' : 'bg-green hover:bg-dark-green'
-                          }`}
+                        className={`w-28 py-1 rounded-md text-white ${subbed ? 'bg-yellow hover:bg-dark-yellow' : 'bg-green hover:bg-dark-green'}`}
                       >
                         {subbed ? 'Unsubscribe' : 'Subscribe'}
                       </button>
+                    </td>
+                    <td className="py-2 px-4">
+                      <Link href={`/groups/${group.id}`}>
+                        <ArrowRightCircleIcon className="h-7 w-7 text-green hover:text-dark-green cursor-pointer" />
+                      </Link>
                     </td>
                     <td className="py-2 px-4">
                       {canEdit(group) && (
@@ -226,18 +269,19 @@ export default function GroupsPage() {
                         </div>
                       )}
                     </td>
-                    <td className="py-2 px-4">
-                      <Link href={`/groups/${group.id}`}>
-                        <ArrowRightCircleIcon className="h-7 w-7 text-green hover:text-dark-green cursor-pointer" />
-                      </Link>
-                    </td>
                   </tr>
                 )
-              }
-
-              )}
+              })}
             </tbody>
           </table>
+
+          <div className="mt-6 flex justify-center">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              buildHref={buildHref}
+            />
+          </div>
         </div>
 
         <div className="md:hidden space-y-4">
@@ -262,9 +306,9 @@ export default function GroupsPage() {
                 </p>
                 <div className="mt-2 flex justify-between items-center">
                   <button
-                    className={`min-w-28 px-3 py-1 rounded-md text-white ${subbed}
+                    className={`min-w-28 px-3 py-1 rounded-md ${subbed
                       ? 'bg-white text-dark-gray border border-border'
-                      : 'bg-green hover:bg-dark-green'
+                      : 'text-white bg-green hover:bg-dark-green'
                       }`}
                   >
                     {subbed ? 'Unsubscribe' : 'Subscribe'}
@@ -276,6 +320,13 @@ export default function GroupsPage() {
               </div>
             )
           })}
+          <div className="mt-6 flex justify-center md:hidden">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              buildHref={buildHref}
+            />
+          </div>
         </div>
       </div>
 
