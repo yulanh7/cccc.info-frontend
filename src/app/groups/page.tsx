@@ -13,9 +13,9 @@ import {
 import type { CreateOrUpdateGroupBody } from '@/app/types/group';
 import type { GroupProps } from '@/app/types';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Pagination from "@/components/pagination";
+import Pagination from "@/components/Pagination";
 
-const PER_PAGE = 3;
+const PER_PAGE = 10;
 
 // simple media query hook
 function useIsMobile() {
