@@ -14,6 +14,8 @@ import type { CreateOrUpdateGroupBody } from '@/app/types/group';
 import type { GroupProps } from '@/app/types';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Pagination from "@/components/pagination";
+import { formatDate } from "@/app/ultility";
+
 
 const PER_PAGE = 3;
 
@@ -247,7 +249,7 @@ export default function GroupsPage() {
                   <tr key={group.id} className={`${index % 2 === 0 ? '' : 'bg-gray-50'}`}>
                     <td className="py-2 px-4 text-gray">{group.title}</td>
                     <td className="py-2 px-4 text-gray">{group.description}</td>
-                    <td className="py-2 px-4 text-gray">{group.createdDate}</td>
+                    <td className="py-2 px-4 text-gray">{formatDate(group.createdDate)} </td>
                     <td className="py-2 px-4 text-gray">{group.creator.firstName}</td>
                     <td className="py-2 px-4">
                       <button
@@ -301,7 +303,7 @@ export default function GroupsPage() {
                 <h2 className="text-lg font-semibold text-dark-gray mt-5">{group.title}</h2>
                 <p className="text-gray text-sm">{group.description}</p>
                 <p className="text-xs text-gray mt-1">
-                  Created: {group.createdDate} by {group.creator.firstName}
+                  Created: {formatDate(group.createdDate)}  by {group.creator.firstName}
                   {group.inviteOnly && <span className="text-dark-green"> (Invite Only)</span>}
                 </p>
                 <div className="mt-2 flex justify-between items-center">
