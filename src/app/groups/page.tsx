@@ -14,7 +14,7 @@ import type { GroupProps } from '@/app/types';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { formatDate } from '@/app/ultility';
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
-
+import MobileSearchHeader from "@/components/layout/MobileSearchHeader";
 import SearchBar from "@/components/SearchBar";
 import GroupsDesktopTable from "@/components/groups/GroupsDesktopTable";
 import GroupsMobileList from "@/components/groups/GroupsMobileList";
@@ -457,6 +457,13 @@ export default function GroupsPage() {
     <>
       <PageTitle title="Groups" showPageTitle={true} />
 
+      <MobileSearchHeader
+        value={qInput}
+        onChange={setQInput}
+        onSubmit={onSubmitSearch}
+        onClear={onClearSearch}
+        placeholder="Search groups…"
+      />
       <button
         onClick={handleAdd}
         className="fixed md:hidden bottom-8 z-20 left-1/2 -translate-x-1/2 bg-yellow px-3 py-3 rounded-[50%]">
@@ -464,22 +471,24 @@ export default function GroupsPage() {
       </button>
 
       <div className="mx-auto w-full p-4 min-h-screen lg:container">
-        <SearchBar
-          value={qInput}
-          onChange={setQInput}
-          onSubmit={onSubmitSearch}
-          onClear={onClearSearch}
-          placeholder="Search groups…"
-          sticky
-          showResultHint={Boolean(searchQuery)}
-          resultHint={
-            <p className="text-sm text-gray mt-2">
-              Showing results for <span className="text-dark-green">“{searchQuery}”</span>
-            </p>
-          }
-        />
+        <div className="hidden md:block ">
+          <SearchBar
+            value={qInput}
+            onChange={setQInput}
+            onSubmit={onSubmitSearch}
+            onClear={onClearSearch}
+            placeholder="Search groups…"
+            sticky
+            showResultHint={Boolean(searchQuery)}
+            resultHint={
+              <p className="text-sm text-gray mt-2">
+                Showing results for <span className="text-dark-green">“{searchQuery}”</span>
+              </p>
+            }
+          />
+        </div>
 
-        <div className='hidden md:flex justify-start ml-4'>
+        <div className='hidden md:flex justify-start ml-4 mt-4'>
           <button
             onClick={handleAdd}
             className="mb-4 flex items-center px-4 py-2 bg-dark-green text-white rounded-sm hover:bg-green"

@@ -17,6 +17,7 @@ export default function Header({
   const headerRef = useRef<HTMLElement>(null);
   const pathname = usePathname();
   const hideHeader = pathname.startsWith('/posts/') || pathname.startsWith('/messages/') || pathname.startsWith('/auth');
+  const hideMobileHeader = pathname.startsWith('/groups');
   const [isFixed, setIsFixed] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
 
@@ -43,6 +44,26 @@ export default function Header({
   }, []);
 
   if (hideHeader) return null;
+
+  if (hideMobileHeader) return (
+    <>
+      <header
+        ref={headerRef}
+        className={`transition-all duration-600 ease-in-out w-full bg-bg ${isFixed ? 'fixed top-0 left-0 right-0 z-10 shadow-md' : 'static'
+          }`}
+      >
+        <div
+          className={`md-header hidden md:flex items-center justify-between px-6 ${isFixed ? 'py-2 shadow-lg' : 'py-4'
+            }`}
+        >
+          <Logo isScrolled={isFixed} />
+          <Menu isLoggedIn={isLoggedIn} userName={userName} unreadCount={unreadCount} />
+        </div>
+
+      </header>
+      <div style={{ height: `${headerHeight}px` }}></div>
+    </>
+  )
 
   return (
     <>

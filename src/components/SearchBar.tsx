@@ -23,7 +23,7 @@ export default function SearchBar({
   resultHint,
 }: Props) {
   return (
-    <div className={`${sticky ? "sticky top-0 bg-bg" : ""} mb-4 lg:p-4`}>
+    <div className={`${sticky ? "sticky top-0 bg-bg" : ""} ml-4 lg:p-4`}>
       <form onSubmit={onSubmit} className="flex items-center gap-2">
         <div className="relative flex-1">
           <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-2.5 text-gray-400" />
