@@ -1,7 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
-import { PencilSquareIcon, TrashIcon, ArrowRightCircleIcon, PlusIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { PlusIcon } from '@heroicons/react/24/outline';
 import PageTitle from '@/components/PageTitle';
 import GroupModal from '@/components/GroupModal';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
@@ -13,16 +12,17 @@ import {
 import type { CreateOrUpdateGroupBody } from '@/app/types/group';
 import type { GroupProps } from '@/app/types';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Pagination from "@/components/Pagination";
 import { formatDate } from '@/app/ultility';
-import Spinner from "@/components/feedback/Spinner";
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
-import TableSkeleton from "@/components/feedback/TableSkeleton";
-import CardSkeleton from "@/components/feedback/CardSkeleton";
+
+import SearchBar from "@/components/SearchBar";
+import GroupsDesktopTable from "@/components/groups/GroupsDesktopTable";
+import GroupsMobileList from "@/components/groups/GroupsMobileList";
 
 const PER_PAGE = 10;
 const STICKY_OFFSET = 80;
 
+/** media query */
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -33,6 +33,17 @@ function useIsMobile() {
     return () => mq.removeEventListener("change", onChange);
   }, []);
   return isMobile;
+}
+
+/** lock body scroll when overlaying */
+function useBodyScrollLock(locked: boolean) {
+  useEffect(() => {
+    const { body } = document;
+    if (!body) return;
+    const prev = body.style.overflow;
+    if (locked) body.style.overflow = 'hidden';
+    return () => { body.style.overflow = prev; };
+  }, [locked]);
 }
 
 export default function GroupsPage() {
@@ -63,6 +74,7 @@ export default function GroupsPage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [restoring, setRestoring] = useState(false); // overlay during restore/optimistic reconcile
 
   // Mobile infinite
   const [mobileItems, setMobileItems] = useState<GroupProps[]>([]);
@@ -74,8 +86,64 @@ export default function GroupsPage() {
   // Scroll anchor (mobile)
   const lastScrollYRef = useRef(0);
   const anchorIdRef = useRef<number | null>(null);
+  const anchorRelOffsetRef = useRef<number>(0);
   const itemRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
+  // lock body scroll whenever overlay visible
+  useBodyScrollLock(Boolean(saving || deleting || restoring));
+
+  // ===== helpers: anchor snapshot / set before action / restore =====
+  const getAnchorSnapshot = useCallback(() => {
+    const topLine = STICKY_OFFSET;
+    let bestId: number | null = null;
+    let bestDist = Number.POSITIVE_INFINITY;
+    let bestRel = 0;
+    for (const [idStr, el] of Object.entries(itemRefs.current)) {
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      const rel = rect.top - topLine;
+      const dist = Math.abs(rel);
+      if (dist < bestDist) {
+        bestDist = dist; bestRel = rel; bestId = Number(idStr);
+      }
+    }
+    return { id: bestId, relOffset: bestRel, scrollY: window.scrollY };
+  }, []);
+
+  const setAnchorBeforeAction = useCallback((preferredId?: number | null) => {
+    const snap = getAnchorSnapshot();
+    lastScrollYRef.current = snap.scrollY;
+    if (preferredId && itemRefs.current[preferredId]) {
+      const el = itemRefs.current[preferredId]!;
+      const rect = el.getBoundingClientRect();
+      anchorIdRef.current = preferredId;
+      anchorRelOffsetRef.current = rect.top - STICKY_OFFSET;
+    } else {
+      anchorIdRef.current = preferredId ?? snap.id;
+      anchorRelOffsetRef.current = snap.relOffset;
+    }
+    setRestoring(true);
+  }, [getAnchorSnapshot]);
+
+  const restoreToAnchor = useCallback(() => {
+    const id = anchorIdRef.current;
+    const rel = anchorRelOffsetRef.current || 0;
+    if (id == null) {
+      window.scrollTo({ top: lastScrollYRef.current, behavior: 'auto' });
+      return;
+    }
+    const el = itemRefs.current[id];
+    if (!el) {
+      window.scrollTo({ top: lastScrollYRef.current, behavior: 'auto' });
+      return;
+    }
+    const rect = el.getBoundingClientRect();
+    const delta = rect.top - (STICKY_OFFSET + rel);
+    const targetTop = Math.max(0, window.scrollY + delta);
+    window.scrollTo({ top: targetTop, behavior: 'auto' });
+  }, []);
+
+  // fetch on URL change
   useEffect(() => {
     const q = (searchParams.get('q') || '').trim();
     const pageParam = parseInt(searchParams.get('page') || '1', 10);
@@ -96,6 +164,7 @@ export default function GroupsPage() {
 
   useEffect(() => setQInput(searchQuery), [searchQuery]);
 
+  // Derived
   const listToRender = searchQuery ? searchResults : availableGroups;
 
   const currentPage = useMemo(() => {
@@ -176,21 +245,25 @@ export default function GroupsPage() {
     return () => io.disconnect();
   }, [isMobile, loadMore]);
 
-  // ===== Scroll restore after edit/delete (mobile) =====
+  // Restore after DOM stable
   useEffect(() => {
     if (!isMobile) return;
-    const id = anchorIdRef.current;
-    if (id == null) return;
-    const el = itemRefs.current[id];
-    if (el) {
-      const rect = el.getBoundingClientRect();
-      const targetTop = Math.max(0, window.scrollY + rect.top - STICKY_OFFSET);
-      window.scrollTo({ top: targetTop, behavior: 'auto' });
-    } else {
-      window.scrollTo({ top: lastScrollYRef.current, behavior: 'auto' });
-    }
-    anchorIdRef.current = null;
-  }, [isMobile, mobileItems]);
+    if (anchorIdRef.current == null && lastScrollYRef.current === 0) return;
+    const r1 = requestAnimationFrame(() => {
+      const r2 = requestAnimationFrame(() => {
+        restoreToAnchor();
+        anchorIdRef.current = null;
+        anchorRelOffsetRef.current = 0;
+        setRestoring(false);
+      });
+      (restoreToAnchor as any).__r2 = r2;
+    });
+    (restoreToAnchor as any).__r1 = r1;
+    return () => {
+      if ((restoreToAnchor as any).__r1) cancelAnimationFrame((restoreToAnchor as any).__r1);
+      if ((restoreToAnchor as any).__r2) cancelAnimationFrame((restoreToAnchor as any).__r2);
+    };
+  }, [isMobile, mobileItems, restoreToAnchor]);
 
   // Handlers
   const handleEdit = (group: GroupProps) => {
@@ -217,26 +290,47 @@ export default function GroupsPage() {
       const action = await dispatch(createGroup(body));
       setSaving(false);
       if (createGroup.fulfilled.match(action)) {
+        // 新建后回到第一页（置顶）
         await refreshPage(1, true);
         if (currentPage !== 1) router.push(buildHref(1));
       } else {
         alert((action.payload as string) ?? 'Create group failed');
       }
     } else {
+      // 移动端：乐观就地更新，后台静默校准；桌面端保持原逻辑
       if (isMobile) {
-        lastScrollYRef.current = window.scrollY;
-        anchorIdRef.current = updatedGroup.id;
-      }
-      setSaving(true);
-      const action = await dispatch(updateGroup({ groupId: updatedGroup.id, body }));
-      setSaving(false);
-      if (updateGroup.fulfilled.match(action)) {
-        await refreshPage(currentPage, true);
-        setMobileItems((prev) =>
-          prev.map((g) => (g.id === updatedGroup.id ? { ...g, ...updatedGroup } as GroupProps : g))
-        );
+        // 记录锚点（使用当前卡片），但不立刻整页刷新
+        setAnchorBeforeAction(updatedGroup.id);
+        setSaving(true);
+        const action = await dispatch(updateGroup({ groupId: updatedGroup.id, body }));
+        setSaving(false);
+        if (updateGroup.fulfilled.match(action)) {
+          // 就地打补丁（不改变顺序，避免重排）
+          setMobileItems((prev) =>
+            prev.map((g) => (g.id === updatedGroup.id ? { ...g, ...updatedGroup } as GroupProps : g))
+          );
+          // 后台静默校准（不走 listLoading），不替换本地数组（避免闪动）
+          void refreshPage(currentPage, false);
+          // 立即执行一次恢复（几乎无位移）
+          const r = requestAnimationFrame(() => {
+            restoreToAnchor();
+            cancelAnimationFrame(r);
+            setRestoring(false);
+          });
+        } else {
+          setRestoring(false);
+          alert((action.payload as string) ?? 'Update group failed');
+        }
       } else {
-        alert((action.payload as string) ?? 'Update group failed');
+        // 桌面：保持你原先的刷新逻辑
+        setSaving(true);
+        const action = await dispatch(updateGroup({ groupId: updatedGroup.id, body }));
+        setSaving(false);
+        if (updateGroup.fulfilled.match(action)) {
+          await refreshPage(currentPage, true);
+        } else {
+          alert((action.payload as string) ?? 'Update group failed');
+        }
       }
     }
     setIsModalOpen(false);
@@ -251,30 +345,67 @@ export default function GroupsPage() {
     if (groupToDelete === null) return;
 
     if (isMobile) {
+      // 找相邻项作为锚点（优先），并准备滚动补偿
       const rows = mobileItems;
       const idx = rows.findIndex((g) => g.id === groupToDelete);
-      const nextId = rows[idx + 1]?.id ?? rows[idx - 1]?.id ?? null;
-      lastScrollYRef.current = window.scrollY;
-      anchorIdRef.current = nextId;
-    }
+      const neighborId = rows[idx + 1]?.id ?? rows[idx - 1]?.id ?? null;
+      const toDeleteEl = itemRefs.current[groupToDelete];
+      const delHeight = toDeleteEl?.getBoundingClientRect().height ?? 0;
 
-    const prevTotal = Number(pagination?.total ?? 0);
-    const newTotal = Math.max(0, prevTotal - 1);
-    const newLastPage = Math.max(1, Math.ceil(newTotal / PER_PAGE));
-    const targetPage = Math.min(currentPage, newLastPage);
+      setAnchorBeforeAction(neighborId); // 同时记录相对偏移，Overlay 打开
+      // 乐观本地移除并做滚动补偿（避免视图上跳）
+      setMobileItems((prev) => prev.filter((g) => g.id !== groupToDelete));
+      if (delHeight > 0) {
+        // 直接补偿位移，让视口看起来完全不动
+        window.scrollBy({ top: -delHeight, behavior: 'auto' });
+      }
 
-    setDeleting(true);
-    const action = await dispatch(deleteGroup(groupToDelete));
-    setDeleting(false);
+      setDeleting(true);
+      const action = await dispatch(deleteGroup(groupToDelete));
+      setDeleting(false);
 
-    if (deleteGroup.fulfilled.match(action)) {
-      await refreshPage(targetPage, true);
-      setIsDeleteConfirmOpen(false);
-      setGroupToDelete(null);
-      if (targetPage !== currentPage) router.push(buildHref(targetPage));
-      setMobileItems((prev) => prev.filter((g) => g.id !== action.meta.arg));
+      if (deleteGroup.fulfilled.match(action)) {
+        // 后台静默校准（不置 listLoading）
+        void refreshPage(currentPage, false);
+        // 轻触恢复（基本不会有位移，因为我们已做高度补偿）
+        const r = requestAnimationFrame(() => {
+          restoreToAnchor();
+          cancelAnimationFrame(r);
+          setRestoring(false);
+        });
+        setIsDeleteConfirmOpen(false);
+        setGroupToDelete(null);
+      } else {
+        // 回滚：把项加回列表并撤销位移
+        setMobileItems((prev) => {
+          const original = rows; // 旧的 rows 就是未删前的顺序
+          return original;
+        });
+        if (delHeight > 0) {
+          window.scrollBy({ top: delHeight, behavior: 'auto' });
+        }
+        setRestoring(false);
+        alert((action.payload as string) || 'Delete group failed');
+      }
     } else {
-      alert((action.payload as string) || 'Delete group failed');
+      // 桌面：保持原逻辑
+      const prevTotal = Number(pagination?.total ?? 0);
+      const newTotal = Math.max(0, prevTotal - 1);
+      const newLastPage = Math.max(1, Math.ceil(newTotal / PER_PAGE));
+      const targetPage = Math.min(currentPage, newLastPage);
+
+      setDeleting(true);
+      const action = await dispatch(deleteGroup(groupToDelete));
+      setDeleting(false);
+
+      if (deleteGroup.fulfilled.match(action)) {
+        await refreshPage(targetPage, true);
+        setIsDeleteConfirmOpen(false);
+        setGroupToDelete(null);
+        if (targetPage !== currentPage) router.push(buildHref(targetPage));
+      } else {
+        alert((action.payload as string) || 'Delete group failed');
+      }
     }
   };
 
@@ -298,6 +429,8 @@ export default function GroupsPage() {
   const desktopRows = listToRender;
   const mobileRows = isMobile ? mobileItems : listToRender;
 
+  const overlayText = saving ? "Saving…" : deleting ? "Deleting…" : restoring ? "Updating view…" : undefined;
+
   return (
     <>
       <PageTitle title="Groups" showPageTitle={true} />
@@ -309,190 +442,67 @@ export default function GroupsPage() {
       </button>
 
       <div className="mx-auto w-full p-4 min-h-screen lg:container">
-        <div className="mb-4 lg:p-4 sticky top-0 bg-bg">
-          <form onSubmit={onSubmitSearch} className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-2.5 text-gray-400" />
-              <input
-                name="q"
-                value={qInput}
-                onChange={(e) => setQInput(e.target.value)}
-                placeholder="Search groups…"
-                className="w-full pl-10 pr-10 py-2 border border-border rounded-sm"
-                aria-label="Search groups"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={onClearSearch}
-                  className="absolute right-3 top-2.5 text-gray-400 hover:text-dark-gray"
-                  aria-label="Clear search"
-                >
-                  <XMarkIcon className="h-5 w-5" />
-                </button>
-              )}
-            </div>
-            <button type="submit" className="px-4 py-2 bg-dark-green text-white rounded-sm hover:bg-green">
-              Search
-            </button>
-          </form>
-
-          {searchQuery && (
+        <SearchBar
+          value={qInput}
+          onChange={setQInput}
+          onSubmit={onSubmitSearch}
+          onClear={onClearSearch}
+          placeholder="Search groups…"
+          sticky
+          showResultHint={Boolean(searchQuery)}
+          resultHint={
             <p className="text-sm text-gray mt-2">
               Showing results for <span className="text-dark-green">“{searchQuery}”</span>
             </p>
-          )}
-        </div>
+          }
+        />
 
         <div className='hidden md:flex justify-start ml-4'>
           <button
             onClick={handleAdd}
             className="mb-4 flex items-center px-4 py-2 bg-dark-green text-white rounded-sm hover:bg-green"
-            disabled={saving || deleting}
+            disabled={saving || deleting || restoring}
           >
             <PlusIcon className="h-5 w-5 mr-2" />
             New Group
           </button>
         </div>
 
-        {/* Desktop */}
-        <div className="hidden md:block overflow-x-auto p-4">
-          <table className="min-w-full bg-bg shadow-lg">
-            <thead>
-              <tr className="bg-light-gray text-dark-gray">
-                <th className="py-2 px-4 text-left">Title</th>
-                <th className="py-2 px-4 text-left">Description</th>
-                <th className="py-2 px-4 text-left">Created Date</th>
-                <th className="py-2 px-4 text-left">Creator</th>
-                <th className="py-2 px-4 text-left">Membership</th>
-                <th className="py-2 px-4 text-left">View</th>
-                <th className="py-2 px-4 text-left">Manage</th>
-              </tr>
-            </thead>
+        <GroupsDesktopTable
+          rows={desktopRows}
+          listLoading={listLoading}
+          canEdit={canEdit}
+          isUserSubscribed={isUserSubscribed}
+          onEdit={handleEdit}
+          onDelete={handleDeleteClick}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          buildHref={buildHref}
+          saving={saving || restoring}
+          deleting={deleting || restoring}
+          formatDate={formatDate}
+        />
 
-            {listLoading ? (
-              <TableSkeleton rows={5} cols={7} />
-            ) : (
-              <tbody>
-                {desktopRows.map((group, index) => {
-                  const subbed = isUserSubscribed(group);
-                  return (
-                    <tr key={group.id} className={`${index % 2 === 0 ? '' : 'bg-gray-50'}`}>
-                      <td className="py-2 px-4 text-gray">{group.title}</td>
-                      <td className="py-2 px-4 text-gray">{group.description}</td>
-                      <td className="py-2 px-4 text-gray">{formatDate(group.createdDate)}</td>
-                      <td className="py-2 px-4 text-gray">{group.creator.firstName}</td>
-                      <td className="py-2 px-4">
-                        <button
-                          className={`w-28 py-1 rounded-md text-white ${subbed ? 'bg-yellow hover:bg-dark-yellow' : 'bg-green hover:bg-dark-green'}`}
-                          disabled={saving || deleting}
-                        >
-                          {subbed ? 'Unsubscribe' : 'Subscribe'}
-                        </button>
-                      </td>
-                      <td className="py-2 px-4">
-                        <Link href={`/groups/${group.id}`}>
-                          <ArrowRightCircleIcon className="h-7 w-7 text-green hover:text-dark-green cursor-pointer" />
-                        </Link>
-                      </td>
-                      <td className="py-2 px-4">
-                        {canEdit(group) && (
-                          <div className="flex items-center gap-2">
-                            <button disabled={saving || deleting}>
-                              <PencilSquareIcon className="h-5 w-5 text-green hover:text-dark-green cursor-pointer" onClick={() => handleEdit(group)} />
-                            </button>
-                            <button disabled={saving || deleting}>
-                              <TrashIcon className="h-5 w-5 text-green hover:text-dark-green cursor-pointer" onClick={() => handleDeleteClick(group.id)} />
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            )}
-          </table>
-
-          {!listLoading && (
-            <div className="mt-6 flex justify-center">
-              <Pagination currentPage={currentPage} totalPages={totalPages} buildHref={buildHref} />
-            </div>
-          )}
-        </div>
-
-        {/* Mobile */}
-        <div className="md:hidden space-y-4">
-          {listLoading && mobileRows.length === 0 ? (
-            <>
-              <CardSkeleton />
-              <CardSkeleton />
-              <CardSkeleton />
-            </>
-          ) : (
-            mobileRows.map((group) => {
-              const subbed = isUserSubscribed(group);
-              return (
-                <div
-                  className={`card p-3 ${group.inviteOnly ? 'backdrop-blur-sm bg-opacity-80' : ''}`}
-                  key={group.id}
-                  ref={(el) => { itemRefs.current[group.id] = el; }}
-                >
-                  <div className="absolute right-2 t-5 flex space-x-2">
-                    {canEdit(group) && (
-                      <>
-                        <button disabled={saving || deleting}>
-                          <PencilSquareIcon className="h-5 w-5 text-green hover:text-dark-green cursor-pointer" onClick={() => handleEdit(group)} />
-                        </button>
-                        <button disabled={saving || deleting}>
-                          <TrashIcon className="h-5 w-5 text-green hover:text-dark-green cursor-pointer" onClick={() => handleDeleteClick(group.id)} />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                  <h2 className="text-lg font-semibold text-dark-gray mt-5">{group.title}</h2>
-                  <p className="text-gray text-sm">{group.description}</p>
-                  <p className="text-xs text-gray mt-1">
-                    Created: {formatDate(group.createdDate)} by {group.creator.firstName}
-                    {group.inviteOnly && <span className="text-dark-green"> (Invite Only)</span>}
-                  </p>
-                  <div className="mt-2 flex justify-between items-center">
-                    <button
-                      className={`min-w-28 px-3 py-1 rounded-md ${subbed ? 'bg-white text-dark-gray border border-border' : 'text-white bg-green hover:bg-dark-green'}`}
-                      disabled={saving || deleting}
-                    >
-                      {subbed ? 'Unsubscribe' : 'Subscribe'}
-                    </button>
-                    <Link href={`/groups/${group.id}`}>
-                      <ArrowRightCircleIcon className="h-7 w-7 text-green hover:text-dark-green cursor-pointer" />
-                    </Link>
-                  </div>
-                </div>
-              )
-            })
-          )}
-
-          {!listLoading && (
-            <div className="flex justify-center">
-              {mobileHasMore ? (
-                <button
-                  onClick={loadMore}
-                  disabled={loadingMore || saving || deleting}
-                  className="px-4 py-2 border border-border rounded-sm text-dark-gray flex items-center gap-2"
-                >
-                  {loadingMore ? (<><Spinner className="h-4 w-4" /> Loading…</>) : "Load more"}
-                </button>
-              ) : (
-                <span className="text-sm text-gray">No more results</span>
-              )}
-            </div>
-          )}
-          <div ref={sentinelRef} aria-hidden className="h-1" />
-        </div>
+        <GroupsMobileList
+          rows={mobileRows}
+          listLoading={listLoading}
+          canEdit={canEdit}
+          isUserSubscribed={isUserSubscribed}
+          onEdit={handleEdit}
+          onDelete={handleDeleteClick}
+          saving={saving || restoring}
+          deleting={deleting || restoring}
+          mobileHasMore={mobileHasMore}
+          loadMore={loadMore}
+          loadingMore={loadingMore}
+          setItemRef={(id, el) => { itemRefs.current[id] = el; }}
+          sentinelRef={sentinelRef}
+          formatDate={formatDate}
+        />
       </div>
 
-      {/* Shared overlay */}
-      <LoadingOverlay show={saving || deleting} text={saving ? "Saving…" : "Deleting…"} />
+      <LoadingOverlay show={Boolean(saving || deleting || restoring)} text={overlayText} />
+
       {isModalOpen && (
         <GroupModal
           group={selectedGroup}
@@ -501,6 +511,7 @@ export default function GroupsPage() {
           onClose={() => setIsModalOpen(false)}
         />
       )}
+
       <DeleteConfirmModal
         isOpen={isDeleteConfirmOpen}
         onConfirm={confirmDelete}
