@@ -1,7 +1,7 @@
 import type { ApiResponseProps } from './api';
 import type { UserProps } from './user';
 
-/** ===================== UI Model (unchanged) ===================== */
+/** ===================== UI Model ===================== */
 export interface GroupProps {
   id: number;
   title: string;
@@ -16,10 +16,11 @@ export interface GroupProps {
 export interface GroupListProps {
   Groups: GroupProps[];
 }
+
 export type GroupListResponse = ApiResponseProps<GroupListProps>;
 export type GroupDetailResponse = ApiResponseProps<GroupProps>;
 
-/** ===================== API Model (UPDATED) ===================== */
+/** ===================== UI Pagination Props (for component) ===================== */
 export interface PaginationProps {
   currentPage: number;
   totalPages: number;
@@ -29,12 +30,13 @@ export interface PaginationProps {
   className?: string;
 }
 
+/** ===================== API Model ===================== */
 export interface GroupApi {
   id: number;
   name: string;
   description: string;
-  creator: number;
-  creator_name: string;
+  creator: number | string;
+  creator_name?: string;
   time: string;
   isPrivate: boolean;
   subscriber_count: number;
@@ -42,9 +44,16 @@ export interface GroupApi {
   is_creator: boolean;
 }
 
+export interface GroupListPaginationApi {
+  page: number;
+  per_page: number;
+  total: number;
+  pages: number;
+}
+
 export interface GroupsListData {
   groups: GroupApi[];
-  pagination: PaginationProps;
+  pagination: GroupListPaginationApi;
 }
 
 export interface GroupDetailData extends GroupApi {
@@ -62,7 +71,7 @@ export interface MembersListData {
     email: string;
     is_creator: boolean;
   }>;
-  pagination: PaginationProps;
+  pagination: GroupListPaginationApi;
 }
 
 export interface GroupStats {
@@ -80,7 +89,7 @@ export interface CreateOrUpdateGroupBody {
   isPrivate: boolean;
 }
 
-/** API response wrappers */
+/** ===================== API Response Wrappers ===================== */
 export type CreateGroupResponse = ApiResponseProps<{ group: GroupApi }>;
 export type UpdateGroupResponse = ApiResponseProps<{ group: GroupApi }>;
 export type GroupsListResponseApi = ApiResponseProps<GroupsListData>;
@@ -88,19 +97,31 @@ export type GroupDetailResponseApi = ApiResponseProps<GroupDetailData>;
 export type MembersListResponseApi = ApiResponseProps<MembersListData>;
 export type GroupStatsResponseApi = ApiResponseProps<GroupStats>;
 
-/** ===================== Mapping: API -> UI (UPDATED) ===================== */
-export const mapGroupApiToProps = (g: GroupApi): GroupProps => ({
-  id: g.id,
-  title: g.name,
-  description: g.description,
-  createdDate: g.time,
-  creator: {
-    id: g.creator,
-    firstName: g.creator_name,
-    email: '',
-    admin: false,
-  },
-  subscribed: g.is_member,
-  editable: g.is_creator,
-  inviteOnly: g.isPrivate,
-});
+/** ===================== Mapping: API -> UI ===================== */
+export const mapGroupApiToProps = (g: GroupApi): GroupProps => {
+  const creatorId =
+    typeof g.creator === 'number'
+      ? g.creator
+      : Number.isFinite(Number(g.creator))
+        ? Number(g.creator)
+        : 0;
+
+  const creatorName =
+    g.creator_name ?? (typeof g.creator === 'string' ? g.creator : '');
+
+  return {
+    id: g.id,
+    title: g.name,
+    description: g.description,
+    createdDate: g.time,
+    creator: {
+      id: creatorId,
+      firstName: creatorName,
+      email: '',
+      admin: false,
+    },
+    subscribed: g.is_member,
+    editable: g.is_creator,
+    inviteOnly: g.isPrivate,
+  };
+};

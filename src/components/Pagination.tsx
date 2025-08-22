@@ -45,7 +45,6 @@ export default function Pagination({
 
   return (
     <nav aria-label="Pagination" className={className}>
-      aabbb
       <ul className="flex items-center gap-2">
         {items.map((item, idx) => {
           if (item === "ellipsis") {

@@ -24,7 +24,7 @@ export default function MessagesPage() {
   const handleCreateChat = () => {
     if (selectedUserId) {
       const newMessageId = Date.now();
-      const title = `Chat with ${mockUsers.find((u) => u.id === selectedUserId)?.first_name}`;
+      const title = `Chat with ${mockUsers.find((u) => u.id === selectedUserId)?.firstName}`;
       const newMessage = {
         id: newMessageId,
         title,
