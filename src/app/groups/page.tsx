@@ -15,11 +15,14 @@ import type { GroupProps } from '@/app/types';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Pagination from "@/components/Pagination";
 import { formatDate } from '@/app/ultility';
+import Spinner from "@/components/feedback/Spinner";
+import LoadingOverlay from "@/components/feedback/LoadingOverLay";
+import TableSkeleton from "@/components/feedback/TableSkeleton";
+import CardSkeleton from "@/components/feedback/CardSkeleton";
 
 const PER_PAGE = 10;
-const STICKY_OFFSET = 80; // approximate sticky header height
+const STICKY_OFFSET = 80;
 
-// simple media query hook
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -55,15 +58,20 @@ export default function GroupsPage() {
   const [groupToDelete, setGroupToDelete] = useState<number | null>(null);
   const [qInput, setQInput] = useState('');
 
-  // Mobile infinite scroll state
+  // Loading states
+  const [listLoading, setListLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  // Mobile infinite
   const [mobileItems, setMobileItems] = useState<GroupProps[]>([]);
   const [mobilePage, setMobilePage] = useState<number>(1);
   const [mobileHasMore, setMobileHasMore] = useState<boolean>(false);
-  const [loadingMore, setLoadingMore] = useState<boolean>(false);
-  const isAppendingRef = useRef(false); // prevent overwrite during append
+  const isAppendingRef = useRef(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  // scroll anchoring refs (mobile)
+  // Scroll anchor (mobile)
   const lastScrollYRef = useRef(0);
   const anchorIdRef = useRef<number | null>(null);
   const itemRefs = useRef<Record<number, HTMLDivElement | null>>({});
@@ -73,20 +81,21 @@ export default function GroupsPage() {
     const pageParam = parseInt(searchParams.get('page') || '1', 10);
     const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
 
-    if (q) {
-      dispatch(setSearchQuery(q));
-      dispatch(searchGroups({ q, page, per_page: PER_PAGE }));
-    } else {
-      dispatch(clearSearch());
-      dispatch(fetchAvailableGroups({ page, per_page: PER_PAGE }));
-    }
+    (async () => {
+      setListLoading(true);
+      if (q) {
+        dispatch(setSearchQuery(q));
+        await dispatch(searchGroups({ q, page, per_page: PER_PAGE }));
+      } else {
+        dispatch(clearSearch());
+        await dispatch(fetchAvailableGroups({ page, per_page: PER_PAGE }));
+      }
+      setListLoading(false);
+    })();
   }, [searchParams, dispatch]);
 
-  useEffect(() => {
-    setQInput(searchQuery);
-  }, [searchQuery]);
+  useEffect(() => setQInput(searchQuery), [searchQuery]);
 
-  // Derived
   const listToRender = searchQuery ? searchResults : availableGroups;
 
   const currentPage = useMemo(() => {
@@ -95,7 +104,6 @@ export default function GroupsPage() {
   }, [searchParams]);
 
   const totalPages = useMemo(() => {
-    // prefer API's total pages if your slice stores it as `pages`
     if (typeof (pagination as any)?.pages === 'number') {
       return Math.max(1, (pagination as any).pages as number);
     }
@@ -111,16 +119,17 @@ export default function GroupsPage() {
     return `/groups${params.toString() ? `?${params.toString()}` : ""}`;
   };
 
-  const refreshPage = async (page: number) => {
+  const refreshPage = async (page: number, withLoading = false) => {
+    if (withLoading) setListLoading(true);
     if (searchQuery) {
       await dispatch(searchGroups({ q: searchQuery, page, per_page: PER_PAGE }));
     } else {
       await dispatch(fetchAvailableGroups({ page, per_page: PER_PAGE }));
     }
+    if (withLoading) setListLoading(false);
   };
 
-  // ===== Mobile infinite scroll wiring =====
-  // init/reset only when not appending
+  // Mobile infinite wiring
   useEffect(() => {
     if (!isMobile) return;
     if (isAppendingRef.current) return;
@@ -128,13 +137,11 @@ export default function GroupsPage() {
     setMobilePage(currentPage);
   }, [isMobile, listToRender, currentPage]);
 
-  // recompute hasMore
   useEffect(() => {
     if (!isMobile) return;
     setMobileHasMore(mobilePage < totalPages);
   }, [isMobile, mobilePage, totalPages]);
 
-  // append when new page arrives
   useEffect(() => {
     if (!isMobile) return;
     if (!isAppendingRef.current) return;
@@ -162,9 +169,7 @@ export default function GroupsPage() {
     const el = sentinelRef.current;
     if (!el) return;
     const io = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) loadMore();
-      },
+      (entries) => { if (entries[0].isIntersecting) loadMore(); },
       { root: null, rootMargin: "200px", threshold: 0 }
     );
     io.observe(el);
@@ -182,13 +187,12 @@ export default function GroupsPage() {
       const targetTop = Math.max(0, window.scrollY + rect.top - STICKY_OFFSET);
       window.scrollTo({ top: targetTop, behavior: 'auto' });
     } else {
-      // fallback to prior Y if anchor not found (e.g., last item deleted)
       window.scrollTo({ top: lastScrollYRef.current, behavior: 'auto' });
     }
     anchorIdRef.current = null;
-  }, [isMobile, mobileItems]); // mobileItems changes after refresh/append
+  }, [isMobile, mobileItems]);
 
-  // ===== Handlers =====
+  // Handlers
   const handleEdit = (group: GroupProps) => {
     setSelectedGroup(group);
     setIsNew(false);
@@ -209,22 +213,25 @@ export default function GroupsPage() {
     };
 
     if (isNew) {
+      setSaving(true);
       const action = await dispatch(createGroup(body));
+      setSaving(false);
       if (createGroup.fulfilled.match(action)) {
-        await refreshPage(1);
+        await refreshPage(1, true);
         if (currentPage !== 1) router.push(buildHref(1));
       } else {
         alert((action.payload as string) ?? 'Create group failed');
       }
     } else {
-      // anchor to the edited item (mobile)
       if (isMobile) {
         lastScrollYRef.current = window.scrollY;
         anchorIdRef.current = updatedGroup.id;
       }
+      setSaving(true);
       const action = await dispatch(updateGroup({ groupId: updatedGroup.id, body }));
+      setSaving(false);
       if (updateGroup.fulfilled.match(action)) {
-        await refreshPage(currentPage); // stay on current page
+        await refreshPage(currentPage, true);
         setMobileItems((prev) =>
           prev.map((g) => (g.id === updatedGroup.id ? { ...g, ...updatedGroup } as GroupProps : g))
         );
@@ -243,7 +250,6 @@ export default function GroupsPage() {
   const confirmDelete = async () => {
     if (groupToDelete === null) return;
 
-    // pre-compute anchor: next item if possible, else previous
     if (isMobile) {
       const rows = mobileItems;
       const idx = rows.findIndex((g) => g.id === groupToDelete);
@@ -257,9 +263,12 @@ export default function GroupsPage() {
     const newLastPage = Math.max(1, Math.ceil(newTotal / PER_PAGE));
     const targetPage = Math.min(currentPage, newLastPage);
 
+    setDeleting(true);
     const action = await dispatch(deleteGroup(groupToDelete));
+    setDeleting(false);
+
     if (deleteGroup.fulfilled.match(action)) {
-      await refreshPage(targetPage);
+      await refreshPage(targetPage, true);
       setIsDeleteConfirmOpen(false);
       setGroupToDelete(null);
       if (targetPage !== currentPage) router.push(buildHref(targetPage));
@@ -286,7 +295,6 @@ export default function GroupsPage() {
     router.push('/groups');
   };
 
-  // choose data source per layout
   const desktopRows = listToRender;
   const mobileRows = isMobile ? mobileItems : listToRender;
 
@@ -296,12 +304,12 @@ export default function GroupsPage() {
 
       <button
         onClick={handleAdd}
-        className="fixed md:hidden bottom-8  z-20 left-1/2 -translate-x-1/2 bg-yellow px-3 py-3 rounded-[50%]">
+        className="fixed md:hidden bottom-8 z-20 left-1/2 -translate-x-1/2 bg-yellow px-3 py-3 rounded-[50%]">
         <PlusIcon className="h-7 w-7 text-white" />
       </button>
 
       <div className="mx-auto w-full p-4 min-h-screen lg:container">
-        <div className=" mb-4 lg:p-4 sticky top-0 bg-bg">
+        <div className="mb-4 lg:p-4 sticky top-0 bg-bg">
           <form onSubmit={onSubmitSearch} className="flex items-center gap-2">
             <div className="relative flex-1">
               <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-2.5 text-gray-400" />
@@ -340,13 +348,14 @@ export default function GroupsPage() {
           <button
             onClick={handleAdd}
             className="mb-4 flex items-center px-4 py-2 bg-dark-green text-white rounded-sm hover:bg-green"
+            disabled={saving || deleting}
           >
             <PlusIcon className="h-5 w-5 mr-2" />
             New Group
           </button>
         </div>
 
-        {/* Desktop table + numeric pagination */}
+        {/* Desktop */}
         <div className="hidden md:block overflow-x-auto p-4">
           <table className="min-w-full bg-bg shadow-lg">
             <thead>
@@ -360,108 +369,130 @@ export default function GroupsPage() {
                 <th className="py-2 px-4 text-left">Manage</th>
               </tr>
             </thead>
-            <tbody>
-              {desktopRows.map((group, index) => {
-                const subbed = isUserSubscribed(group);
-                return (
-                  <tr key={group.id} className={`${index % 2 === 0 ? '' : 'bg-gray-50'}`}>
-                    <td className="py-2 px-4 text-gray">{group.title}</td>
-                    <td className="py-2 px-4 text-gray">{group.description}</td>
-                    <td className="py-2 px-4 text-gray">{formatDate(group.createdDate)}</td>
-                    <td className="py-2 px-4 text-gray">{group.creator.firstName}</td>
-                    <td className="py-2 px-4">
-                      <button
-                        className={`w-28 py-1 rounded-md text-white ${subbed ? 'bg-yellow hover:bg-dark-yellow' : 'bg-green hover:bg-dark-green'}`}
-                      >
-                        {subbed ? 'Unsubscribe' : 'Subscribe'}
-                      </button>
-                    </td>
-                    <td className="py-2 px-4">
-                      <Link href={`/groups/${group.id}`}>
-                        <ArrowRightCircleIcon className="h-7 w-7 text-green hover:text-dark-green cursor-pointer" />
-                      </Link>
-                    </td>
-                    <td className="py-2 px-4">
-                      {canEdit(group) && (
-                        <div className="flex items-center gap-2">
-                          <PencilSquareIcon className="h-5 w-5 text-green hover:text-dark-green cursor-pointer" onClick={() => handleEdit(group)} />
-                          <TrashIcon className="h-5 w-5 text-green hover:text-dark-green cursor-pointer" onClick={() => handleDeleteClick(group.id)} />
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
+
+            {listLoading ? (
+              <TableSkeleton rows={5} cols={7} />
+            ) : (
+              <tbody>
+                {desktopRows.map((group, index) => {
+                  const subbed = isUserSubscribed(group);
+                  return (
+                    <tr key={group.id} className={`${index % 2 === 0 ? '' : 'bg-gray-50'}`}>
+                      <td className="py-2 px-4 text-gray">{group.title}</td>
+                      <td className="py-2 px-4 text-gray">{group.description}</td>
+                      <td className="py-2 px-4 text-gray">{formatDate(group.createdDate)}</td>
+                      <td className="py-2 px-4 text-gray">{group.creator.firstName}</td>
+                      <td className="py-2 px-4">
+                        <button
+                          className={`w-28 py-1 rounded-md text-white ${subbed ? 'bg-yellow hover:bg-dark-yellow' : 'bg-green hover:bg-dark-green'}`}
+                          disabled={saving || deleting}
+                        >
+                          {subbed ? 'Unsubscribe' : 'Subscribe'}
+                        </button>
+                      </td>
+                      <td className="py-2 px-4">
+                        <Link href={`/groups/${group.id}`}>
+                          <ArrowRightCircleIcon className="h-7 w-7 text-green hover:text-dark-green cursor-pointer" />
+                        </Link>
+                      </td>
+                      <td className="py-2 px-4">
+                        {canEdit(group) && (
+                          <div className="flex items-center gap-2">
+                            <button disabled={saving || deleting}>
+                              <PencilSquareIcon className="h-5 w-5 text-green hover:text-dark-green cursor-pointer" onClick={() => handleEdit(group)} />
+                            </button>
+                            <button disabled={saving || deleting}>
+                              <TrashIcon className="h-5 w-5 text-green hover:text-dark-green cursor-pointer" onClick={() => handleDeleteClick(group.id)} />
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            )}
           </table>
 
-          <div className="mt-6 flex justify-center">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              buildHref={buildHref}
-            />
-          </div>
+          {!listLoading && (
+            <div className="mt-6 flex justify-center">
+              <Pagination currentPage={currentPage} totalPages={totalPages} buildHref={buildHref} />
+            </div>
+          )}
         </div>
 
-        {/* Mobile infinite list */}
+        {/* Mobile */}
         <div className="md:hidden space-y-4">
-          {mobileRows.map((group) => {
-            const subbed = isUserSubscribed(group);
-            return (
-              <div
-                className={`card p-3 ${group.inviteOnly ? 'backdrop-blur-sm bg-opacity-80' : ''}`}
-                key={group.id}
-                ref={(el) => { itemRefs.current[group.id] = el; }}
-              >
-                <div className="absolute right-2 t-5 flex space-x-2">
-                  {canEdit(group) && (
-                    <>
-                      <PencilSquareIcon className="h-5 w-5 text-green hover:text-dark-green cursor-pointer" onClick={() => handleEdit(group)} />
-                      <TrashIcon className="h-5 w-5 text-green hover:text-dark-green cursor-pointer" onClick={() => handleDeleteClick(group.id)} />
-                    </>
-                  )}
+          {listLoading && mobileRows.length === 0 ? (
+            <>
+              <CardSkeleton />
+              <CardSkeleton />
+              <CardSkeleton />
+            </>
+          ) : (
+            mobileRows.map((group) => {
+              const subbed = isUserSubscribed(group);
+              return (
+                <div
+                  className={`card p-3 ${group.inviteOnly ? 'backdrop-blur-sm bg-opacity-80' : ''}`}
+                  key={group.id}
+                  ref={(el) => { itemRefs.current[group.id] = el; }}
+                >
+                  <div className="absolute right-2 t-5 flex space-x-2">
+                    {canEdit(group) && (
+                      <>
+                        <button disabled={saving || deleting}>
+                          <PencilSquareIcon className="h-5 w-5 text-green hover:text-dark-green cursor-pointer" onClick={() => handleEdit(group)} />
+                        </button>
+                        <button disabled={saving || deleting}>
+                          <TrashIcon className="h-5 w-5 text-green hover:text-dark-green cursor-pointer" onClick={() => handleDeleteClick(group.id)} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  <h2 className="text-lg font-semibold text-dark-gray mt-5">{group.title}</h2>
+                  <p className="text-gray text-sm">{group.description}</p>
+                  <p className="text-xs text-gray mt-1">
+                    Created: {formatDate(group.createdDate)} by {group.creator.firstName}
+                    {group.inviteOnly && <span className="text-dark-green"> (Invite Only)</span>}
+                  </p>
+                  <div className="mt-2 flex justify-between items-center">
+                    <button
+                      className={`min-w-28 px-3 py-1 rounded-md ${subbed ? 'bg-white text-dark-gray border border-border' : 'text-white bg-green hover:bg-dark-green'}`}
+                      disabled={saving || deleting}
+                    >
+                      {subbed ? 'Unsubscribe' : 'Subscribe'}
+                    </button>
+                    <Link href={`/groups/${group.id}`}>
+                      <ArrowRightCircleIcon className="h-7 w-7 text-green hover:text-dark-green cursor-pointer" />
+                    </Link>
+                  </div>
                 </div>
-                <h2 className="text-lg font-semibold text-dark-gray mt-5">{group.title}</h2>
-                <p className="text-gray text-sm">{group.description}</p>
-                <p className="text-xs text-gray mt-1">
-                  Created: {formatDate(group.createdDate)} by {group.creator.firstName}
-                  {group.inviteOnly && <span className="text-dark-green"> (Invite Only)</span>}
-                </p>
-                <div className="mt-2 flex justify-between items-center">
-                  <button
-                    className={`min-w-28 px-3 py-1 rounded-md ${subbed
-                      ? 'bg-white text-dark-gray border border-border'
-                      : 'text-white bg-green hover:bg-dark-green'
-                      }`}
-                  >
-                    {subbed ? 'Unsubscribe' : 'Subscribe'}
-                  </button>
-                  <Link href={`/groups/${group.id}`}>
-                    <ArrowRightCircleIcon className="h-7 w-7 text-green hover:text-dark-green cursor-pointer" />
-                  </Link>
-                </div>
-              </div>
-            )
-          })}
+              )
+            })
+          )}
 
-          <div className="flex justify-center">
-            {mobileHasMore ? (
-              <button
-                onClick={loadMore}
-                disabled={loadingMore}
-                className="px-4 py-2 border border-border rounded-sm text-dark-gray"
-              >
-                {loadingMore ? "Loading…" : "Load more"}
-              </button>
-            ) : (
-              <span className="text-sm text-gray">No more results</span>
-            )}
-          </div>
+          {!listLoading && (
+            <div className="flex justify-center">
+              {mobileHasMore ? (
+                <button
+                  onClick={loadMore}
+                  disabled={loadingMore || saving || deleting}
+                  className="px-4 py-2 border border-border rounded-sm text-dark-gray flex items-center gap-2"
+                >
+                  {loadingMore ? (<><Spinner className="h-4 w-4" /> Loading…</>) : "Load more"}
+                </button>
+              ) : (
+                <span className="text-sm text-gray">No more results</span>
+              )}
+            </div>
+          )}
           <div ref={sentinelRef} aria-hidden className="h-1" />
         </div>
       </div>
 
+      {/* Shared overlay */}
+      <LoadingOverlay show={saving || deleting} text={saving ? "Saving…" : "Deleting…"} />
       {isModalOpen && (
         <GroupModal
           group={selectedGroup}
@@ -470,7 +501,6 @@ export default function GroupsPage() {
           onClose={() => setIsModalOpen(false)}
         />
       )}
-
       <DeleteConfirmModal
         isOpen={isDeleteConfirmOpen}
         onConfirm={confirmDelete}
