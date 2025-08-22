@@ -12,19 +12,24 @@ type Props = {
   isUserSubscribed: (g: GroupProps) => boolean;
   onEdit: (g: GroupProps) => void;
   onDelete: (id: number) => void;
+  onToggleSubscription: (g: GroupProps) => void;
   currentPage: number;
   totalPages: number;
   buildHref: (page: number) => string;
   saving: boolean;
   deleting: boolean;
+  toggling: boolean;
   formatDate: (timestamp: string, showTime?: boolean) => string;
 };
+
 
 export default function GroupsDesktopTable({
   rows,
   listLoading,
   canEdit,
   isUserSubscribed,
+  toggling,
+  onToggleSubscription,
   onEdit,
   onDelete,
   currentPage,
@@ -64,7 +69,8 @@ export default function GroupsDesktopTable({
                   <td className="py-2 px-4">
                     <button
                       className={`w-28 py-1 rounded-md text-white ${subbed ? 'bg-yellow hover:bg-dark-yellow' : 'bg-green hover:bg-dark-green'}`}
-                      disabled={saving || deleting}
+                      disabled={saving || deleting || toggling}
+                      onClick={() => onToggleSubscription(group)}               // ← 新增
                     >
                       {subbed ? 'Unsubscribe' : 'Subscribe'}
                     </button>

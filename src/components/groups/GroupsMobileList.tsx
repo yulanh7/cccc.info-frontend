@@ -12,16 +12,18 @@ type Props = {
   isUserSubscribed: (g: GroupProps) => boolean;
   onEdit: (g: GroupProps) => void;
   onDelete: (id: number) => void;
+  onToggleSubscription: (g: GroupProps) => void;
   saving: boolean;
   deleting: boolean;
+  toggling: boolean;
   mobileHasMore: boolean;
   loadMore: () => Promise<void> | void;
   loadingMore: boolean;
   setItemRef: (id: number, el: HTMLDivElement | null) => void;
-  // match useRef<HTMLDivElement | null>(null)
   sentinelRef: React.MutableRefObject<HTMLDivElement | null>;
   formatDate: (timestamp: string, showTime?: boolean) => string;
 };
+
 
 export default function GroupsMobileList({
   rows,
@@ -30,6 +32,8 @@ export default function GroupsMobileList({
   isUserSubscribed,
   onEdit,
   onDelete,
+  onToggleSubscription,
+  toggling,
   saving,
   deleting,
   mobileHasMore,
@@ -76,11 +80,10 @@ export default function GroupsMobileList({
               </p>
               <div className="mt-2 flex justify-between items-center">
                 <button
-                  className={`min-w-28 px-3 py-1 rounded-md ${subbed
-                    ? 'bg-white text-dark-gray border border-border'
-                    : 'text-white bg-green hover:bg-dark-green'
+                  className={`min-w-28 px-3 py-1 rounded-md ${subbed ? 'bg-white text-dark-gray border border-border' : 'text-white bg-green hover:bg-dark-green'
                     }`}
-                  disabled={saving || deleting}
+                  disabled={saving || deleting || toggling}
+                  onClick={() => onToggleSubscription(group)}               // ← 新增
                 >
                   {subbed ? 'Unsubscribe' : 'Subscribe'}
                 </button>

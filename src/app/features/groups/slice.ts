@@ -6,7 +6,7 @@ import type {
   GroupApi,
   CreateOrUpdateGroupBody,
   GroupsListData,
-  Pagination,
+  GroupListPaginationApi,
 } from '@/app/types/group';
 import { mapGroupApiToProps } from '@/app/types/group';
 
@@ -19,18 +19,20 @@ const GROUP_ENDPOINTS = {
   UPDATE_GROUP: (id: number) => `/groups/${id}`,
   DELETE_GROUP: (id: number) => `/groups/${id}`,
   SEARCH_GROUPS: '/groups/search',
+  JOIN_GROUP: (id: number) => `/groups/${id}/join`,
+  LEAVE_GROUP: (id: number) => `/groups/${id}/leave`,
 } as const;
 
 interface GroupsState {
   currentGroup: GroupProps | null;
   availableGroups: GroupProps[];
-  availableGroupsPagination: Pagination | null;
+  availableGroupsPagination: GroupListPaginationApi | null;
   userGroups: GroupProps[];
-  userGroupsPagination: Pagination | null;
+  userGroupsPagination: GroupListPaginationApi | null;
   userMembership: Record<number, true>;
   searchQuery: string;
   searchResults: GroupProps[];
-  searchPagination: Pagination | null;
+  searchPagination: GroupListPaginationApi | null;
   status: Record<string, LoadStatus>;
   error: Record<string, string | null>;
 }
@@ -76,7 +78,7 @@ export const createGroup = createAsyncThunk<GroupProps, CreateOrUpdateGroupBody>
 
 /** 2.2 Get available groups */
 export const fetchAvailableGroups = createAsyncThunk<
-  { groups: GroupProps[]; pagination: Pagination },
+  { groups: GroupProps[]; pagination: GroupListPaginationApi },
   { page?: number; per_page?: number } | undefined
 >('groups/fetchAvailableGroups', async (params, { rejectWithValue }) => {
   try {
@@ -94,7 +96,7 @@ export const fetchAvailableGroups = createAsyncThunk<
 
 /** 2.1 Get user subscribed groups */
 export const fetchUserGroups = createAsyncThunk<
-  { groups: GroupProps[]; pagination: Pagination; membership: Record<number, true> },
+  { groups: GroupProps[]; pagination: GroupListPaginationApi; membership: Record<number, true> },
   { page?: number; per_page?: number } | undefined
 >('groups/fetchUserGroups', async (params, { rejectWithValue }) => {
   try {
@@ -144,7 +146,7 @@ export const deleteGroup = createAsyncThunk<
 
 // Search group
 export const searchGroups = createAsyncThunk<
-  { q: string; groups: GroupProps[]; pagination: Pagination },
+  { q: string; groups: GroupProps[]; pagination: GroupListPaginationApi },
   { q: string; page?: number; per_page?: number }
 >('groups/searchGroups', async ({ q, page, per_page }, { rejectWithValue }) => {
   try {
@@ -167,6 +169,36 @@ export const searchGroups = createAsyncThunk<
   }
 });
 
+export const joinGroup = createAsyncThunk<{ id: number }, number>(
+  'groups/joinGroup',
+  async (groupId, { rejectWithValue }) => {
+    try {
+      const res = await apiRequest<{}>('POST', GROUP_ENDPOINTS.JOIN_GROUP(groupId));
+      if (!res.success) throw new Error(res.message || 'Join group failed');
+      return { id: groupId };
+    } catch (e: any) {
+      return rejectWithValue(e.message || 'Join group failed') as any;
+    }
+  }
+);
+
+export const leaveGroup = createAsyncThunk<{ id: number }, number>(
+  'groups/leaveGroup',
+  async (groupId, { rejectWithValue }) => {
+    try {
+      const res = await apiRequest<{}>('POST', GROUP_ENDPOINTS.LEAVE_GROUP(groupId));
+      if (!res.success) throw new Error(res.message || 'Leave group failed');
+      return { id: groupId };
+    } catch (e: any) {
+      return rejectWithValue(e.message || 'Leave group failed') as any;
+    }
+  }
+);
+
+const setSubOnList = (arr: GroupProps[], id: number, val: boolean) => {
+  const i = arr.findIndex(g => g.id === id);
+  if (i >= 0) arr[i] = { ...arr[i], subscribed: val };
+};
 
 const groupsSlice = createSlice({
   name: 'groups',
@@ -271,6 +303,42 @@ const groupsSlice = createSlice({
       .addCase(searchGroups.rejected, (s, a) => {
         setStatus(s, 'searchGroups', 'failed');
         setError(s, 'searchGroups', (a.payload as string) || 'Search groups failed');
+      });
+
+    // join
+    builder
+      .addCase(joinGroup.pending, (s) => { setStatus(s, 'joinGroup', 'loading'); setError(s, 'joinGroup', null); })
+      .addCase(joinGroup.fulfilled, (s, a) => {
+        setStatus(s, 'joinGroup', 'succeeded');
+        const id = a.payload.id;
+        if (s.currentGroup?.id === id) s.currentGroup = { ...s.currentGroup, subscribed: true };
+        setSubOnList(s.availableGroups, id, true);
+        setSubOnList(s.userGroups, id, true);
+        s.userMembership[id] = true;
+      })
+      .addCase(joinGroup.rejected, (s, a) => {
+        setStatus(s, 'joinGroup', 'failed');
+        setError(s, 'joinGroup', (a.payload as string) || 'Join group failed');
+      });
+
+    // leave
+    builder
+      .addCase(leaveGroup.pending, (s) => { setStatus(s, 'leaveGroup', 'loading'); setError(s, 'leaveGroup', null); })
+      .addCase(leaveGroup.fulfilled, (s, a) => {
+        setStatus(s, 'leaveGroup', 'succeeded');
+        const id = a.payload.id;
+        if (s.currentGroup?.id === id) s.currentGroup = { ...s.currentGroup, subscribed: false };
+        setSubOnList(s.availableGroups, id, false);
+        // 你也可以选择直接从 userGroups 移除（用户页会更直观）
+        s.userGroups = s.userGroups.filter(g => g.id !== id);
+        if (s.userMembership[id]) {
+          const { [id]: _, ...rest } = s.userMembership;
+          s.userMembership = rest;
+        }
+      })
+      .addCase(leaveGroup.rejected, (s, a) => {
+        setStatus(s, 'leaveGroup', 'failed');
+        setError(s, 'leaveGroup', (a.payload as string) || 'Leave group failed');
       });
   },
 });

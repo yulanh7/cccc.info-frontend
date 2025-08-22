@@ -7,7 +7,7 @@ import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 import { useAppDispatch, useAppSelector } from '@/app/features/hooks';
 import {
   createGroup, fetchAvailableGroups, updateGroup, deleteGroup, searchGroups,
-  setSearchQuery, clearSearch,
+  setSearchQuery, clearSearch, joinGroup, leaveGroup,
 } from '@/app/features/groups/slice';
 import type { CreateOrUpdateGroupBody } from '@/app/types/group';
 import type { GroupProps } from '@/app/types';
@@ -69,12 +69,15 @@ export default function GroupsPage() {
   const [groupToDelete, setGroupToDelete] = useState<number | null>(null);
   const [qInput, setQInput] = useState('');
 
+
   // Loading states
   const [listLoading, setListLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [restoring, setRestoring] = useState(false); // overlay during restore/optimistic reconcile
+  const [toggling, setToggling] = useState(false);
+  useBodyScrollLock(Boolean(saving || deleting || restoring || toggling));
 
   // Mobile infinite
   const [mobileItems, setMobileItems] = useState<GroupProps[]>([]);
@@ -420,6 +423,20 @@ export default function GroupsPage() {
     router.push(`/groups${params.toString() ? `?${params}` : ''}`);
   };
 
+  const handleToggleSubscription = async (group: GroupProps) => {
+    setToggling(true);
+    const action = group.subscribed ? await dispatch(leaveGroup(group.id))
+      : await dispatch(joinGroup(group.id));
+    setToggling(false);
+
+    if (leaveGroup.rejected.match(action) || joinGroup.rejected.match(action)) {
+      alert((action.payload as string) || (group.subscribed ? 'Leave group failed' : 'Join group failed'));
+      return;
+    }
+
+    // 可选：静默刷新当前页，确保与服务器完全一致（顺序不变基本不会闪动）
+    void refreshPage(currentPage, false);
+  };
   const onClearSearch = () => {
     setQInput('');
     dispatch(clearSearch());
@@ -429,7 +446,12 @@ export default function GroupsPage() {
   const desktopRows = listToRender;
   const mobileRows = isMobile ? mobileItems : listToRender;
 
-  const overlayText = saving ? "Saving…" : deleting ? "Deleting…" : restoring ? "Updating view…" : undefined;
+  const overlayText =
+    saving ? "Saving…" :
+      deleting ? "Deleting…" :
+        restoring ? "Updating view…" :
+          toggling ? "Updating membership…" :
+            undefined;
 
   return (
     <>
@@ -475,11 +497,13 @@ export default function GroupsPage() {
           isUserSubscribed={isUserSubscribed}
           onEdit={handleEdit}
           onDelete={handleDeleteClick}
+          onToggleSubscription={handleToggleSubscription}
           currentPage={currentPage}
           totalPages={totalPages}
           buildHref={buildHref}
           saving={saving || restoring}
           deleting={deleting || restoring}
+          toggling={toggling}
           formatDate={formatDate}
         />
 
@@ -490,8 +514,10 @@ export default function GroupsPage() {
           isUserSubscribed={isUserSubscribed}
           onEdit={handleEdit}
           onDelete={handleDeleteClick}
+          onToggleSubscription={handleToggleSubscription}
           saving={saving || restoring}
           deleting={deleting || restoring}
+          toggling={toggling}
           mobileHasMore={mobileHasMore}
           loadMore={loadMore}
           loadingMore={loadingMore}
