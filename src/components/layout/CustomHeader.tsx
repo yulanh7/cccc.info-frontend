@@ -4,7 +4,7 @@ import { useState } from 'react';
 import {
   ChevronLeftIcon, TrashIcon, PencilIcon, PlusIcon, UserCircleIcon
 } from '@heroicons/react/24/outline';
-import DeleteConfirmModal from './DeleteConfirmModal';
+import DeleteConfirmModal from '../DeleteConfirmModal';
 
 interface CustomHeaderProps {
   item?: any;

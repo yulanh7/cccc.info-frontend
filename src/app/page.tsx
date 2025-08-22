@@ -1,6 +1,6 @@
 import Post from '@/components/Post';
 import { mockPostList } from '@/app/data/mockData'
-import PageTitle from '@/components/PageTitle';
+import PageTitle from '@/components/layout/PageTitle';
 
 export default function HomePage() {
   return (

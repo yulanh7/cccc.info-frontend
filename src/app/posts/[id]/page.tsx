@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { mockPostList } from '@/app/data/mockData';
 import { CalendarIcon, UserCircleIcon, UserGroupIcon, EyeIcon } from '@heroicons/react/24/outline';
-import CustomHeader from '@/components/CustomHeader';
+import CustomHeader from '@/components/layout/CustomHeader';
 import PostModal from '@/components/PostModal';
 
 export default function PostDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {

@@ -1,6 +1,6 @@
 import './globals.css';
 import ReduxProvider from '@/components/ReduxProvider';
-import LayoutClient from '@/components/LayoutClient';
+import LayoutClient from '@/components/layout/LayoutClient';
 
 export const metadata = {
   title: 'Canberra Chinese Christian Church',

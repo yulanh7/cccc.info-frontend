@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Post from '@/components/Post';
 import { mockPostList } from '@/app/data/mockData'
-import PageTitle from '@/components/PageTitle';
+import PageTitle from '@/components/layout/PageTitle';
 import PostModal from '@/components/PostModal';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { PostProps } from '@/app/types';

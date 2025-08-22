@@ -1,7 +1,7 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PlusIcon } from '@heroicons/react/24/outline';
-import PageTitle from '@/components/PageTitle';
+import PageTitle from '@/components/layout/PageTitle';
 import GroupModal from '@/components/GroupModal';
 import DeleteConfirmModal from '@/components/DeleteConfirmModal';
 import { useAppDispatch, useAppSelector } from '@/app/features/hooks';

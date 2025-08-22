@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { mockUsers, mockMessages } from '@/app/data/mockData';
 import { PencilIcon, UserCircleIcon } from '@heroicons/react/24/outline';
 import { formatDate } from '@/app/ultility';
-import PageTitle from '@/components/PageTitle';
+import PageTitle from '@/components/layout/PageTitle';
 import MessageContactModal from '@/components/MessageContactModal';
 
 export default function MessagesPage() {

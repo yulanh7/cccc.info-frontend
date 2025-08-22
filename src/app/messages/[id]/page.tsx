@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { mockUsers, mockMessages } from '@/app/data/mockData';
-import CustomHeader from '@/components/CustomHeader';
+import CustomHeader from '@/components/layout/CustomHeader';
 
 export default function MessageDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
   const params = React.use(paramsPromise);

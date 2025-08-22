@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Logo from '@/components/Logo';
 import Menu from '@/components/Menu';
-import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+// import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { usePathname } from 'next/navigation';
 
 export default function Header({
@@ -63,7 +63,7 @@ export default function Header({
             }`}
         >
           <Logo isScrolled={isFixed} />
-          <MagnifyingGlassIcon className="h-5 w-5 text-dark-gray" />
+          {/* <MagnifyingGlassIcon className="h-5 w-5 text-dark-gray" /> */}
         </div>
       </header>
       <div style={{ height: `${headerHeight}px` }}></div>
