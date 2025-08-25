@@ -1,15 +1,15 @@
-// request.ts
 import axios, {
   AxiosError,
   AxiosInstance,
   AxiosRequestConfig,
   AxiosResponse,
 } from 'axios';
+
 import { ApiResponseProps } from '@/app/types/api';
 import {
   getToken,
   getRefreshToken,
-  setAccessToken, // Make sure this exists in token.ts
+  setAccessToken, // 确保在 token.ts 存在
   clearAuth,
 } from './auth/token';
 
@@ -26,6 +26,21 @@ const api: AxiosInstance = axios.create({
 export let onAccessTokenRefreshed: ((token: string) => void) | null = null;
 export const setOnAccessTokenRefreshed = (fn: (token: string) => void) => {
   onAccessTokenRefreshed = fn;
+};
+
+// ====== 小工具：统一的登录引导（弹提示 → 跳转 /auth?next=...）======
+const promptLoginRedirect = (msg?: string) => {
+  if (typeof window === 'undefined') return;
+
+  const next =
+    window.location.pathname + window.location.search + window.location.hash;
+  const tip = msg ?? '请先登录后再继续操作。现在前往登录页？';
+
+  // 原生 confirm 简单可靠；如果你有自定义 Modal，可以把这里替换成 Modal 逻辑
+  const ok = window.confirm(tip);
+  if (ok) {
+    window.location.href = `/auth?next=${encodeURIComponent(next)}`;
+  }
 };
 
 // ====== Concurrent 401 queue handling ======
@@ -64,22 +79,24 @@ api.interceptors.response.use(
       _retry?: boolean;
     };
 
-    // Not a 401 error OR request has already been retried → throw
+    // 非 401 或已经重试过 → 直接抛出
     if (error.response?.status !== 401 || originalRequest?._retry) {
       throw error;
     }
 
-    // No refresh token → cannot refresh → clear auth
+    // 没有 refresh token → 无法刷新 → 清理并引导登录
     const refreshToken =
       typeof window !== 'undefined' ? getRefreshToken() : null;
     if (!refreshToken) {
       clearAuth();
+      // 友好提示并引导
+      promptLoginRedirect('登录已过期或未登录，需要先登录。现在去登录？');
       throw error;
     }
 
     originalRequest._retry = true;
 
-    // If refresh is already in progress, queue the request
+    // 如果正在刷新，加入队列
     if (isRefreshing) {
       return new Promise((resolve, reject) => {
         failedQueue.push({
@@ -95,14 +112,13 @@ api.interceptors.response.use(
       });
     }
 
-    // Start refresh process
+    // 开始刷新
     isRefreshing = true;
 
     try {
-      // Use a clean axios instance to avoid triggering interceptors recursively
+      // 用干净实例避免递归触发拦截器
       const raw = axios.create({ baseURL: BASE_URL });
 
-      // NOTE: If BASE_URL already includes `/api`, just use `/auth/refresh` here
       const refreshResp: AxiosResponse<{
         success: boolean;
         message: string;
@@ -116,24 +132,25 @@ api.interceptors.response.use(
       const newAccess = refreshResp.data?.data?.access_token;
       if (!newAccess) throw new Error('No access_token in refresh response');
 
-      // Save new access token locally
+      // 保存新 access token
       if (typeof window !== 'undefined') {
         setAccessToken(newAccess);
       }
-      // Notify listeners (e.g., Redux) of the new token
+      // 通知监听者（如 Redux）
       onAccessTokenRefreshed?.(newAccess);
 
-      // Process queued requests
+      // 处理队列
       processQueue(null, newAccess);
 
-      // Retry original request with the new token
+      // 以新 token 重试发起的请求
       originalRequest.headers = originalRequest.headers ?? {};
       (originalRequest.headers as any).Authorization = `Bearer ${newAccess}`;
       return api(originalRequest);
     } catch (err) {
-      // Refresh failed: clear auth and reject all queued requests
+      // 刷新失败：清理、引导登录，并拒绝队列
       processQueue(err, null);
       clearAuth();
+      promptLoginRedirect('登录已过期，需要重新登录。现在去登录？');
       throw err;
     } finally {
       isRefreshing = false;
@@ -151,28 +168,31 @@ export const apiRequest = async <T>(
   try {
     const config: AxiosRequestConfig = {
       method,
-      url: endpoint, // Since baseURL is already set
+      url: endpoint, // baseURL 已设置
       data,
     };
 
-    // If auth is required but no token is present (browser only)
+    // 需要鉴权但没有 token（仅浏览器环境）
     if (requireAuth && typeof window !== 'undefined') {
       const token = getToken();
-      if (!token) throw new Error('No token found');
+      if (!token) {
+        // 弹提示并引导登录
+        promptLoginRedirect('该操作需要登录。现在前往登录页？');
+        // 抛一个一致的错误给调用方
+        throw { code: 401, message: '未登录或会话已过期' };
+      }
       config.headers = {
         ...(config.headers || {}),
         Authorization: `Bearer ${token}`,
       };
     }
 
-    // Tell axios the expected response shape
     const response: AxiosResponse<ApiResponseProps<T>> =
       await api.request<ApiResponseProps<T>>(config);
 
     const res = response.data;
     if (res == null) throw new Error('Invalid API response: Missing data');
 
-    // Normalize (in case backend omits code/message)
     return {
       success: res.success ?? true,
       code: res.code ?? response.status,
@@ -180,9 +200,10 @@ export const apiRequest = async <T>(
       data: res.data as T,
     };
   } catch (error: any) {
-    const code = error.response?.status || 500;
+    const code = error?.code ?? error?.response?.status ?? 500;
     let message =
-      error.response?.data?.message ||
+      error?.message ??
+      error?.response?.data?.message ??
       `Request failed: ${method} ${BASE_URL}${endpoint}`;
     if (error.code === 'ECONNREFUSED') {
       message = `Cannot connect to ${BASE_URL}${endpoint}. Ensure the backend server is running.`;
