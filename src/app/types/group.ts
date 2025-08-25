@@ -125,3 +125,53 @@ export const mapGroupApiToProps = (g: GroupApi): GroupProps => {
     inviteOnly: g.isPrivate,
   };
 };
+
+
+/** ========== Posts API & UI Types ========== */
+export interface GroupPostApi {
+  id: number;
+  title: string;
+  author: { id: number; firstName: string };
+  created_at: string;
+  summary: string;
+  like_count: number;
+  has_files: boolean;
+  has_videos: boolean;
+}
+
+export interface GroupPostsData {
+  posts: GroupPostApi[];
+  total_pages: number;
+  current_page: number;
+  total_posts: number;
+}
+
+export type GroupPostsResponseApi = ApiResponseProps<GroupPostsData>;
+
+export interface GroupSubscriber {
+  id: number;
+  firstName: string;
+  email: string;
+}
+
+export interface PostListItem {
+  id: number;
+  title: string;
+  authorName: string;
+  createdAt: string;
+  summary: string;
+  likeCount: number;
+  hasFiles: boolean;
+  hasVideos: boolean;
+}
+
+export const mapPostApiToListItem = (p: GroupPostApi): PostListItem => ({
+  id: p.id,
+  title: p.title,
+  authorName: p.author?.firstName ?? '',
+  createdAt: p.created_at,
+  summary: p.summary,
+  likeCount: p.like_count,
+  hasFiles: p.has_files,
+  hasVideos: p.has_videos,
+});

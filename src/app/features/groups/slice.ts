@@ -7,6 +7,7 @@ import type {
   CreateOrUpdateGroupBody,
   GroupsListData,
   GroupListPaginationApi,
+  GroupDetailData
 } from '@/app/types/group';
 import { mapGroupApiToProps } from '@/app/types/group';
 
@@ -21,6 +22,7 @@ const GROUP_ENDPOINTS = {
   SEARCH_GROUPS: '/groups/search',
   JOIN_GROUP: (id: number) => `/groups/${id}/join`,
   LEAVE_GROUP: (id: number) => `/groups/${id}/leave`,
+  GROUP_DETAIL: (id: number) => `/groups/${id}`,
 } as const;
 
 interface GroupsState {
@@ -195,6 +197,21 @@ export const leaveGroup = createAsyncThunk<{ id: number }, number>(
   }
 );
 
+/** 2.4 Get single group detail (must be a member) */
+export const fetchGroupDetail = createAsyncThunk<GroupProps, number>(
+  'groups/fetchGroupDetail',
+  async (groupId, { rejectWithValue }) => {
+    try {
+      const res = await apiRequest<GroupDetailData>('GET', GROUP_ENDPOINTS.GROUP_DETAIL(groupId));
+      if (!res.success || !res.data) throw new Error(res.message || 'Fetch group detail failed');
+
+      return mapGroupApiToProps(res.data);
+    } catch (e: any) {
+      return rejectWithValue(e.message || 'Fetch group detail failed') as any;
+    }
+  }
+);
+
 const setSubOnList = (arr: GroupProps[], id: number, val: boolean) => {
   const i = arr.findIndex(g => g.id === id);
   if (i >= 0) arr[i] = { ...arr[i], subscribed: val };
@@ -329,7 +346,6 @@ const groupsSlice = createSlice({
         const id = a.payload.id;
         if (s.currentGroup?.id === id) s.currentGroup = { ...s.currentGroup, subscribed: false };
         setSubOnList(s.availableGroups, id, false);
-        // 你也可以选择直接从 userGroups 移除（用户页会更直观）
         s.userGroups = s.userGroups.filter(g => g.id !== id);
         if (s.userMembership[id]) {
           const { [id]: _, ...rest } = s.userMembership;
@@ -339,6 +355,21 @@ const groupsSlice = createSlice({
       .addCase(leaveGroup.rejected, (s, a) => {
         setStatus(s, 'leaveGroup', 'failed');
         setError(s, 'leaveGroup', (a.payload as string) || 'Leave group failed');
+      });
+
+    //group detail
+    builder
+      .addCase(fetchGroupDetail.pending, (s) => {
+        setStatus(s, 'fetchGroupDetail', 'loading');
+        setError(s, 'fetchGroupDetail', null);
+      })
+      .addCase(fetchGroupDetail.fulfilled, (s, a) => {
+        setStatus(s, 'fetchGroupDetail', 'succeeded');
+        s.currentGroup = a.payload;
+      })
+      .addCase(fetchGroupDetail.rejected, (s, a) => {
+        setStatus(s, 'fetchGroupDetail', 'failed');
+        setError(s, 'fetchGroupDetail', (a.payload as string) || 'Fetch group detail failed');
       });
   },
 });
