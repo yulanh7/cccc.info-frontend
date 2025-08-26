@@ -21,7 +21,6 @@ export default function CustomHeader({
   item,
   showEdit = false,
   showDelete = true,
-  showAdd = false,
   pageTitle,
   onDelete,
   onEdit,
@@ -81,14 +80,6 @@ export default function CustomHeader({
               className="text-dark-gray cursor-pointer hover:text-dark-green focus:outline-none"
             >
               <PencilIcon className="h-6 w-6" />
-            </button>
-          )}
-          {showAdd && onAdd && (
-            <button
-              onClick={onAdd}
-              className="text-dark-gray hover:text-dark-green focus:outline-none"
-            >
-              <PlusIcon className="h-6 w-6" />
             </button>
           )}
         </div>

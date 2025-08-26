@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import CustomHeader from "@/components/layout/CustomHeader";
 import Post from "@/components/Post";
@@ -62,8 +62,9 @@ function IconBtn({
   );
 }
 
-export default function GroupPage({ params }: { params: { id: string } }) {
-  const groupId = useMemo(() => Number(params.id), [params.id]);
+export default function GroupPage() {
+  const { id } = useParams<{ id: string }>();
+  const groupId = useMemo(() => Number(id), [id]);
   const dispatch = useAppDispatch();
   const router = useRouter();
 
@@ -126,7 +127,6 @@ export default function GroupPage({ params }: { params: { id: string } }) {
       <CustomHeader
         item={headerItem}
         pageTitle={group?.title || "Group"}
-        showAdd={!!group?.editable}
         showEdit={!!group?.editable}
         showDelete={!!group?.editable}
         onEdit={handleEditGroup}
