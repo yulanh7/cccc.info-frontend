@@ -34,7 +34,7 @@ export default function GroupEditModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="relative w-full max-w-lg rounded-md border border-border bg-white dark:bg-[#111] p-5">
+      <div className="relative w-full max-w-lg rounded-md border border-border bg-white p-5">
         <button
           onClick={onClose}
           className="absolute right-3 top-3 text-dark-gray hover:text-foreground"
