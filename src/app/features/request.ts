@@ -43,6 +43,29 @@ const promptLoginRedirect = (msg?: string) => {
   }
 };
 
+function pickServerMessage(payload: any): string | undefined {
+  if (!payload) return;
+  if (typeof payload === "string" && payload.trim()) return payload;
+  if (payload.message && typeof payload.message === "string" && payload.message.trim()) {
+    return payload.message;
+  }
+  if (payload.error && typeof payload.error === "string" && payload.error.trim()) {
+    return payload.error;
+  }
+  // 常见的校验 errors 结构：数组或 { field: [msg] }
+  if (Array.isArray(payload.errors) && payload.errors.length) {
+    return payload.errors.map(String).join(", ");
+  }
+  if (payload.errors && typeof payload.errors === "object") {
+    try {
+      const flat = Object.values(payload.errors).flat();
+      if (Array.isArray(flat) && flat.length) return flat.map(String).join(", ");
+    } catch { }
+  }
+  return;
+}
+
+
 // ====== Concurrent 401 queue handling ======
 let isRefreshing = false;
 let failedQueue: Array<{
@@ -81,6 +104,8 @@ api.interceptors.response.use(
 
     // 非 401 或已经重试过 → 直接抛出
     if (error.response?.status !== 401 || originalRequest?._retry) {
+      const serverMsg = pickServerMessage(error.response?.data);
+      if (serverMsg) (error as any).message = serverMsg; // 覆盖成后端的人话
       throw error;
     }
 
@@ -200,10 +225,13 @@ export const apiRequest = async <T>(
       data: res.data as T,
     };
   } catch (error: any) {
-    const code = error?.code ?? error?.response?.status ?? 500;
+    const status = error?.response?.status ?? 500;
+    const code = typeof status === "number" ? status : 500;
+    const serverMsg = pickServerMessage(error?.response?.data);
     let message =
-      error?.message ??
+      serverMsg ??
       error?.response?.data?.message ??
+      error?.message ??
       `Request failed: ${method} ${BASE_URL}${endpoint}`;
     if (error.code === 'ECONNREFUSED') {
       message = `Cannot connect to ${BASE_URL}${endpoint}. Ensure the backend server is running.`;
