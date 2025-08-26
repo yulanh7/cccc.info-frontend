@@ -30,7 +30,6 @@ import {
   UserPlusIcon,
 } from "@heroicons/react/24/outline";
 
-/** 轻量图标按钮 */
 function IconBtn({
   title,
   children,
@@ -65,7 +64,7 @@ function IconBtn({
   );
 }
 
-/** ===== 小工具：屏幕是否 >= md ===== */
+/** 屏幕是否 >= md */
 function useIsMdUp() {
   const [isMd, setIsMd] = useState(false);
   useEffect(() => {
@@ -78,7 +77,7 @@ function useIsMdUp() {
   return isMd;
 }
 
-/** ===== 骨架 & 空状态组件 ===== */
+/** 轻量骨架 & 空态 */
 function TitleSkeleton() {
   return (
     <div className="mx-auto lg:container px-4 pt-2">
@@ -86,7 +85,6 @@ function TitleSkeleton() {
     </div>
   );
 }
-
 function GroupInfoSkeleton() {
   return (
     <section className="mb-4 md:mb-6 rounded-xl border border-border bg-bg p-4 md:p-6">
@@ -100,7 +98,6 @@ function GroupInfoSkeleton() {
     </section>
   );
 }
-
 function PostCardSkeleton() {
   return (
     <div className="rounded-sm border border-border p-3">
@@ -110,7 +107,6 @@ function PostCardSkeleton() {
     </div>
   );
 }
-
 function EmptyPostsState({
   canCreate,
   onCreate,
@@ -140,29 +136,28 @@ export default function GroupPage() {
   const router = useRouter();
   const isMdUp = useIsMdUp();
 
-  const {
-    group,
-    subscriberCount,
-    subscribers,
-    posts,
-    postsPagination,
-    status,
-  } = useAppSelector((s) => s.groupDetail);
+  const { group, subscriberCount, subscribers, posts, postsPagination, status } =
+    useAppSelector((s) => s.groupDetail);
 
-  // ===== 页面状态 =====
+  // —— 本地 UI 状态
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showSubsModal, setShowSubsModal] = useState(false);
 
-  // 帖子“是否已经完成过一次加载”的开关（用于区分首次加载 vs. 后续刷新）
+  // —— 帖子“首次加载”检测，用于骨架/轻提示策略
   const [postsFetchStarted, setPostsFetchStarted] = useState(false);
   const [postsEverLoaded, setPostsEverLoaded] = useState(false);
+  useEffect(() => {
+    // 切换群时重置帖子加载标记，避免沿用上一个群的状态
+    setPostsFetchStarted(false);
+    setPostsEverLoaded(false);
+  }, [groupId]);
   useEffect(() => {
     if (postsFetchStarted && status.posts !== "loading") setPostsEverLoaded(true);
   }, [postsFetchStarted, status.posts]);
 
-  // 初始化拉取
+  // —— 拉取数据（切换群时会触发）
   useEffect(() => {
     if (!Number.isFinite(groupId)) return;
     dispatch(fetchGroupDetail(groupId));
@@ -170,17 +165,25 @@ export default function GroupPage() {
     setPostsFetchStarted(true);
   }, [dispatch, groupId]);
 
-  // 加载态
-  const pageLoading = status.group === "loading" && !group; // 首次群详情
-  const postsLoading = status.posts === "loading";          // 帖子区加载/刷新
+  // —— 防止“旧群数据闪现”：仅在 id 匹配时才认为 group “生效”
+  const groupMatchesRoute = group?.id === groupId;
+  const safeGroup = groupMatchesRoute ? group : null;
+  const safePosts = groupMatchesRoute ? posts : [];
+  const safePagination = groupMatchesRoute ? postsPagination : null;
 
-  // 事件
+  // —— 加载态：整页 VS 帖子局部
+  const pageLoading = !groupMatchesRoute || status.group === "loading";
+  const postsLoading = status.posts === "loading" && groupMatchesRoute;
+
+  // —— 事件
   const handleEditGroup = () => setShowEditModal(true);
 
   const submitEditGroup = async (body: CreateOrUpdateGroupBody) => {
-    if (!group) return;
+    if (!safeGroup) return;
     try {
-      await dispatch(updateGroup({ groupId: group.id, body })).unwrap();
+      const updated = await dispatch(updateGroup({ groupId: safeGroup.id, body })).unwrap();
+      // 采用方案A：更新成功后强制重拉详情（确保服务端权威数据）
+      await dispatch(fetchGroupDetail(updated.id));
       setShowEditModal(false);
     } catch (e: any) {
       alert(e?.message || "Update group failed");
@@ -188,9 +191,9 @@ export default function GroupPage() {
   };
 
   const handleDeleteGroup = async () => {
-    if (!group) return;
+    if (!safeGroup) return;
     try {
-      await dispatch(deleteGroup(group.id)).unwrap();
+      await dispatch(deleteGroup(safeGroup.id)).unwrap();
       setShowDeleteConfirm(false);
       router.push("/groups");
     } catch (e: any) {
@@ -199,61 +202,58 @@ export default function GroupPage() {
   };
 
   const loadMore = () => {
-    if (!postsPagination) return;
-    const next = postsPagination.current_page + 1;
-    if (next <= postsPagination.total_pages) {
-      dispatch(
-        fetchGroupPosts({ groupId, page: next, per_page: 20, append: true })
-      );
+    if (!safePagination) return;
+    const next = safePagination.current_page + 1;
+    if (next <= safePagination.total_pages) {
+      dispatch(fetchGroupPosts({ groupId, page: next, per_page: 20, append: true }));
     }
   };
 
   const handleSavePost = (item: PostProps) => {
-    console.log("Saved post:", { ...item, group: String(groupId) });
+    if (!Number.isFinite(groupId)) return;
     setIsPostModalOpen(false);
     // 仅刷新帖子，不动整页
     dispatch(fetchGroupPosts({ groupId, page: 1, per_page: 20, append: false }));
   };
 
-  const headerItem = group
-    ? { id: group.id, author: group.creator?.firstName }
+  const headerItem = safeGroup
+    ? { id: safeGroup.id, author: safeGroup.creator?.firstName }
     : undefined;
 
   return (
     <>
-      {/* ===== 顶部标题：骨架 或 实际 ===== */}
+      {/* 标题：整页 loading 时用 skeleton（也会被 Overlay 遮住） */}
       {pageLoading ? (
         <TitleSkeleton />
       ) : (
-        <PageTitle title={group?.title} showPageTitle={true} />
+        <PageTitle title={safeGroup?.title} showPageTitle={true} />
       )}
 
-      {/* 顶部操作条（你已去掉 Add） */}
       <CustomHeader
         item={headerItem}
-        pageTitle={group?.title || "Group"}
+        pageTitle={safeGroup?.title || "Group"}
         showAdd={false}
-        showEdit={!!group?.editable}
-        showDelete={!!group?.editable}
+        showEdit={!!safeGroup?.editable}
+        showDelete={!!safeGroup?.editable}
         onEdit={handleEditGroup}
         onDelete={() => setShowDeleteConfirm(true)}
       />
 
       <div className="container mx-auto md:p-6 p-4 mt-14">
-        {/* ===== 群信息卡片：骨架 或 实际 ===== */}
+        {/* 群信息卡片 */}
         {pageLoading ? (
           <GroupInfoSkeleton />
         ) : (
           <section className="mb-4 md:mb-6 rounded-xl border border-border bg-bg p-4 md:p-6">
             <div className="flex items-start justify-between gap-3">
               <div>
-                {group?.description && (
-                  <p className="mt-1 text-sm text-dark-gray">{group.description}</p>
+                {safeGroup?.description && (
+                  <p className="mt-1 text-sm text-dark-gray">{safeGroup.description}</p>
                 )}
               </div>
 
               <div className="hidden md:flex items-center gap-2">
-                {group?.editable && (
+                {safeGroup?.editable && (
                   <>
                     <IconBtn title="New post" onClick={() => setIsPostModalOpen(true)}>
                       <PlusIcon className="h-5 w-5" />
@@ -273,16 +273,13 @@ export default function GroupPage() {
               </div>
             </div>
 
-            {/* 元信息：作者/时间/成员（放描述下，左对齐） */}
+            {/* 元信息 */}
             <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-dark-gray">
-              {/* Creator：首字母头像 + 标签 */}
               <span className="inline-flex items-center gap-2">
                 <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-dark-green/10 text-dark-green text-xs font-semibold">
-                  {(group?.creator?.firstName?.[0] || "?").toUpperCase()}
+                  {(safeGroup?.creator?.firstName?.[0] || "?").toUpperCase()}
                 </span>
-                <span className="font-medium">
-                  {group?.creator?.firstName || "—"}
-                </span>
+                <span className="font-medium">{safeGroup?.creator?.firstName || "—"}</span>
                 <span className="px-1.5 py-0.5 text-[10px] uppercase tracking-wide rounded border border-border text-dark-gray/70">
                   Creator
                 </span>
@@ -290,17 +287,15 @@ export default function GroupPage() {
 
               <span className="text-border">•</span>
 
-              {/* Created time */}
               <span className="inline-flex items-center gap-1.5">
                 <CalendarIcon className="h-5 w-5" />
-                <time dateTime={group?.createdDate || ""} className="font-medium">
-                  {group?.createdDate ? formatDate(group.createdDate) : "—"}
+                <time dateTime={safeGroup?.createdDate || ""} className="font-medium">
+                  {safeGroup?.createdDate ? formatDate(safeGroup.createdDate) : "—"}
                 </time>
               </span>
 
               <span className="text-border">•</span>
 
-              {/* Members */}
               <button
                 onClick={() => setShowSubsModal(true)}
                 className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border hover:bg-white/5"
@@ -308,23 +303,20 @@ export default function GroupPage() {
                 title="View members"
               >
                 <UserPlusIcon className="h-4 w-4" />
-                <span className="text-[11px] uppercase tracking-wide text-dark-gray/70">
-                  Members
-                </span>
+                <span className="text-[11px] uppercase tracking-wide text-dark-gray/70">Members</span>
                 <span className="font-semibold">{subscriberCount ?? 0}</span>
               </button>
             </div>
           </section>
         )}
 
-        {/* ===== 帖子列表（智能加载） ===== */}
+        {/* 帖子列表（智能加载，且仅局部） */}
         <section className="relative">
           {(() => {
             const isInitialPostsLoading =
               postsLoading && !postsEverLoaded && postsFetchStarted;
 
             if (isInitialPostsLoading) {
-              // 首次加载：按屏幕大小渲染 1～2 张骨架
               const skeletonCount = isMdUp ? 2 : 1;
               return (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-8">
@@ -335,20 +327,17 @@ export default function GroupPage() {
               );
             }
 
-            if (!isInitialPostsLoading && posts.length === 0) {
-              // 已完成首次加载且为空：空状态卡
+            if (!isInitialPostsLoading && safePosts.length === 0) {
               return (
                 <EmptyPostsState
-                  canCreate={Boolean(group?.editable)}
+                  canCreate={Boolean(safeGroup?.editable)}
                   onCreate={() => setIsPostModalOpen(true)}
                 />
               );
             }
 
-            // 正常列表
             return (
               <>
-                {/* 顶部轻量刷新提示：仅在列表已有内容时显示 */}
                 {postsLoading && postsEverLoaded && (
                   <div className="sticky top-[72px] z-10 mb-2 flex items-center gap-2 text-xs text-dark-gray">
                     <span className="inline-block h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
@@ -357,16 +346,15 @@ export default function GroupPage() {
                 )}
 
                 <div className="columns-2 gap-1 md:columns-2 lg:columns-3 md:gap-8">
-                  {posts.map((post) => (
+                  {safePosts.map((post) => (
                     <div className="break-inside-avoid mb-2 md:mb-8" key={post.id}>
                       <Post post={post} />
                     </div>
                   ))}
                 </div>
 
-                {/* Load more */}
-                {postsPagination &&
-                  postsPagination.current_page < postsPagination.total_pages && (
+                {safePagination &&
+                  safePagination.current_page < safePagination.total_pages && (
                     <div className="mt-4 flex justify-center">
                       <button
                         onClick={loadMore}
@@ -383,10 +371,10 @@ export default function GroupPage() {
         </section>
       </div>
 
-      {/* ===== 整页 Overlay：仅用于群详情首次加载 ===== */}
+      {/* —— 整页 Overlay（群详情 loading 或 id 未匹配时） */}
       <LoadingOverlay show={pageLoading} text="Loading group…" />
 
-      {/* ===== 订阅者、编辑、删除、发帖 ===== */}
+      {/* —— 弹窗们 */}
       <SubscribersModal
         open={showSubsModal}
         onClose={() => setShowSubsModal(false)}
@@ -397,7 +385,7 @@ export default function GroupPage() {
       <GroupEditModal
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
-        group={group ?? undefined}
+        group={safeGroup ?? undefined}
         onSubmit={submitEditGroup}
       />
 

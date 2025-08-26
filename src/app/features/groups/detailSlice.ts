@@ -1,7 +1,7 @@
 // app/features/groupDetail/slice.ts
-import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { apiRequest } from '../request';
-import type { GroupProps, GroupDetailData, GroupListPaginationApi } from '@/app/types/group';
+import type { GroupProps, GroupDetailData } from '@/app/types/group';
 import { mapGroupApiToProps } from '@/app/types/group';
 import type { PostProps } from '@/app/types';
 
@@ -30,6 +30,9 @@ const mapPostApiToProps = (p: GroupPostApi, groupId: number): PostProps => ({
 });
 
 interface GroupDetailState {
+  /** 当前正在查看/加载的 groupId，用于防止竞态和旧数据闪现 */
+  currentGroupId: number | null;
+
   group: GroupProps | null;
   subscriberCount: number | null;
   subscribers: Array<{ id: number; firstName: string; email: string }>;
@@ -50,6 +53,8 @@ interface GroupDetailState {
 }
 
 const initialState: GroupDetailState = {
+  currentGroupId: null,
+
   group: null,
   subscriberCount: null,
   subscribers: [],
@@ -58,7 +63,6 @@ const initialState: GroupDetailState = {
   status: { group: 'idle', posts: 'idle' },
   error: { group: null, posts: null },
 };
-
 
 // 获取单个群详情：/groups/:id
 export const fetchGroupDetail = createAsyncThunk<
@@ -126,29 +130,62 @@ const groupDetailSlice = createSlice({
     clearGroupDetail: () => initialState,
   },
   extraReducers: (builder) => {
+    // ===== group detail =====
     builder
-      .addCase(fetchGroupDetail.pending, (s) => { s.status.group = 'loading'; s.error.group = null; })
+      .addCase(fetchGroupDetail.pending, (s, a) => {
+        const id = a.meta.arg as number;
+        s.currentGroupId = id;
+        s.status.group = 'loading';
+        s.error.group = null;
+
+        // 切换群时：立即清空旧数据，避免旧数据闪现
+        s.group = null;
+        s.subscriberCount = null;
+        s.subscribers = [];
+
+        // 也清空 posts（你会在页面里只做 posts 局部加载提示）
+        s.posts = [];
+        s.postsPagination = null;
+        s.status.posts = 'idle';
+        s.error.posts = null;
+      })
       .addCase(fetchGroupDetail.fulfilled, (s, a) => {
+        const id = a.meta.arg as number;
+        // 竞态防护：只接收与 currentGroupId 一致的响应
+        if (s.currentGroupId !== id) return;
+
         s.status.group = 'succeeded';
         s.group = a.payload.group;
         s.subscriberCount = a.payload.subscriberCount;
         s.subscribers = a.payload.subscribers;
       })
       .addCase(fetchGroupDetail.rejected, (s, a) => {
+        const id = a.meta.arg as number;
+        if (s.currentGroupId !== id) return; // 竞态防护
         s.status.group = 'failed';
         s.error.group = (a.payload as string) || 'Fetch group detail failed';
       });
 
-    // posts
+    // ===== posts =====
     builder
-      .addCase(fetchGroupPosts.pending, (s) => { s.status.posts = 'loading'; s.error.posts = null; })
+      .addCase(fetchGroupPosts.pending, (s, a) => {
+        const { groupId } = a.meta.arg as { groupId: number };
+        if (s.currentGroupId !== groupId) return; // 竞态防护
+        s.status.posts = 'loading';
+        s.error.posts = null;
+        // 注意：不清空 s.posts，保持 UI 只出现局部轻提示
+      })
       .addCase(fetchGroupPosts.fulfilled, (s, a) => {
+        const { groupId, append } = a.meta.arg as { groupId: number; append?: boolean };
+        if (s.currentGroupId !== groupId) return; // 竞态防护
         s.status.posts = 'succeeded';
-        const { posts, current_page, total_pages, total_posts, append } = a.payload;
+        const { posts, current_page, total_pages, total_posts } = a.payload;
         s.posts = append ? [...s.posts, ...posts] : posts;
         s.postsPagination = { current_page, total_pages, total_posts };
       })
       .addCase(fetchGroupPosts.rejected, (s, a) => {
+        const { groupId } = a.meta.arg as { groupId: number };
+        if (s.currentGroupId !== groupId) return; // 竞态防护
         s.status.posts = 'failed';
         s.error.posts = (a.payload as string) || 'Fetch posts failed';
       });
