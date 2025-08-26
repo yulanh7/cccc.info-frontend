@@ -8,7 +8,8 @@ import {
   UserPlusIcon,
   CheckCircleIcon,
 } from "@heroicons/react/24/outline";
-import IconBtn from "@/components/ui/IconBtn";
+import Button from "@/components/ui/Button";
+import IconButton from "@/components/ui/IconButton";
 import type { GroupProps } from "@/app/types/group";
 
 type Props = {
@@ -20,7 +21,6 @@ type Props = {
   onDeleteGroup: () => void;
   formatDate: (timestamp: string, showTime?: boolean) => string;
 
-  /** 选择模式控制（外部受控） */
   selectMode: boolean;
   selectedCount: number;
   onToggleSelectMode: () => void;
@@ -53,12 +53,25 @@ export default function GroupInfoBar({
           <div className="hidden md:flex items-center gap-2">
             {group.editable && (
               <>
-                <IconBtn title="Edit group" onClick={onEditGroup}>
+
+
+                <IconButton
+                  title="Edit group"
+                  onClick={onEditGroup}
+                  variant="outline"
+                  size="md"
+                >
                   <PencilIcon className="h-5 w-5" />
-                </IconBtn>
-                <IconBtn title="Delete group" intent="danger" onClick={onDeleteGroup}>
+                </IconButton>
+
+                <IconButton
+                  title="Delete group"
+                  onClick={onDeleteGroup}
+                  variant="danger"
+                  size="md"
+                >
                   <TrashIcon className="h-5 w-5" />
-                </IconBtn>
+                </IconButton>
               </>
             )}
           </div>
@@ -78,59 +91,57 @@ export default function GroupInfoBar({
             </time>
           </span>
 
-          <button
+          <Button
             onClick={onShowMembers}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-border hover:bg-white/5"
-            aria-label="View members"
+            variant="outline"
+            size="sm"
+            leftIcon={<UserPlusIcon className="h-4 w-4" />}
             title="View members"
           >
-            <UserPlusIcon className="h-4 w-4" />
             <span className="text-[11px] uppercase tracking-wide text-dark-gray/70">
               Members
             </span>
-            <span className="font-semibold">{subscriberCount}</span>
-          </button>
+            <span className="ml-1 font-semibold">{subscriberCount}</span>
+          </Button>
         </div>
       </section>
-      <section className="flex justify-end gap-3">
-        <div>
-          <button
-            onClick={onToggleSelectMode}
-            className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-2 transition-colors ${selectMode
-              ? "border-yellow-500/60 text-yellow-600 hover:bg-yellow-50"
-              : "bg-green hover:bg-dark-green text-white"
-              }`}
-            title={selectMode ? "Cancel select" : "Select posts"}
-          >
-            <CheckCircleIcon className="h-5 w-5" />
-            <span className="text-sm">{selectMode ? "Cancel Select" : "Select Posts"}</span>
-          </button>
-          {selectMode && (
-            <button
-              onClick={onBulkDeleteSelected}
-              disabled={selectedCount === 0}
-              className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-2 ml-2 border-red/50 text-red hover:bg-red/10 disabled:opacity-50"
-              title="Delete selected"
+
+      {/* 移动端：动作分布（可根据你现有布局保留） */}
+      <section className="flex justify-end gap-2 px-4">
+        {group.editable && (
+          <>
+            <Button
+              onClick={onToggleSelectMode}
+              variant={selectMode ? "warning" : "outline"}
+              size="sm"
+              leftIcon={<CheckCircleIcon className="h-5 w-5" />}
+              active={selectMode}
             >
-              <TrashIcon className="h-5 w-5" />
-              <span className="text-sm">
+              {selectMode ? "Cancel" : "Select"}
+            </Button>
+
+            {selectMode && (
+              <Button
+                onClick={onBulkDeleteSelected}
+                variant="danger"
+                size="sm"
+                leftIcon={<TrashIcon className="h-5 w-5" />}
+                disabled={selectedCount === 0}
+              >
                 Delete{selectedCount > 0 ? ` (${selectedCount})` : ""}
-              </span>
-            </button>
-          )}
-        </div>
+              </Button>
+            )}
 
-
-
-        <button
-          onClick={onNewPost}
-          className={`inline-flex items-center gap-1.5 rounded-md text-white px-2.5 py-2  bg-green hover:bg-dark-green
-            `}
-          title={selectMode ? "Cancel select" : "Select posts"}
-        >
-          <PlusIcon className="h-5 w-5" />
-          <span className="text-sm">New Post</span>
-        </button>
+            <Button
+              onClick={onNewPost}
+              variant="primary"
+              size="sm"
+              leftIcon={<PlusIcon className="h-5 w-5" />}
+            >
+              New
+            </Button>
+          </>
+        )}
       </section>
     </>
   );

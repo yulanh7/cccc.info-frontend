@@ -70,7 +70,7 @@ export default function GroupsDesktopTable({
                     <button
                       className={`w-28 py-1 rounded-md text-white ${subbed ? 'bg-yellow hover:bg-dark-yellow' : 'bg-green hover:bg-dark-green'}`}
                       disabled={saving || deleting || toggling}
-                      onClick={() => onToggleSubscription(group)}               // ← 新增
+                      onClick={() => onToggleSubscription(group)}
                     >
                       {subbed ? 'Unsubscribe' : 'Subscribe'}
                     </button>
