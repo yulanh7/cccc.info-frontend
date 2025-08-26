@@ -82,6 +82,9 @@ export default function GroupInfoBar({
             <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-dark-green/10 text-dark-green text-xs font-semibold">
               {(group.creator?.firstName?.[0] || "?").toUpperCase()}
             </span>
+            <span>
+              {(group.creator?.firstName)}
+            </span>
           </span>
 
           <span className="inline-flex items-center gap-1.5">
@@ -117,7 +120,7 @@ export default function GroupInfoBar({
               leftIcon={<CheckCircleIcon className="h-5 w-5" />}
               active={selectMode}
             >
-              {selectMode ? "Cancel" : "Select"}
+              {selectMode ? "Cancel" : "Select Posts"}
             </Button>
 
             {selectMode && (
@@ -138,7 +141,7 @@ export default function GroupInfoBar({
               size="sm"
               leftIcon={<PlusIcon className="h-5 w-5" />}
             >
-              New
+              New Post
             </Button>
           </>
         )}

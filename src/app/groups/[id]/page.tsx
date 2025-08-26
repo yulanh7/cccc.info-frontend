@@ -31,6 +31,7 @@ import type { CreateOrUpdateGroupBody } from "@/app/types/group";
 import type { PostProps } from "@/app/types";
 
 import { PlusIcon } from "@heroicons/react/24/outline";
+import { useConfirm } from "@/hooks/useConfirm";
 
 /** 轻量骨架 */
 function TitleSkeleton() {
@@ -53,13 +54,16 @@ export default function GroupPage() {
   // —— 本地 UI 状态
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showSubsModal, setShowSubsModal] = useState(false);
 
   // 选择模式 & 批量删除
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+
+  // —— 通用确认器（删群 / 批量删帖 / 单个删帖）
+  const confirmGroupDelete = useConfirm("Are you sure you want to delete this group?");
+  const confirmBulkDelete = useConfirm<number[]>("Delete selected posts?");
+  const confirmSingleDelete = useConfirm<number>("Delete this post?");
 
   // —— 帖子“首次加载”检测（决定是否显示初次骨架 vs 空态）
   const [postsFetchStarted, setPostsFetchStarted] = useState(false);
@@ -140,25 +144,16 @@ export default function GroupPage() {
     }
   };
 
-  const onBulkDelete = async () => {
-    if (!safeGroup || selectedIds.size === 0) {
-      setShowBulkDeleteConfirm(false);
-      return;
-    }
-    const ids = Array.from(selectedIds);
-    try {
-      await Promise.allSettled(ids.map((id) => dispatch(deletePostThunk(id)).unwrap()));
-      setSelectMode(false);
-      setSelectedIds(new Set());
-      dispatch(fetchGroupPosts({ groupId: safeGroup.id, page: 1, per_page: 20, append: false }));
-    } finally {
-      setShowBulkDeleteConfirm(false);
-    }
+  const onBulkDelete = async (ids: number[]) => {
+    if (!safeGroup || ids.length === 0) return;
+    await Promise.allSettled(ids.map((id) => dispatch(deletePostThunk(id)).unwrap()));
+    setSelectMode(false);
+    setSelectedIds(new Set());
+    dispatch(fetchGroupPosts({ groupId: safeGroup.id, page: 1, per_page: 20, append: false }));
   };
 
   const handleSavePost = (item: PostProps) => {
     setIsPostModalOpen(false);
-    // 需要编辑时，在打开 PostModal 时把要编辑的 item 传进去并在这里分支
     onCreatePost(item);
   };
 
@@ -179,7 +174,6 @@ export default function GroupPage() {
     if (!safeGroup) return;
     try {
       await dispatch(deleteGroup(safeGroup.id)).unwrap();
-      setShowDeleteConfirm(false);
       router.push("/groups");
     } catch (e: any) {
       alert(e?.message || "Delete group failed");
@@ -230,7 +224,7 @@ export default function GroupPage() {
         showEdit={!!safeGroup?.editable}
         showDelete={!!safeGroup?.editable}
         onEdit={handleEditGroup}
-        onDelete={() => setShowDeleteConfirm(true)}
+        onDelete={() => confirmGroupDelete.ask()}
       />
 
       <div className="container mx-auto md:p-6 p-4 mt-14">
@@ -242,12 +236,18 @@ export default function GroupPage() {
             onShowMembers={() => setShowSubsModal(true)}
             onNewPost={() => setIsPostModalOpen(true)}
             onEditGroup={handleEditGroup}
-            onDeleteGroup={() => setShowDeleteConfirm(true)}
-            // 选择模式控制放到这里
+            onDeleteGroup={() => confirmGroupDelete.ask()}
             selectMode={selectMode}
             selectedCount={selectedIds.size}
             onToggleSelectMode={toggleSelectMode}
-            onBulkDeleteSelected={() => setShowBulkDeleteConfirm(true)}
+            onBulkDeleteSelected={() => {
+              const ids = Array.from(selectedIds);
+              if (ids.length === 0) return;
+              confirmBulkDelete.ask(
+                ids,
+                `Delete ${ids.length} selected post${ids.length > 1 ? "s" : ""}?`
+              );
+            }}
             formatDate={formatDate}
           />
         ) : null}
@@ -286,9 +286,9 @@ export default function GroupPage() {
                 selectMode={selectMode}
                 selectedIds={selectedIds}
                 onToggleSelect={toggleSelect}
-                // 单删（选择模式关闭时才出现）
+                // 单删（选择模式关闭时才出现）—— 这里只负责“询问”，真正删除放到确认回调里
                 canEdit={() => Boolean(safeGroup?.editable)}
-                onDeleteSingle={onDeleteSingle}
+                onDeleteSingle={(postId) => confirmSingleDelete.ask(postId)}
                 deleting={status.posts === "loading" && safePosts.length > 0}
                 // 分页（可选）
                 hasMore={Boolean(
@@ -322,19 +322,36 @@ export default function GroupPage() {
         onSubmit={submitEditGroup}
       />
 
+      {/* 删群确认 */}
       <DeleteConfirmModal
-        isOpen={showDeleteConfirm}
-        onConfirm={handleDeleteGroup}
-        onCancel={() => setShowDeleteConfirm(false)}
-        message="Are you sure you want to delete this group?"
+        isOpen={confirmGroupDelete.open}
+        message={confirmGroupDelete.message}
+        onCancel={confirmGroupDelete.cancel}
+        onConfirm={confirmGroupDelete.confirm(async () => {
+          await handleDeleteGroup();
+        })}
       />
 
-      {/* 批量删除确认 */}
+      {/* 批量删帖确认 */}
       <DeleteConfirmModal
-        isOpen={showBulkDeleteConfirm}
-        onConfirm={onBulkDelete}
-        onCancel={() => setShowBulkDeleteConfirm(false)}
-        message={`Delete ${selectedIds.size} selected post(s)?`}
+        isOpen={confirmBulkDelete.open}
+        message={confirmBulkDelete.message}
+        onCancel={confirmBulkDelete.cancel}
+        onConfirm={confirmBulkDelete.confirm(async (ids) => {
+          if (!ids || ids.length === 0) return;
+          await onBulkDelete(ids);
+        })}
+      />
+
+      {/* 单个删帖确认 */}
+      <DeleteConfirmModal
+        isOpen={confirmSingleDelete.open}
+        message={confirmSingleDelete.message}
+        onCancel={confirmSingleDelete.cancel}
+        onConfirm={confirmSingleDelete.confirm(async (postId) => {
+          if (!postId) return;
+          await onDeleteSingle(postId);
+        })}
       />
 
       {isPostModalOpen && (

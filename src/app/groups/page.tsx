@@ -18,6 +18,7 @@ import MobileSearchHeader from "@/components/layout/MobileSearchHeader";
 import SearchBar from "@/components/SearchBar";
 import GroupsDesktopTable from "@/components/groups/GroupsDesktopTable";
 import GroupsMobileList from "@/components/groups/GroupsMobileList";
+import { useConfirm } from "@/hooks/useConfirm";
 
 const PER_PAGE = 10;
 const STICKY_OFFSET = 80;
@@ -51,6 +52,7 @@ export default function GroupsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isMobile = useIsMobile();
+  const confirmGroupDelete = useConfirm<number>("Are you sure you want to delete this group?");
 
   // Redux data
   const availableGroups = useAppSelector((s) => s.groups.availableGroups);
@@ -65,8 +67,6 @@ export default function GroupsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isNew, setIsNew] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<GroupProps | undefined>(undefined);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [groupToDelete, setGroupToDelete] = useState<number | null>(null);
   const [qInput, setQInput] = useState('');
 
 
@@ -340,76 +340,7 @@ export default function GroupsPage() {
   };
 
   const handleDeleteClick = (id: number) => {
-    setGroupToDelete(id);
-    setIsDeleteConfirmOpen(true);
-  };
-
-  const confirmDelete = async () => {
-    if (groupToDelete === null) return;
-
-    if (isMobile) {
-      // 找相邻项作为锚点（优先），并准备滚动补偿
-      const rows = mobileItems;
-      const idx = rows.findIndex((g) => g.id === groupToDelete);
-      const neighborId = rows[idx + 1]?.id ?? rows[idx - 1]?.id ?? null;
-      const toDeleteEl = itemRefs.current[groupToDelete];
-      const delHeight = toDeleteEl?.getBoundingClientRect().height ?? 0;
-
-      setAnchorBeforeAction(neighborId); // 同时记录相对偏移，Overlay 打开
-      // 乐观本地移除并做滚动补偿（避免视图上跳）
-      setMobileItems((prev) => prev.filter((g) => g.id !== groupToDelete));
-      if (delHeight > 0) {
-        // 直接补偿位移，让视口看起来完全不动
-        window.scrollBy({ top: -delHeight, behavior: 'auto' });
-      }
-
-      setDeleting(true);
-      const action = await dispatch(deleteGroup(groupToDelete));
-      setDeleting(false);
-
-      if (deleteGroup.fulfilled.match(action)) {
-        // 后台静默校准（不置 listLoading）
-        void refreshPage(currentPage, false);
-        // 轻触恢复（基本不会有位移，因为我们已做高度补偿）
-        const r = requestAnimationFrame(() => {
-          restoreToAnchor();
-          cancelAnimationFrame(r);
-          setRestoring(false);
-        });
-        setIsDeleteConfirmOpen(false);
-        setGroupToDelete(null);
-      } else {
-        // 回滚：把项加回列表并撤销位移
-        setMobileItems((prev) => {
-          const original = rows; // 旧的 rows 就是未删前的顺序
-          return original;
-        });
-        if (delHeight > 0) {
-          window.scrollBy({ top: delHeight, behavior: 'auto' });
-        }
-        setRestoring(false);
-        alert((action.payload as string) || 'Delete group failed');
-      }
-    } else {
-      // 桌面：保持原逻辑
-      const prevTotal = Number(pagination?.total ?? 0);
-      const newTotal = Math.max(0, prevTotal - 1);
-      const newLastPage = Math.max(1, Math.ceil(newTotal / PER_PAGE));
-      const targetPage = Math.min(currentPage, newLastPage);
-
-      setDeleting(true);
-      const action = await dispatch(deleteGroup(groupToDelete));
-      setDeleting(false);
-
-      if (deleteGroup.fulfilled.match(action)) {
-        await refreshPage(targetPage, true);
-        setIsDeleteConfirmOpen(false);
-        setGroupToDelete(null);
-        if (targetPage !== currentPage) router.push(buildHref(targetPage));
-      } else {
-        alert((action.payload as string) || 'Delete group failed');
-      }
-    }
+    confirmGroupDelete.ask(id); // 只需这行
   };
 
   const canEdit = (g: GroupProps) => !!user && (user.admin || g.editable === true);
@@ -548,11 +479,64 @@ export default function GroupsPage() {
       )}
 
       <DeleteConfirmModal
-        isOpen={isDeleteConfirmOpen}
-        onConfirm={confirmDelete}
-        onCancel={() => { setIsDeleteConfirmOpen(false); setGroupToDelete(null); }}
-        message="Are you sure you want to delete this group?"
+        isOpen={confirmGroupDelete.open}
+        message={confirmGroupDelete.message}
+        onCancel={confirmGroupDelete.cancel}
+        onConfirm={confirmGroupDelete.confirm(async (id) => {
+          if (id == null) return;
+
+          if (isMobile) {
+            const rows = mobileItems;
+            const idx = rows.findIndex((g) => g.id === id);
+            const neighborId = rows[idx + 1]?.id ?? rows[idx - 1]?.id ?? null;
+            const toDeleteEl = itemRefs.current[id];
+            const delHeight = toDeleteEl?.getBoundingClientRect().height ?? 0;
+
+            setAnchorBeforeAction(neighborId);
+            setMobileItems((prev) => prev.filter((g) => g.id !== id));
+            if (delHeight > 0) {
+              window.scrollBy({ top: -delHeight, behavior: "auto" });
+            }
+
+            setDeleting(true);
+            const action = await dispatch(deleteGroup(id));
+            setDeleting(false);
+
+            if (deleteGroup.fulfilled.match(action)) {
+              void refreshPage(currentPage, false);
+              const r = requestAnimationFrame(() => {
+                restoreToAnchor();
+                cancelAnimationFrame(r);
+                setRestoring(false);
+              });
+            } else {
+              setMobileItems(rows);
+              if (delHeight > 0) {
+                window.scrollBy({ top: delHeight, behavior: "auto" });
+              }
+              setRestoring(false);
+              alert((action.payload as string) || "Delete group failed");
+            }
+          } else {
+            const prevTotal = Number(pagination?.total ?? 0);
+            const newTotal = Math.max(0, prevTotal - 1);
+            const newLastPage = Math.max(1, Math.ceil(newTotal / PER_PAGE));
+            const targetPage = Math.min(currentPage, newLastPage);
+
+            setDeleting(true);
+            const action = await dispatch(deleteGroup(id));
+            setDeleting(false);
+
+            if (deleteGroup.fulfilled.match(action)) {
+              await refreshPage(targetPage, true);
+              if (targetPage !== currentPage) router.push(buildHref(targetPage));
+            } else {
+              alert((action.payload as string) || "Delete group failed");
+            }
+          }
+        })}
       />
+
     </>
   );
 }
