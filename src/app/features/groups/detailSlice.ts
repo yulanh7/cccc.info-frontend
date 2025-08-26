@@ -26,6 +26,7 @@ const mapPostApiToProps = (p: GroupPostApi, groupId: number): PostProps => ({
   group: String(groupId),
   description: p.summary,
   videoUrl: '',
+  hasVideo: p.has_videos,
   files: p.has_files ? [] : undefined,
 });
 

@@ -9,6 +9,7 @@ export interface PostProps {
   description: string;
   videoUrl: string;
   files?: { url: string; name: string }[];
+  hasVideo?: boolean;
 }
 
 export interface CreatePostCredentials {
@@ -20,6 +21,7 @@ export interface EditPostCredentials {
   title: string;
   content: string;
 }
+
 
 export type CreatePostResponse = ApiResponseProps<PostProps>;
 export type FetchPostsResponse = ApiResponseProps<PostProps[]>;
