@@ -61,25 +61,27 @@ export default function PostCardSimple({
           </div>
         )}
       </div>
-      <div className='p-2'>
-        {/* <h2 className="font-semibold text-dark-gray">{title}</h2> */}
+      <div className='px-2 pb-2'>
+        <h2 className="font-semibold text-dark-gray leading-[1.3] md:leading-[1.3] mb-2">
+          {title}
+        </h2>
         {/* <div className="flex items-center">
           <UserGroupIcon className="h-4 w-4 mr-1 text-dark-gray" />
           <span className="truncate">{group}</span>
         </div> */}
         {description && (
-          <p className="text-gray text-sm line-clamp-3">
+          <p className="text-gray text-sm line-clamp-3 leading-[1.1] md:leading-[1.2]">
             {ellipsize(description, 160, { byWords: true })}
           </p>
         )}
         <div className="mt-2 space-y-1 text-xs text-gray">
-
-
           <span className="inline-flex items-center gap-1 text-xs">
             <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-dark-green/10 text-dark-green  font-semibold">
               {(author.firstName?.[0] || "?").toUpperCase()}
             </span>
-            <span className="text-[9px]">{author?.firstName}</span>
+            <span className="text-[9px]">
+              {ellipsize(author.firstName, 10, { byWords: true })}
+            </span>
           </span>
         </div>
       </div>
