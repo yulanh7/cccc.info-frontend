@@ -59,7 +59,7 @@ export default function PostsListWithSelect({
       ) : rows.length === 0 ? (
         <p className="text-sm text-dark-gray">No posts yet.</p>
       ) : (
-        <div className="columns-2 md:columns-3 lg:columns-4 gap-2">
+        <div className="columns-2 md:columns-3 lg:columns-4 gap-2 md:gap-4">
           {rows.map((post) => {
             const canManage = !!canEdit?.(post);
             const isSelected = selectedIds.has(post.id);
@@ -70,9 +70,9 @@ export default function PostsListWithSelect({
               <div key={post.id} className="relative rounded-sm overflow-hidden mb-2">
                 {/* 顶部工具栏（覆盖在图片上方） */}
                 {canManage && (selectMode || showDelete) && (
-                  <div className="absolute right-0 top-[0px] z-10 pointer-events-none">
+                  <div className="absolute left-0 top-[20px] z-10 pointer-events-none">
                     <div
-                      className="flex items-center gap-1 bg-white border-t border-border rounded-xs shadow-sm  pointer-events-auto"
+                      className="flex items-center gap-1 bg-yellow border-t border-border rounded-xs shadow-sm  pointer-events-auto"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {selectMode && (
@@ -89,7 +89,7 @@ export default function PostsListWithSelect({
                       )}
 
                       {!selectMode && showDelete && (
-                        <div className="flex items-center gap-1">
+                        <div className="flex flex-col items-center gap-2">
                           <IconButton
                             title="Edit group"
                             aria-label="Edit group"
@@ -97,7 +97,7 @@ export default function PostsListWithSelect({
                             variant="ghost"
                             size="sm"
                             onClick={() => onEditSingle(post)}
-                            tone="brand"
+                          // tone="brand"
                           >
                             <PencilSquareIcon className="h-5 w-5" />
                           </IconButton>
@@ -109,7 +109,7 @@ export default function PostsListWithSelect({
                             variant="ghost"
                             size="sm"
                             onClick={() => onDeleteSingle(post.id)}
-                            tone="brand"
+                          // tone="brand"
                           >
                             <TrashIcon className="h-5 w-5" />
                           </IconButton>
@@ -118,8 +118,6 @@ export default function PostsListWithSelect({
                     </div>
                   </div>
                 )}
-
-
                 {/* 内容：给出与工具栏同等的顶部内边距，避免被遮挡。大约 40px，可按实际按钮高度微调 */}
                 <Link href={`/posts/${post.id}`} className="block">
                   <PostCardSimple post={post} formatDate={formatDate} />

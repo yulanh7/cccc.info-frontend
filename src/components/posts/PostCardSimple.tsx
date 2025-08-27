@@ -30,15 +30,15 @@ export default function PostCardSimple({
 
   return (
     <div className="card relative cursor-pointer border border-border">
-      <div
-        className="absolute left-2 top-[100px] md:top-1/2 -rotate-90 origin-left
+      {/* <div
+        className="absolute left-2 top-[100px]  -rotate-90 origin-left
              z-10 bg-yellow text-xs text-dark-gray px-2 py-0.5 rounded"
       >
         <div className="flex items-center">
           <CalendarIcon className="h-4 w-4 mr-1" />
           <time>{formatDate(date)}</time>
         </div>
-      </div>
+      </div> */}
       <div className="aspect-w-16 aspect-h-9 mb-1">
         {thumbnail ? (
           <div className="relative">
@@ -47,16 +47,16 @@ export default function PostCardSimple({
               alt={title}
               className="w-full h-30 md:h-40 object-cover rounded-t-xs md:rounded-t-sm"
             />
-            <div className="absolute inset-0 grid place-items-center pointer-events-none">
+            <div className="absolute top-2 right-2 pointer-events-none">
               <div className="rounded-full bg-[rgba(0,0,0,0.35)] p-2">
-                <PlayIcon className="h-3 w-3  text-white" />
+                <PlayIcon className="h-3 w-3 text-white" />
               </div>
             </div>
           </div>
 
         ) : (
           <div
-            className="w-full h-20 md:h-30 bg-[url('/images/bg-for-homepage.png')] bg-cover bg-center rounded-t-xs md:rounded-t-sm flex items-center justify-center"
+            className="w-full pt-7 pb-4 px-3 min-h-20 bg-[url('/images/bg-for-homepage.png')] bg-cover bg-center rounded-t-xs md:rounded-t-sm flex items-center justify-center"
           >
             <h2 className="text-dark-gray  font-'Apple Color Emoji' font-semibold text-center px-4">
               {title}
@@ -64,14 +64,14 @@ export default function PostCardSimple({
           </div>
         )}
       </div>
-      <div className='py-2 pl-4 pr-2'>
+      <div className='p-2'>
         {/* <h2 className="font-semibold text-dark-gray">{title}</h2> */}
         {/* <div className="flex items-center">
           <UserGroupIcon className="h-4 w-4 mr-1 text-dark-gray" />
           <span className="truncate">{group}</span>
         </div> */}
         {description && (
-          <p className="text-gray text-sm mt-1 line-clamp-3">
+          <p className="text-gray text-sm line-clamp-3">
             {ellipsize(description, 160, { byWords: true })}
           </p>
         )}

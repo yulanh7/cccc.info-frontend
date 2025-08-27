@@ -27,7 +27,7 @@ const boxBase =
   "inline-flex items-center justify-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-border disabled:opacity-50 disabled:cursor-not-allowed";
 
 const sizeBox: Record<Size, string> = {
-  sm: "h-8 w-8",
+  sm: "h-6 w-6",
   md: "h-9 w-9",
 };
 
