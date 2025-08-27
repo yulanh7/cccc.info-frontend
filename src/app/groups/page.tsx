@@ -27,7 +27,7 @@ import type { CreateOrUpdateGroupBody } from "@/app/types/group";
 import { formatDate } from "@/app/ultility";
 import { useConfirm } from "@/hooks/useConfirm";
 import Button from "@/components/ui/Button";
-import IconButton from "@/components/ui/IconButton";
+import { canEditGroup } from "@/app/types/group";
 
 const PER_PAGE = 9;
 
@@ -179,7 +179,6 @@ export default function GroupsPage() {
     confirmGroupDelete.ask(id);
   };
 
-  const canEdit = (g: GroupProps) => !!user && (user.admin || g.editable === true);
   const isUserSubscribed = (g: GroupProps) => g.subscribed === true;
 
   const onSubmitSearch = (e: React.FormEvent<HTMLFormElement>) => {
@@ -275,7 +274,7 @@ export default function GroupsPage() {
         <GroupsDesktopTable
           rows={rows}
           listLoading={listLoading}
-          canEdit={canEdit}
+          canEdit={canEditGroup}
           isUserSubscribed={isUserSubscribed}
           onEdit={handleEdit}
           onDelete={handleDeleteClick}
@@ -293,7 +292,7 @@ export default function GroupsPage() {
         <GroupsMobileList
           rows={rows}
           listLoading={listLoading}
-          canEdit={canEdit}
+          canEdit={canEditGroup}
           isUserSubscribed={isUserSubscribed}
           onEdit={handleEdit}
           onDelete={handleDeleteClick}

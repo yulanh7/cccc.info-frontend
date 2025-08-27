@@ -16,14 +16,11 @@ import ConfirmModal from "@/components/ConfirmModal"; // 复用并传自定义�
 type Props = {
   rows: GroupProps[];
   listLoading: boolean;
-
   canEdit: (g: GroupProps) => boolean;
   isUserSubscribed: (g: GroupProps) => boolean;
-
   onEdit: (g: GroupProps) => void;
   onDelete: (id: number) => void;
   onToggleSubscription: (g: GroupProps) => void;
-
   saving: boolean;
   deleting: boolean;
   toggling: boolean;
@@ -96,7 +93,7 @@ export default function GroupsMobileList({
                   role="button"
                   tabIndex={0}
                   className="
-                    card relative p-3 cursor-pointer hover:shadow-sm
+                    card relative p-4 cursor-pointer hover:shadow-sm
                     focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-dark-green
                   "
                   aria-label={`Open group ${group.title}`}
@@ -110,7 +107,7 @@ export default function GroupsMobileList({
 
                   {/* 顶部右侧操作（阻止冒泡） */}
                   {canEdit(group) && (
-                    <div className="flex justify-end space-x-2 border-b-1 border-border">
+                    <div className="flex justify-end space-x-2 border-b-1 border-border mb-4">
                       <div onClick={(e) => e.stopPropagation()}>
                         <IconButton
                           title="Edit group"
@@ -144,7 +141,7 @@ export default function GroupsMobileList({
                   )}
 
                   {/* 标题 & 时间 */}
-                  <h2 className="text-lg font-semibold text-dark-gray mt-6">
+                  <h2 className="text-lg font-semibold text-dark-gray mb-1">
                     {group.title}
                     {group.editable && (
                       <span className="ml-2 align-middle text-[10px] px-1.5 py-0.5 rounded border border-dark-green text-dark-green">

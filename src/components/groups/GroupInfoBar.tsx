@@ -8,10 +8,12 @@ import {
   CalendarIcon,
   UserPlusIcon,
   CheckCircleIcon,
+  LockClosedIcon
 } from "@heroicons/react/24/outline";
 import Button from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
 import type { GroupProps } from "@/app/types/group";
+import { canEditGroup } from "@/app/types/group";
 
 type Props = {
   group: GroupProps;
@@ -43,7 +45,7 @@ export default function GroupInfoBar({
   onBulkDeleteSelected,
 }: Props) {
   // 统一权限判断：只有创建者可管理（编辑/删除/选择/新建）
-  const canManage = group.editable === true;
+  const canManage = canEditGroup(group);
 
   return (
     <>
@@ -56,9 +58,15 @@ export default function GroupInfoBar({
                 {group.title}
               </h2>
               {canManage && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded border border-border text-dark-gray/70">
+                <span className="text-[10px] px-1.5 py-0.5 rounded border border-green text-green">
                   Owner
                 </span>
+              )}
+              {group.isPrivate && (
+                <div className="flex items-center gap-1 text-dark-gray/80">
+                  <LockClosedIcon className="h-4 w-4" />
+                  <span className="text-[11px]">Private</span>
+                </div>
               )}
             </div>
 
