@@ -24,7 +24,6 @@ type Props = {
   saving: boolean;
   deleting: boolean;
   toggling: boolean;
-
   currentPage: number;
   totalPages: number;
   buildHref: (page: number) => string;

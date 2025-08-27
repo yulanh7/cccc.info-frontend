@@ -2,24 +2,25 @@
 
 import React from "react";
 import Link from "next/link";
-import { CheckIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { CheckIcon, TrashIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
 import CardSkeleton from "@/components/feedback/CardSkeleton";
 import Spinner from "@/components/feedback/Spinner";
 import type { PostProps } from "@/app/types/post";
 import PostCardSimple from "./PostCardSimple";
+import Button from "@/components/ui/Button";
+import IconButton from "@/components/ui/IconButton";
 
 type Props = {
   rows: PostProps[];
   listLoading: boolean;
-
-  // 选择模式（受控，独立按钮在 GroupInfoBar）
   selectMode: boolean;
   selectedIds: Set<number>;
   onToggleSelect: (id: number) => void;
 
   // 单删（选择模式关闭时才出现）
-  canEdit?: (p: PostProps) => boolean;
+  canEdit?: (p: PostProps) => boolean;      // ← 外部传入：当前用户是否为作者
   onDeleteSingle?: (id: number) => void;
+  onEditSingle?: (p: PostProps) => void;
   deleting?: boolean;
 
   // 分页
@@ -34,19 +35,16 @@ type Props = {
 export default function PostsListWithSelect({
   rows,
   listLoading,
-
   selectMode,
   selectedIds,
   onToggleSelect,
-
   canEdit,
   onDeleteSingle,
+  onEditSingle,
   deleting = false,
-
   hasMore,
   loadMore,
   loadingMore,
-
   formatDate,
 }: Props) {
   return (
@@ -61,55 +59,73 @@ export default function PostsListWithSelect({
       ) : rows.length === 0 ? (
         <p className="text-sm text-dark-gray">No posts yet.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="columns-2 md:columns-3 lg:columns-4 gap-2">
           {rows.map((post) => {
+            const canManage = !!canEdit?.(post);
             const isSelected = selectedIds.has(post.id);
             const showDelete =
-              !selectMode && !!canEdit?.(post) && typeof onDeleteSingle === "function";
+              !selectMode && canManage && typeof onDeleteSingle === "function" && typeof onEditSingle === "function";
 
             return (
-              <div key={post.id} className="relative">
-                {/* 右上角：选择模式的勾选按钮 */}
-                {selectMode && (
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onToggleSelect(post.id);
-                    }}
-                    className={`absolute right-2 top-2 z-10 inline-flex items-center justify-center h-5 w-5 rounded-sm ${isSelected
-                      ? "bg-yellow border-yellow text-white"
-                      : "bg-white  border border-yellow text-dark-gray"
-                      }`}
-                    title={isSelected ? "Unselect" : "Select"}
-                    aria-label="Select post"
-                  >
-                    {isSelected && <CheckIcon className="h-4 w-4" />}
-                  </button>
+              <div key={post.id} className="relative rounded-sm overflow-hidden mb-2">
+                {/* 顶部工具栏（覆盖在图片上方） */}
+                {canManage && (selectMode || showDelete) && (
+                  <div className="absolute right-0 top-[0px] z-10 pointer-events-none">
+                    <div
+                      className="flex items-center gap-1 bg-white border-t border-border rounded-xs shadow-sm  pointer-events-auto"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {selectMode && (
+                        <IconButton
+                          title={isSelected ? "Unselect" : "Select"}
+                          aria-label="Select post"
+                          size="sm"
+                          variant={isSelected ? "warning" : "outline"}
+                          onClick={() => onToggleSelect(post.id)}
+                          active={isSelected}
+                        >
+                          <CheckIcon className="h-4 w-4" />
+                        </IconButton>
+                      )}
+
+                      {!selectMode && showDelete && (
+                        <div className="flex items-center gap-1">
+                          <IconButton
+                            title="Edit group"
+                            aria-label="Edit group"
+                            rounded="full"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onEditSingle(post)}
+                            tone="brand"
+                          >
+                            <PencilSquareIcon className="h-5 w-5" />
+                          </IconButton>
+
+                          <IconButton
+                            title="Delete group"
+                            aria-label="Delete group"
+                            rounded="full"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onDeleteSingle(post.id)}
+                            tone="brand"
+                          >
+                            <TrashIcon className="h-5 w-5" />
+                          </IconButton>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 )}
 
-                {/* 右上角：单删（仅在非选择模式） */}
-                {showDelete && (
-                  <button
-                    disabled={deleting}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onDeleteSingle!(post.id);
-                    }}
-                    className="absolute right-2 top-2 z-10 inline-flex items-center justify-center h-7 w-7 rounded-md border border-red/50 text-red hover:bg-red/10 disabled:opacity-50"
-                    title="Delete post"
-                    aria-label="Delete post"
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                  </button>
-                )}
 
-                {/* 卡片内容整体作为链接进入详情 */}
+                {/* 内容：给出与工具栏同等的顶部内边距，避免被遮挡。大约 40px，可按实际按钮高度微调 */}
                 <Link href={`/posts/${post.id}`} className="block">
                   <PostCardSimple post={post} formatDate={formatDate} />
                 </Link>
               </div>
+
             );
           })}
         </div>
@@ -119,19 +135,15 @@ export default function PostsListWithSelect({
       {typeof hasMore !== "undefined" && (
         <div className="flex justify-center">
           {hasMore ? (
-            <button
+            <Button
               onClick={loadMore}
               disabled={loadingMore || deleting}
-              className="px-4 py-2 border border-border rounded-sm text-dark-gray flex items-center gap-2"
+              variant="outline"
+              size="md"
+              leftIcon={loadingMore ? <Spinner className="h-4 w-4" /> : undefined}
             >
-              {loadingMore ? (
-                <>
-                  <Spinner className="h-4 w-4" /> Loading…
-                </>
-              ) : (
-                "Load more"
-              )}
-            </button>
+              {loadingMore ? "Loading…" : "Load more"}
+            </Button>
           ) : (
             <span className="text-sm text-gray">No more results</span>
           )}

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { mockPostList } from '@/app/data/mockData';
 import { CalendarIcon, UserCircleIcon, UserGroupIcon, EyeIcon } from '@heroicons/react/24/outline';
 import CustomHeader from '@/components/layout/CustomHeader';
-import PostModal from '@/components/PostModal';
+import PostModal from '@/components/posts/PostModal';
 
 export default function PostDetailPage({ params: paramsPromise }: { params: Promise<{ id: string }> }) {
   const params = React.use(paramsPromise);
@@ -48,9 +48,9 @@ export default function PostDetailPage({ params: paramsPromise }: { params: Prom
         onAdd={handleAdd}
       />
       <div className="aspect-w-16 aspect-h-9 mb-4 mt-16">
-        {post.videoUrl ? (
+        {post.videoUrls ? (
           <iframe
-            src={post.videoUrl}
+            src={post.videoUrls[0]}
             title={post.title}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen

@@ -13,7 +13,6 @@ import {
 import Button from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
 import type { GroupProps } from "@/app/types/group";
-import { canEditGroup } from "@/app/types/group";
 
 type Props = {
   group: GroupProps;
@@ -45,7 +44,7 @@ export default function GroupInfoBar({
   onBulkDeleteSelected,
 }: Props) {
   // 统一权限判断：只有创建者可管理（编辑/删除/选择/新建）
-  const canManage = canEditGroup(group);
+  const canManage = group.editable === true;
 
   return (
     <>
@@ -136,8 +135,8 @@ export default function GroupInfoBar({
 
       {/* 移动端/桌面通用：选择模式 & 新建，仅创建者可见 */}
       {canManage && (
-        <section className="flex justify-end gap-2 px-4">
-          <Button
+        <section className="hidden md:flex justify-end gap-2 px-4">
+          {/* <Button
             onClick={onToggleSelectMode}
             variant={selectMode ? "warning" : "outline"}
             size="sm"
@@ -145,7 +144,7 @@ export default function GroupInfoBar({
             active={selectMode}
           >
             {selectMode ? "Cancel" : "Select Posts"}
-          </Button>
+          </Button> */}
 
           {selectMode && (
             <Button

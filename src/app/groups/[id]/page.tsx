@@ -7,14 +7,14 @@ import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import CustomHeader from "@/components/layout/CustomHeader";
 import PageTitle from "@/components/layout/PageTitle";
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
-import PostModal from "@/components/PostModal";
+import PostModal from "@/components/posts/PostModal";
 import GroupModal from "@/components/groups/GroupModal";
 import SubscribersModal from "@/components/groups/SubscribersModal";
 import ConfirmModal from "@/components/ConfirmModal";
 import GroupInfoBar from "@/components/groups/GroupInfoBar";
 import PostsListWithSelect from "@/components/posts/PostsListWithSelect";
 import type { GroupProps } from "@/app/types";
-
+import { canEditPost } from "@/app/types/post";
 import { formatDate } from "@/app/ultility";
 import {
   fetchGroupDetail,
@@ -48,7 +48,7 @@ export default function GroupPage() {
   const groupId = useMemo(() => Number(id), [id]);
   const dispatch = useAppDispatch();
   const router = useRouter();
-
+  const user = useAppSelector((s) => s.auth.user);
   const { group, subscriberCount, subscribers, posts, postsPagination, status } =
     useAppSelector((s) => s.groupDetail);
 
@@ -56,6 +56,8 @@ export default function GroupPage() {
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showSubsModal, setShowSubsModal] = useState(false);
+  const [editingPost, setEditingPost] = useState<PostProps | null>(null);
+
 
   // 选择模式 & 批量删除
   const [selectMode, setSelectMode] = useState(false);
@@ -97,11 +99,13 @@ export default function GroupPage() {
 
   // ====== helper：把 Modal 的 PostProps 构造成 API body ======
   const toApiBody = (item: PostProps) => ({
-    title: item.title?.trim() ?? "",
+    title: (item.title ?? "").trim(),
     content: `<p>${(item.description ?? "").trim()}</p>`,
     description: item.description ?? "",
-    video_urls: item.videoUrl ? [item.videoUrl] : [],
-    file_ids: [], // 之后接入上传后填充
+    video_urls: Array.isArray(item.videoUrls)
+      ? item.videoUrls.filter(Boolean)
+      : ((item as any).videoUrl ? [(item as any).videoUrl] : []),
+    file_ids: [], // fill when you wire uploads
   });
 
   // ====== 新建 / 编辑 / 删除（单个） / 批量删除 ======
@@ -124,7 +128,7 @@ export default function GroupPage() {
   const onEditPost = async (item: PostProps) => {
     try {
       await dispatch(
-        updatePostThunk({ postId: item.id, body: toApiBody(item), authorNameHint: item.author })
+        updatePostThunk({ postId: item.id, body: toApiBody(item), authorNameHint: item.author.firstName })
       ).unwrap();
       if (safeGroup) {
         dispatch(fetchGroupPosts({ groupId: safeGroup.id, page: 1, per_page: 20, append: false }));
@@ -176,6 +180,21 @@ export default function GroupPage() {
       alert(e?.message || "Update group failed");
     }
   };
+
+  const handlePostModalSave = async (item: PostProps) => {
+    setIsPostModalOpen(false);
+    try {
+      if (editingPost) {
+
+        await onEditPost(item);   // 更新
+      } else {
+        await onCreatePost(item); // 新建
+      }
+    } finally {
+      setEditingPost(null);
+    }
+  };
+
 
   const handleDeleteGroup = async () => {
     if (!safeGroup) return;
@@ -241,7 +260,7 @@ export default function GroupPage() {
             group={safeGroup}
             subscriberCount={subscriberCount ?? 0}
             onShowMembers={() => setShowSubsModal(true)}
-            onNewPost={() => setIsPostModalOpen(true)}
+            onNewPost={() => { setEditingPost(null); setIsPostModalOpen(true); }}
             onEditGroup={handleEditGroup}
             onDeleteGroup={() => confirmGroupDelete.ask()}
             selectMode={selectMode}
@@ -289,15 +308,13 @@ export default function GroupPage() {
               <PostsListWithSelect
                 rows={safePosts}
                 listLoading={status.posts === "loading" && safePosts.length === 0}
-                // 选择模式（受控）
                 selectMode={selectMode}
                 selectedIds={selectedIds}
                 onToggleSelect={toggleSelect}
-                // 单删（选择模式关闭时才出现）—— 这里只负责“询问”，真正删除放到确认回调里
-                canEdit={() => Boolean(safeGroup?.editable)}
+                canEdit={(p) => canEditPost(p, user)}
                 onDeleteSingle={(postId) => confirmSingleDelete.ask(postId)}
+                onEditSingle={(p) => { setEditingPost(p); setIsPostModalOpen(true); }}
                 deleting={status.posts === "loading" && safePosts.length > 0}
-                // 分页（可选）
                 hasMore={Boolean(
                   safePagination &&
                   safePagination.current_page < safePagination.total_pages
@@ -365,12 +382,13 @@ export default function GroupPage() {
 
       {isPostModalOpen && (
         <PostModal
-          item={undefined}
-          isNew={true}
-          onSave={handleSavePost}
-          onClose={() => setIsPostModalOpen(false)}
+          item={editingPost ?? undefined}
+          isNew={!editingPost}
+          onSave={handlePostModalSave}
+          onClose={() => { setIsPostModalOpen(false); setEditingPost(null); }}
         />
       )}
+
 
       {/* 移动端新增按钮 */}
       {!pageLoading && safeGroup?.editable && (

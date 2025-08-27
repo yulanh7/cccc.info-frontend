@@ -3,32 +3,26 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { apiRequest } from '../request';
 import type { GroupProps, GroupDetailData } from '@/app/types/group';
 import { mapGroupApiToProps } from '@/app/types/group';
-import type { PostProps } from '@/app/types';
+import type { PostProps, GroupPostApi } from '@/app/types';
 
 type LoadStatus = 'idle' | 'loading' | 'succeeded' | 'failed';
 
-interface GroupPostApi {
-  id: number;
-  title: string;
-  author: { id: number; firstName: string };
-  created_at: string;
-  summary: string;
-  like_count: number;
-  has_files: boolean;
-  has_videos: boolean;
-}
 
 const mapPostApiToProps = (p: GroupPostApi, groupId: number): PostProps => ({
   id: p.id,
   title: p.title,
   date: p.created_at,
-  author: p.author?.firstName ?? '',
+  author: {
+    id: Number(p.author?.id ?? 0),
+    firstName: p.author?.firstName ?? "",
+  },
   group: String(groupId),
-  description: p.summary,
-  videoUrl: '',
-  hasVideo: p.has_videos,
-  files: p.has_files ? [] : undefined,
+  description: p.summary ?? "",
+  videoUrls: Array.isArray((p as any).videos) ? (p as any).videos : [],
+  hasVideo: Boolean(p.has_videos),
+  files: p.has_files ? [] : undefined, // 先给空数组/undefined；详情页再补完整
 });
+
 
 interface GroupDetailState {
   /** 当前正在查看/加载的 groupId，用于防止竞态和旧数据闪现 */

@@ -1,7 +1,7 @@
-import type { ApiResponseProps } from './api';
-import type { UserProps } from './user';
+import type { ApiResponseProps } from "./api";
+import type { UserProps } from "./user";
 
-/** ===================== UI Model ===================== */
+/** ===================== UI Group ===================== */
 export interface GroupProps {
   id: number;
   title: string;
@@ -20,7 +20,7 @@ export interface GroupListProps {
 export type GroupListResponse = ApiResponseProps<GroupListProps>;
 export type GroupDetailResponse = ApiResponseProps<GroupProps>;
 
-/** ===================== UI Pagination Props (for component) ===================== */
+/** ===================== Pagination (UI) ===================== */
 export interface PaginationProps {
   currentPage: number;
   totalPages: number;
@@ -30,7 +30,7 @@ export interface PaginationProps {
   className?: string;
 }
 
-/** ===================== API Model ===================== */
+/** ===================== API Models ===================== */
 export interface GroupApi {
   id: number;
   name: string;
@@ -100,14 +100,14 @@ export type GroupStatsResponseApi = ApiResponseProps<GroupStats>;
 /** ===================== Mapping: API -> UI ===================== */
 export const mapGroupApiToProps = (g: GroupApi): GroupProps => {
   const creatorId =
-    typeof g.creator === 'number'
+    typeof g.creator === "number"
       ? g.creator
       : Number.isFinite(Number(g.creator))
         ? Number(g.creator)
         : 0;
 
   const creatorName =
-    g.creator_name ?? (typeof g.creator === 'string' ? g.creator : '');
+    g.creator_name ?? (typeof g.creator === "string" ? g.creator : "");
 
   return {
     id: g.id,
@@ -117,7 +117,7 @@ export const mapGroupApiToProps = (g: GroupApi): GroupProps => {
     creator: {
       id: creatorId,
       firstName: creatorName,
-      email: '',
+      email: "",
       admin: false,
     },
     subscribed: g.is_member,
@@ -126,55 +126,5 @@ export const mapGroupApiToProps = (g: GroupApi): GroupProps => {
   };
 };
 
-
-/** ========== Posts API & UI Types ========== */
-export interface GroupPostApi {
-  id: number;
-  title: string;
-  author: { id: number; firstName: string };
-  created_at: string;
-  summary: string;
-  like_count: number;
-  has_files: boolean;
-  has_videos: boolean;
-}
-
-export interface GroupPostsData {
-  posts: GroupPostApi[];
-  total_pages: number;
-  current_page: number;
-  total_posts: number;
-}
-
-export type GroupPostsResponseApi = ApiResponseProps<GroupPostsData>;
-
-export interface GroupSubscriber {
-  id: number;
-  firstName: string;
-  email: string;
-}
-
-export interface PostListItem {
-  id: number;
-  title: string;
-  authorName: string;
-  createdAt: string;
-  summary: string;
-  likeCount: number;
-  hasFiles: boolean;
-  hasVideos: boolean;
-}
-
-export const mapPostApiToListItem = (p: GroupPostApi): PostListItem => ({
-  id: p.id,
-  title: p.title,
-  authorName: p.author?.firstName ?? '',
-  createdAt: p.created_at,
-  summary: p.summary,
-  likeCount: p.like_count,
-  hasFiles: p.has_files,
-  hasVideos: p.has_videos,
-});
-
-/** ===================== 权限工具（可在各页面统一使用） ===================== */
+/** ===================== Permissions ===================== */
 export const canEditGroup = (g: GroupProps) => g.editable === true;
