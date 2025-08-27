@@ -97,16 +97,41 @@ export default function GroupPage() {
   const pageLoading = !groupMatchesRoute || status.group === "loading";
   const postsLoading = status.posts === "loading" && groupMatchesRoute;
 
-  // ====== helper：把 Modal 的 PostProps 构造成 API body ======
-  const toApiBody = (item: PostProps) => ({
+  const normalizeVideoUrls = (src: any): string[] => {
+    const raw = src?.videoUrls ?? src?.video_urls ?? src?.videoUrl ?? [];
+    let list: string[] = [];
+    if (Array.isArray(raw)) {
+      list = raw;
+    } else if (typeof raw === "string") {
+      // 允许用户输入用逗号/换行分隔的多个链接
+      list = raw.split(/[\n,]+/);
+    }
+    return list.map(s => String(s).trim()).filter(Boolean);
+  };
+
+  const toApiBody = (item: any) => ({
     title: (item.title ?? "").trim(),
     content: `<p>${(item.description ?? "").trim()}</p>`,
     description: item.description ?? "",
-    video_urls: Array.isArray(item.videoUrls)
-      ? item.videoUrls.filter(Boolean)
-      : ((item as any).videoUrl ? [(item as any).videoUrl] : []),
-    file_ids: [], // fill when you wire uploads
+    // 只从标准化函数取，确保发送给后端的是 string[]
+    video_urls: normalizeVideoUrls(item),
+    file_ids: [], // TODO: 上传后替换
   });
+
+  // 保存 PostModal 返回的数据时，先统一标准化，再调用 create/update
+  const handlePostModalSave = async (item: PostProps) => {
+    setIsPostModalOpen(false);
+    const normalized = { ...item, videoUrls: normalizeVideoUrls(item) };
+    try {
+      if (editingPost) {
+        await onEditPost(normalized as PostProps);
+      } else {
+        await onCreatePost(normalized as PostProps);
+      }
+    } finally {
+      setEditingPost(null);
+    }
+  };
 
   // ====== 新建 / 编辑 / 删除（单个） / 批量删除 ======
   const onCreatePost = async (item: PostProps) => {
@@ -157,10 +182,7 @@ export default function GroupPage() {
     dispatch(fetchGroupPosts({ groupId: safeGroup.id, page: 1, per_page: 20, append: false }));
   };
 
-  const handleSavePost = (item: PostProps) => {
-    setIsPostModalOpen(false);
-    onCreatePost(item);
-  };
+
 
   const handleEditGroup = () => setShowEditModal(true);
 
@@ -180,21 +202,6 @@ export default function GroupPage() {
       alert(e?.message || "Update group failed");
     }
   };
-
-  const handlePostModalSave = async (item: PostProps) => {
-    setIsPostModalOpen(false);
-    try {
-      if (editingPost) {
-
-        await onEditPost(item);   // 更新
-      } else {
-        await onCreatePost(item); // 新建
-      }
-    } finally {
-      setEditingPost(null);
-    }
-  };
-
 
   const handleDeleteGroup = async () => {
     if (!safeGroup) return;
@@ -393,11 +400,12 @@ export default function GroupPage() {
       {/* 移动端新增按钮 */}
       {!pageLoading && safeGroup?.editable && (
         <button
-          onClick={() => setIsPostModalOpen(true)}
+          onClick={() => { setEditingPost(null); setIsPostModalOpen(true); }}
           className="fixed md:hidden bottom-8 z-20 left-1/2 -translate-x-1/2 bg-yellow px-3 py-3 rounded-[50%]"
         >
           <PlusIcon className="h-7 w-7 text-white" />
         </button>
+
       )}
     </>
   );
