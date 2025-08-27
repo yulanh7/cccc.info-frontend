@@ -57,3 +57,24 @@ export function getYouTubeThumbnail(
   if (!videoId) return null;
   return `https://img.youtube.com/vi/${videoId}/${quality}.jpg`;
 }
+
+export function ellipsize(
+  input: string | null | undefined,
+  max = 80,
+  opts: { byWords?: boolean; suffix?: string } = {}
+): string {
+  const suffix = opts.suffix ?? '…';
+  if (!input) return '';
+  const chars = Array.from(input); // 按“字符”而不是 code unit 计数（兼容 emoji）
+  if (chars.length <= max) return input;
+
+  if (opts.byWords) {
+    // 尝试在上限附近按空格断句（对中文无空格时自动退化为字符截断）
+    const slice = chars.slice(0, max + 1).join('');
+    const cut = slice.lastIndexOf(' ');
+    const base = cut > 0 ? slice.slice(0, cut) : chars.slice(0, max).join('');
+    return base + suffix;
+  }
+
+  return chars.slice(0, max).join('') + suffix;
+}

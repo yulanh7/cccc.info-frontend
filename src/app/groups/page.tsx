@@ -27,7 +27,7 @@ import type { CreateOrUpdateGroupBody } from "@/app/types/group";
 import { formatDate } from "@/app/ultility";
 import { useConfirm } from "@/hooks/useConfirm";
 
-const PER_PAGE = 2;
+const PER_PAGE = 10;
 
 export default function GroupsPage() {
   const dispatch = useAppDispatch();

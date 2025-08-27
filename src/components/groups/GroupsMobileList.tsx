@@ -5,6 +5,7 @@ import CardSkeleton from "@/components/feedback/CardSkeleton";
 import Spinner from "@/components/feedback/Spinner";
 import type { GroupProps } from "@/app/types";
 import Pagination from "@/components/Pagination";
+import { ellipsize } from '@/app/ultility';
 
 type Props = {
   rows: GroupProps[];
@@ -82,7 +83,7 @@ export default function GroupsMobileList({
               </div>
 
               <h2 className="text-lg font-semibold text-dark-gray mt-5">{group.title}</h2>
-              <p className="text-gray text-sm">{group.description}</p>
+              <p className="text-gray text-sm">  {ellipsize(group.description, 80, { byWords: true })}</p>
               <p className="text-xs text-gray mt-1">
                 Created: {formatDate(group.createdDate)} by {group.creator.firstName}
                 {group.inviteOnly && <span className="text-dark-green"> (Invite Only)</span>}

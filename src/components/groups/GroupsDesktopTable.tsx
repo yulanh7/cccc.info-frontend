@@ -4,6 +4,7 @@ import { PencilSquareIcon, TrashIcon, ArrowRightCircleIcon } from '@heroicons/re
 import Pagination from "@/components/Pagination";
 import TableSkeleton from "@/components/feedback/TableSkeleton";
 import type { GroupProps } from "@/app/types";
+import { ellipsize } from '@/app/ultility';
 
 type Props = {
   rows: GroupProps[];
@@ -63,7 +64,12 @@ export default function GroupsDesktopTable({
               return (
                 <tr key={group.id} className={`${index % 2 === 0 ? '' : 'bg-gray-50'}`}>
                   <td className="py-2 px-4 text-gray">{group.title}</td>
-                  <td className="py-2 px-4 text-gray">{group.description}</td>
+                  <td
+                    className="py-2 px-4 text-gray"
+                    title={group.description}
+                  >
+                    {ellipsize(group.description, 80, { byWords: true })}
+                  </td>
                   <td className="py-2 px-4 text-gray">{formatDate(group.createdDate)}</td>
                   <td className="py-2 px-4 text-gray">{group.creator.firstName}</td>
                   <td className="py-2 px-4">

@@ -7,6 +7,7 @@ import {
   UserGroupIcon,
   ArrowRightCircleIcon,
 } from "@heroicons/react/24/outline";
+import { ellipsize } from '@/app/ultility';
 import Link from "next/link";
 
 type Props = {
@@ -27,7 +28,9 @@ export default function PostCardSimple({
       <h2 className="text-lg font-semibold text-dark-gray">{title}</h2>
 
       {description && (
-        <p className="text-gray text-sm mt-1 line-clamp-3">{description}</p>
+        <p className="text-gray text-sm mt-1 line-clamp-3">
+          {ellipsize(description, 80, { byWords: true })}
+        </p>
       )}
 
       <div className="mt-2 space-y-1 text-xs text-gray">
