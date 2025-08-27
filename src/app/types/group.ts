@@ -11,7 +11,6 @@ export interface GroupProps {
   subscribed: boolean;
   editable: boolean;
   isPrivate: boolean;
-
 }
 
 export interface GroupListProps {
@@ -176,3 +175,6 @@ export const mapPostApiToListItem = (p: GroupPostApi): PostListItem => ({
   hasFiles: p.has_files,
   hasVideos: p.has_videos,
 });
+
+/** ===================== 权限工具（可在各页面统一使用） ===================== */
+export const canEditGroup = (g: GroupProps) => g.editable === true;

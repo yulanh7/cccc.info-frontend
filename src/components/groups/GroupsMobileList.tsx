@@ -140,9 +140,15 @@ export default function GroupsMobileList({
                   )}
 
                   {/* 标题 & 时间 */}
-                  <h2 className="text-lg font-semibold text-dark-gray mt-2">{group.title}</h2>
-
-                  <p className="text-xs text-dark-green mb-1.5">
+                  <h2 className="text-lg font-semibold text-dark-gray mt-6">
+                    {group.title}
+                    {group.editable && (
+                      <span className="ml-2 align-middle text-[10px] px-1.5 py-0.5 rounded border border-dark-green text-dark-green">
+                        Owner
+                      </span>
+                    )}
+                  </h2>
+                  <p className="text-xs text-dark-gray mb-1.5">
                     <span className="inline-flex items-center gap-1.5 italic">
                       <CalendarIcon className="h-4 w-4 " />
                       <time dateTime={group.createdDate} className="font-medium">

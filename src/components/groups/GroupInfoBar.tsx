@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import {
   PencilIcon,
   PlusIcon,
@@ -21,6 +22,7 @@ type Props = {
   onDeleteGroup: () => void;
   formatDate: (timestamp: string, showTime?: boolean) => string;
 
+  /** 选择模式（由父组件控制） */
   selectMode: boolean;
   selectedCount: number;
   onToggleSelectMode: () => void;
@@ -40,51 +42,64 @@ export default function GroupInfoBar({
   onToggleSelectMode,
   onBulkDeleteSelected,
 }: Props) {
+  // 统一权限判断：只有创建者可管理（编辑/删除/选择/新建）
+  const canManage = group.editable === true;
+
   return (
     <>
       <section className="mb-4 md:mb-6 rounded-xl border border-border bg-bg p-4 md:p-6">
         <div className="flex items-start justify-between gap-3">
           <div>
+            {/* 标题 + Owner 徽标（如果可管理） */}
+            <div className="flex items-center gap-2">
+              <h2 className="text-base md:text-lg font-semibold text-foreground">
+                {group.title}
+              </h2>
+              {canManage && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded border border-border text-dark-gray/70">
+                  Owner
+                </span>
+              )}
+            </div>
+
             {group.description && (
-              <p className="mt-1 text-sm text-dark-gray">{group.description}</p>
+              <p className="mt-2 text-sm text-dark-gray">{group.description}</p>
             )}
           </div>
 
-          <div className="hidden md:flex items-center gap-2">
-            {group.editable && (
-              <>
+          {/* 桌面端右上角操作，仅创建者可见 */}
+          {canManage && (
+            <div className="hidden md:flex items-center gap-2">
+              <IconButton
+                title="Edit group"
+                aria-label="Edit group"
+                variant="outline"
+                size="md"
+                onClick={onEditGroup}
+              >
+                <PencilIcon className="h-5 w-5" />
+              </IconButton>
 
-
-                <IconButton
-                  title="Edit group"
-                  onClick={onEditGroup}
-                  variant="outline"
-                  size="md"
-                >
-                  <PencilIcon className="h-5 w-5" />
-                </IconButton>
-
-                <IconButton
-                  title="Delete group"
-                  onClick={onDeleteGroup}
-                  variant="danger"
-                  size="md"
-                >
-                  <TrashIcon className="h-5 w-5" />
-                </IconButton>
-              </>
-            )}
-          </div>
+              <IconButton
+                title="Delete group"
+                aria-label="Delete group"
+                variant="danger"
+                size="md"
+                onClick={onDeleteGroup}
+              >
+                <TrashIcon className="h-5 w-5" />
+              </IconButton>
+            </div>
+          )}
         </div>
 
+        {/* 元信息 */}
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-dark-gray">
           <span className="inline-flex items-center gap-2">
             <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-dark-green/10 text-dark-green text-xs font-semibold">
               {(group.creator?.firstName?.[0] || "?").toUpperCase()}
             </span>
-            <span>
-              {(group.creator?.firstName)}
-            </span>
+            <span>{group.creator?.firstName}</span>
           </span>
 
           <span className="inline-flex items-center gap-1.5">
@@ -109,43 +124,41 @@ export default function GroupInfoBar({
         </div>
       </section>
 
-      {/* 移动端：动作分布（可根据你现有布局保留） */}
-      <section className="flex justify-end gap-2 px-4">
-        {group.editable && (
-          <>
-            <Button
-              onClick={onToggleSelectMode}
-              variant={selectMode ? "warning" : "outline"}
-              size="sm"
-              leftIcon={<CheckCircleIcon className="h-5 w-5" />}
-              active={selectMode}
-            >
-              {selectMode ? "Cancel" : "Select Posts"}
-            </Button>
+      {/* 移动端/桌面通用：选择模式 & 新建，仅创建者可见 */}
+      {canManage && (
+        <section className="flex justify-end gap-2 px-4">
+          <Button
+            onClick={onToggleSelectMode}
+            variant={selectMode ? "warning" : "outline"}
+            size="sm"
+            leftIcon={<CheckCircleIcon className="h-5 w-5" />}
+            active={selectMode}
+          >
+            {selectMode ? "Cancel" : "Select Posts"}
+          </Button>
 
-            {selectMode && (
-              <Button
-                onClick={onBulkDeleteSelected}
-                variant="danger"
-                size="sm"
-                leftIcon={<TrashIcon className="h-5 w-5" />}
-                disabled={selectedCount === 0}
-              >
-                Delete{selectedCount > 0 ? ` (${selectedCount})` : ""}
-              </Button>
-            )}
-
+          {selectMode && (
             <Button
-              onClick={onNewPost}
-              variant="primary"
+              onClick={onBulkDeleteSelected}
+              variant="danger"
               size="sm"
-              leftIcon={<PlusIcon className="h-5 w-5" />}
+              leftIcon={<TrashIcon className="h-5 w-5" />}
+              disabled={selectedCount === 0}
             >
-              New Post
+              Delete{selectedCount > 0 ? ` (${selectedCount})` : ""}
             </Button>
-          </>
-        )}
-      </section>
+          )}
+
+          <Button
+            onClick={onNewPost}
+            variant="primary"
+            size="sm"
+            leftIcon={<PlusIcon className="h-5 w-5" />}
+          >
+            New Post
+          </Button>
+        </section>
+      )}
     </>
   );
 }
