@@ -8,11 +8,12 @@ import CustomHeader from "@/components/layout/CustomHeader";
 import PageTitle from "@/components/layout/PageTitle";
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
 import PostModal from "@/components/PostModal";
-import GroupEditModal from "@/components/groups/GroupEditModal";
+import GroupModal from "@/components/groups/GroupModal";
 import SubscribersModal from "@/components/groups/SubscribersModal";
 import ConfirmModal from "@/components/ConfirmModal";
 import GroupInfoBar from "@/components/groups/GroupInfoBar";
 import PostsListWithSelect from "@/components/posts/PostsListWithSelect";
+import type { GroupProps } from "@/app/types";
 
 import { formatDate } from "@/app/ultility";
 import {
@@ -159,7 +160,13 @@ export default function GroupPage() {
 
   const handleEditGroup = () => setShowEditModal(true);
 
-  const submitEditGroup = async (body: CreateOrUpdateGroupBody) => {
+  const submitEditGroup = async (updatedGroup: GroupProps) => {
+    const body: CreateOrUpdateGroupBody = {
+      name: updatedGroup.title.trim(),
+      description: updatedGroup.description.trim(),
+      isPrivate: updatedGroup.isPrivate,
+    };
+
     if (!safeGroup) return;
     try {
       const updated = await dispatch(updateGroup({ groupId: safeGroup.id, body })).unwrap();
@@ -315,12 +322,14 @@ export default function GroupPage() {
         title="Subscribers"
       />
 
-      <GroupEditModal
-        isOpen={showEditModal}
-        onClose={() => setShowEditModal(false)}
-        group={safeGroup ?? undefined}
-        onSubmit={submitEditGroup}
-      />
+      {showEditModal && (
+        <GroupModal
+          group={safeGroup ?? undefined}
+          onSave={submitEditGroup}
+          onClose={() => setShowEditModal(false)}
+          isNew={false}
+        />
+      )}
 
       {/* 删群确认 */}
       <ConfirmModal

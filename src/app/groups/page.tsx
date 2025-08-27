@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { useRouter, useSearchParams } from "next/navigation";
 import PageTitle from "@/components/layout/PageTitle";
-import GroupModal from "@/components/GroupModal";
+import GroupModal from "@/components/groups/GroupModal";
 import ConfirmModal from "@/components/ConfirmModal";
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
 import MobileSearchHeader from "@/components/layout/MobileSearchHeader";

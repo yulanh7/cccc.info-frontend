@@ -4,7 +4,8 @@ import { useState, useRef } from 'react';
 import { mockUsers } from '@/app/data/mockData';
 import { GroupProps } from '@/app/types';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import SaveConfirmModal from "./SaveConfirmModal";
+import Button from "@/components/ui/Button";
+import SaveConfirmModal from "../SaveConfirmModal";
 
 interface GroupEditModalProps {
   group?: GroupProps | any;
@@ -104,6 +105,10 @@ export default function GroupEditModal({
     return { top: 0, right: 0 };
   };
 
+  const nameId = "group-name";
+  const descId = "group-description";
+  const privId = "group-private";
+
   return (
     <div className="fixed inset-0 min-h-screen bg-gray bg-opacity-50 flex items-center justify-center z-20 overflow-y-auto">
       <div className="bg-white p-6 rounded-sm shadow-lg w-full md:max-w-[80vw] max-h-[90vh] overflow-y-auto relative">
@@ -118,14 +123,17 @@ export default function GroupEditModal({
         <h2 className="text-xl mb-4">{isNew ? 'Add New Group' : 'Edit Group'}</h2>
 
         {/* Title */}
+        <label htmlFor={nameId} className="block text-sm font-medium mb-1">
+          Title
+        </label>
         <input
+          id={nameId}
           ref={titleRef}
           type="text"
           value={editedItem.title}
           onChange={(e) => handleChange('title', e.target.value)}
           className={`w-full p-2 mb-1 border rounded-sm ${errors.title ? 'border-red-500' : 'border-border'
             }`}
-          placeholder="Group Title"
           aria-invalid={!!errors.title}
           aria-describedby={errors.title ? 'title-error' : undefined}
         />
@@ -136,7 +144,11 @@ export default function GroupEditModal({
         )}
 
         {/* Description */}
+        <label htmlFor={descId} className="block text-sm font-medium mb-1">
+          Description
+        </label>
         <textarea
+          id={descId}
           ref={descRef}
           value={editedItem.description}
           onChange={(e) => handleChange('description', e.target.value)}
@@ -145,6 +157,7 @@ export default function GroupEditModal({
           placeholder="Description"
           aria-invalid={!!errors.description}
           aria-describedby={errors.description ? 'description-error' : undefined}
+          rows={6}
         />
         {errors.description && (
           <p id="description-error" className="text-red-600 text-sm mb-3">
@@ -165,20 +178,14 @@ export default function GroupEditModal({
           </label>
         </div>
 
-        <div className="flex justify-end space-x-4">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-dark-gray hover:text-dark-green"
-          >
+        {/* Actions */}
+        <div className="mt-5 flex justify-end gap-3">
+          <Button variant="outline" size="sm" onClick={onClose}>
             Cancel
-          </button>
-          {/* Save remains visually enabled at all times */}
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 bg-dark-green text-white rounded-sm hover:bg-green"
-          >
+          </Button>
+          <Button variant="primary" size="sm" onClick={handleSave}>
             Save
-          </button>
+          </Button>
         </div>
 
         <SaveConfirmModal

@@ -73,7 +73,8 @@ export default function GroupInfoBar({
               <IconButton
                 title="Edit group"
                 aria-label="Edit group"
-                variant="outline"
+                variant="ghost"
+                tone="brand"
                 size="md"
                 onClick={onEditGroup}
               >
@@ -83,7 +84,8 @@ export default function GroupInfoBar({
               <IconButton
                 title="Delete group"
                 aria-label="Delete group"
-                variant="danger"
+                variant="ghost"
+                tone="brand"
                 size="md"
                 onClick={onDeleteGroup}
               >
