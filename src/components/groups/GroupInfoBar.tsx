@@ -48,95 +48,99 @@ export default function GroupInfoBar({
 
   return (
     <>
-      <section className="mb-4 md:mb-6 rounded-xl border border-border bg-bg p-4 md:p-6">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            {/* 标题 + Owner 徽标（如果可管理） */}
-            <div className="flex items-center gap-2">
-              <h2 className="text-base md:text-lg font-semibold text-foreground">
-                {group.title}
-              </h2>
-              {canManage && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded border border-green text-green">
-                  Owner
-                </span>
-              )}
-              {group.isPrivate && (
-                <div className="flex items-center gap-1 text-dark-gray/80">
-                  <LockClosedIcon className="h-4 w-4" />
-                  <span className="text-[11px]">Private</span>
-                </div>
+      <section className="mb-4 md:mb-6 bg-page-header-bg p-4 md:p-6 mt-15 md:mt-1">
+        <div className="container mx-auto">
+
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              {/* 标题 + Owner 徽标（如果可管理） */}
+              <div className="flex items-center gap-2">
+                <h2 className="text-white md:text-lg font-semibold">
+                  {group.title}
+                </h2>
+                {canManage && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded border border-yellow text-yellow">
+                    Owner
+                  </span>
+                )}
+                {group.isPrivate && (
+                  <div className="flex items-center gap-1 text-white">
+                    <LockClosedIcon className="h-4 w-4" />
+                    <span className="text-[11px]">Private</span>
+                  </div>
+                )}
+              </div>
+
+              {group.description && (
+                <p className="mt-2 text-sm text-white">{group.description}</p>
               )}
             </div>
 
-            {group.description && (
-              <p className="mt-2 text-sm text-dark-gray">{group.description}</p>
+            {/* 桌面端右上角操作，仅创建者可见 */}
+            {canManage && (
+              <div className="hidden md:flex items-center gap-2">
+                <IconButton
+                  className="text-white"
+                  title="Edit group"
+                  aria-label="Edit group"
+                  variant="ghost"
+                  // tone="brand"
+                  size="md"
+                  onClick={onEditGroup}
+                >
+                  <PencilIcon className="h-5 w-5" />
+                </IconButton>
+
+                <IconButton
+                  title="Delete group"
+                  aria-label="Delete group"
+                  variant="ghost"
+                  className="text-white"
+                  // tone="brand"
+                  size="md"
+                  onClick={onDeleteGroup}
+                >
+                  <TrashIcon className="h-5 w-5" />
+                </IconButton>
+              </div>
             )}
           </div>
 
-          {/* 桌面端右上角操作，仅创建者可见 */}
-          {canManage && (
-            <div className="hidden md:flex items-center gap-2">
-              <IconButton
-                title="Edit group"
-                aria-label="Edit group"
-                variant="ghost"
-                tone="brand"
-                size="md"
-                onClick={onEditGroup}
-              >
-                <PencilIcon className="h-5 w-5" />
-              </IconButton>
+          {/* 元信息 */}
+          <div className="flex justify-between mt-3">
 
-              <IconButton
-                title="Delete group"
-                aria-label="Delete group"
-                variant="ghost"
-                tone="brand"
-                size="md"
-                onClick={onDeleteGroup}
+            <div className=" flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-white">
+              <span className="inline-flex items-center gap-2">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-yellow/40 text-white text-xs font-semibold">
+                  {(group.creator?.firstName?.[0] || "?").toUpperCase()}
+                </span>
+                <span>{group.creator?.firstName}</span>
+              </span>
+
+              <span className="inline-flex items-center gap-1.5">
+                <CalendarIcon className="h-5 w-5" />
+                <time dateTime={group.createdDate} className="font-medium">
+                  {group.createdDate ? formatDate(group.createdDate) : "—"}
+                </time>
+              </span>
+
+              <Button
+                onClick={onShowMembers}
+                className="border-white text-white"
+                variant="outline"
+                size="sm"
+                leftIcon={<UserPlusIcon className="h-4 w-4 text-white" />}
+                title="View members"
               >
-                <TrashIcon className="h-5 w-5" />
-              </IconButton>
+                <span className="text-[11px] uppercase tracking-wide">
+                  Members
+                </span>
+                <span className="ml-1 font-semibold">{subscriberCount}</span>
+              </Button>
             </div>
-          )}
-        </div>
-
-        {/* 元信息 */}
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-dark-gray">
-          <span className="inline-flex items-center gap-2">
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-dark-green/10 text-dark-green text-xs font-semibold">
-              {(group.creator?.firstName?.[0] || "?").toUpperCase()}
-            </span>
-            <span>{group.creator?.firstName}</span>
-          </span>
-
-          <span className="inline-flex items-center gap-1.5">
-            <CalendarIcon className="h-5 w-5" />
-            <time dateTime={group.createdDate} className="font-medium">
-              {group.createdDate ? formatDate(group.createdDate) : "—"}
-            </time>
-          </span>
-
-          <Button
-            onClick={onShowMembers}
-            variant="outline"
-            size="sm"
-            leftIcon={<UserPlusIcon className="h-4 w-4" />}
-            title="View members"
-          >
-            <span className="text-[11px] uppercase tracking-wide text-dark-gray/70">
-              Members
-            </span>
-            <span className="ml-1 font-semibold">{subscriberCount}</span>
-          </Button>
-        </div>
-      </section>
-
-      {/* 移动端/桌面通用：选择模式 & 新建，仅创建者可见 */}
-      {canManage && (
-        <section className="hidden md:flex justify-end gap-2 px-4">
-          {/* <Button
+            {canManage && (
+              <section className="hidden md:flex justify-end gap-2 px-4">
+                {/* <Button
             onClick={onToggleSelectMode}
             variant={selectMode ? "warning" : "outline"}
             size="sm"
@@ -146,28 +150,34 @@ export default function GroupInfoBar({
             {selectMode ? "Cancel" : "Select Posts"}
           </Button> */}
 
-          {selectMode && (
-            <Button
-              onClick={onBulkDeleteSelected}
-              variant="danger"
-              size="sm"
-              leftIcon={<TrashIcon className="h-5 w-5" />}
-              disabled={selectedCount === 0}
-            >
-              Delete{selectedCount > 0 ? ` (${selectedCount})` : ""}
-            </Button>
-          )}
+                {selectMode && (
+                  <Button
+                    onClick={onBulkDeleteSelected}
+                    variant="danger"
+                    size="sm"
+                    leftIcon={<TrashIcon className="h-5 w-5" />}
+                    disabled={selectedCount === 0}
+                  >
+                    Delete{selectedCount > 0 ? ` (${selectedCount})` : ""}
+                  </Button>
+                )}
 
-          <Button
-            onClick={onNewPost}
-            variant="primary"
-            size="sm"
-            leftIcon={<PlusIcon className="h-5 w-5" />}
-          >
-            New Post
-          </Button>
-        </section>
-      )}
+                <Button
+                  onClick={onNewPost}
+                  variant="primary"
+                  size="sm"
+                  leftIcon={<PlusIcon className="h-5 w-5" />}
+                >
+                  New Post
+                </Button>
+              </section>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* 移动端/桌面通用：选择模式 & 新建，仅创建者可见 */}
+
     </>
   );
 }

@@ -237,11 +237,11 @@ export default function GroupPage() {
   return (
     <>
       {/* 标题 */}
-      {pageLoading ? (
+      {/* {pageLoading ? (
         <TitleSkeleton />
       ) : (
         <PageTitle title={safeGroup?.title} showPageTitle={true} />
-      )}
+      )} */}
 
       <CustomHeader
         item={headerItem}
@@ -253,30 +253,30 @@ export default function GroupPage() {
         onDelete={() => confirmGroupDelete.ask()}
       />
 
-      <div className="container mx-auto md:p-6 p-4 mt-14">
+      {!pageLoading && safeGroup ? (
+        <GroupInfoBar
+          group={safeGroup}
+          subscriberCount={subscriberCount ?? 0}
+          onShowMembers={() => setShowSubsModal(true)}
+          onNewPost={() => { setEditingPost(null); setIsPostModalOpen(true); }}
+          onEditGroup={handleEditGroup}
+          onDeleteGroup={() => confirmGroupDelete.ask()}
+          selectMode={selectMode}
+          selectedCount={selectedIds.size}
+          onToggleSelectMode={toggleSelectMode}
+          onBulkDeleteSelected={() => {
+            const ids = Array.from(selectedIds);
+            if (ids.length === 0) return;
+            confirmBulkDelete.ask(
+              ids,
+              `Delete ${ids.length} selected post${ids.length > 1 ? "s" : ""}?`
+            );
+          }}
+          formatDate={formatDate}
+        />
+      ) : null}
+      <div className="container mx-auto md:p-6 p-4 mt-5">
         {/* 群信息条 + 右上角动作（含 Select） */}
-        {!pageLoading && safeGroup ? (
-          <GroupInfoBar
-            group={safeGroup}
-            subscriberCount={subscriberCount ?? 0}
-            onShowMembers={() => setShowSubsModal(true)}
-            onNewPost={() => { setEditingPost(null); setIsPostModalOpen(true); }}
-            onEditGroup={handleEditGroup}
-            onDeleteGroup={() => confirmGroupDelete.ask()}
-            selectMode={selectMode}
-            selectedCount={selectedIds.size}
-            onToggleSelectMode={toggleSelectMode}
-            onBulkDeleteSelected={() => {
-              const ids = Array.from(selectedIds);
-              if (ids.length === 0) return;
-              confirmBulkDelete.ask(
-                ids,
-                `Delete ${ids.length} selected post${ids.length > 1 ? "s" : ""}?`
-              );
-            }}
-            formatDate={formatDate}
-          />
-        ) : null}
 
         {/* 帖子列表（仅局部刷新） */}
         <section className="relative mt-4">

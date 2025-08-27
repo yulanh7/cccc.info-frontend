@@ -86,6 +86,13 @@
     background-repeat: no-repeat;
   }
 
+  .bg-page-header-bg {
+    background-image: url('/images/page-header-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
   .waterdrop-shape {
     border-radius: 0 50% 50%;
     transform: rotate(45deg);
