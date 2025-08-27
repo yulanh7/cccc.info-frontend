@@ -41,7 +41,7 @@ export default function GroupsDesktopTable({
   formatDate,
 }: Props) {
   return (
-    <div className="hidden md:block overflow-x-auto p-4">
+    <div className="hidden overflow-x-auto p-4">
       <table className="min-w-full bg-bg shadow-lg">
         <thead>
           <tr className="bg-light-gray text-dark-gray">

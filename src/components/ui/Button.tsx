@@ -1,10 +1,10 @@
 "use client";
-
 import React from "react";
 import { cn } from "./cn";
 
 type Variant = "primary" | "warning" | "outline" | "ghost" | "danger";
 type Size = "sm" | "md";
+type Tone = "default" | "brand" | "danger";
 
 type ButtonProps = {
   children: React.ReactNode;
@@ -15,14 +15,14 @@ type ButtonProps = {
   variant?: Variant;
   size?: Size;
   className?: string;
-  /** 可切换按钮（比如 Select 开关） */
   active?: boolean;
-  /** 图标（放在文字左侧） */
   leftIcon?: React.ReactNode;
-  /** 图标（放在文字右侧） */
   rightIcon?: React.ReactNode;
   title?: string;
   "aria-label"?: string;
+  hoverOverlay?: boolean;
+  /** 统一控制文字/边框色（只对 outline/ghost 真正生效） */
+  tone?: Tone;
 };
 
 const base =
@@ -34,13 +34,25 @@ const sizes: Record<Size, string> = {
 };
 
 const variants: Record<Variant, string> = {
-  primary: "bg-green text-white hover:bg-dark-green border border-transparent",
-  warning:
-    "bg-yellow text-dark-gray hover:bg-yellow/90 border border-transparent",
-  outline: "border border-border text-foreground hover:bg-white/5",
+  primary: "bg-[#FBD402] text-[#1F2937] border border-transparent",
+  warning: "bg-yellow text-dark-gray hover:bg-yellow/90 border border-transparent",
+  outline: "border border-dark-green text-foreground hover:bg-white/5",
   ghost: "bg-transparent text-foreground hover:bg-white/5 border border-transparent",
   danger: "border border-red/50 text-red hover:bg-red/10",
 };
+
+function toneClasses(variant: Variant, tone: Tone) {
+  if (tone === "default") return "";
+  if (variant === "outline") {
+    if (tone === "brand") return "text-[#4A7502] border-[#4A7502]";
+    if (tone === "danger") return "text-red-600 border-red-600";
+  }
+  if (variant === "ghost") {
+    if (tone === "brand") return "text-[#4A7502]";
+    if (tone === "danger") return "text-red-600";
+  }
+  return "";
+}
 
 export default function Button({
   children,
@@ -55,13 +67,27 @@ export default function Button({
   leftIcon,
   rightIcon,
   title,
+  hoverOverlay = true,
+  tone = "default",
   ...rest
 }: ButtonProps) {
-  // 可切换按钮的「active」对 warning/primary 常用；也能给 outline/ghost 叠加样式
   const activeClass = active
     ? variant === "outline"
       ? "bg-white/5"
-      : "" // warning/primary 自带实底
+      : ""
+    : "";
+
+  const overlayClass = hoverOverlay
+    ? [
+      "relative overflow-hidden",
+      "after:content-[''] after:absolute after:inset-0",
+      "after:bg-black/10",
+      "after:origin-bottom-left after:scale-0",
+      "hover:after:scale-100",
+      "after:transition-transform after:duration-300 after:ease-out",
+      "after:pointer-events-none",
+      "disabled:hover:after:scale-0",
+    ].join(" ")
     : "";
 
   return (
@@ -69,7 +95,11 @@ export default function Button({
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
-      className={cn(base, sizes[size], variants[variant], activeClass, className)}
+      className={cn(
+        base, sizes[size], variants[variant], activeClass, overlayClass,
+        toneClasses(variant, tone),
+        className
+      )}
       title={title}
       {...rest}
     >

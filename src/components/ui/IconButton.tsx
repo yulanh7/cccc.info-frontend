@@ -1,13 +1,13 @@
 "use client";
-
 import React from "react";
 import { cn } from "./cn";
 
 type Variant = "primary" | "warning" | "outline" | "ghost" | "danger";
 type Size = "sm" | "md";
+type Tone = "default" | "brand" | "danger";
 
 type Props = {
-  children: React.ReactNode; // 放 Heroicons
+  children: React.ReactNode;
   onClick?: () => void;
   title?: string;
   "aria-label"?: string;
@@ -17,7 +17,10 @@ type Props = {
   size?: Size;
   className?: string;
   active?: boolean;
-  rounded?: "md" | "full"; // 需要圆形图标时用 full
+  rounded?: "md" | "full";
+  hoverOverlay?: boolean;
+  /** 统一控制文字/边框色（只对 outline/ghost 真正生效） */
+  tone?: Tone;
 };
 
 const boxBase =
@@ -29,13 +32,25 @@ const sizeBox: Record<Size, string> = {
 };
 
 const variants: Record<Variant, string> = {
-  primary: "bg-green text-white hover:bg-dark-green border border-transparent",
-  warning:
-    "bg-yellow text-dark-gray hover:bg-yellow/90 border border-transparent",
+  primary: "bg-[#FBD402] text-[#1F2937] border border-transparent",
+  warning: "bg-yellow text-dark-gray hover:bg-yellow/90 border border-transparent",
   outline: "border border-border text-foreground hover:bg-white/5 bg-transparent",
   ghost: "bg-transparent text-foreground hover:bg-white/5 border border-transparent",
   danger: "border border-red/50 text-red hover:bg-red/10 bg-transparent",
 };
+
+function toneClasses(variant: Variant, tone: Tone) {
+  if (tone === "default") return "";
+  if (variant === "outline") {
+    if (tone === "brand") return "text-dark-green border-dark-green";
+    if (tone === "danger") return "text-red-600 border-red-600";
+  }
+  if (variant === "ghost") {
+    if (tone === "brand") return "text-dark-green";
+    if (tone === "danger") return "text-red-600";
+  }
+  return "";
+}
 
 export default function IconButton({
   children,
@@ -48,6 +63,8 @@ export default function IconButton({
   className,
   active,
   rounded = "md",
+  hoverOverlay = true,
+  tone = "default",
   ...rest
 }: Props) {
   const radius = rounded === "full" ? "rounded-full" : "rounded-md";
@@ -56,13 +73,30 @@ export default function IconButton({
       ? "bg-white/5"
       : ""
     : "";
+  const overlayClass = hoverOverlay
+    ? [
+      "relative overflow-hidden",
+      "after:content-[''] after:absolute after:inset-0",
+      "after:bg-black/10",
+      "after:origin-bottom-left after:scale-0",
+      "hover:after:scale-100",
+      "after:transition-transform after:duration-300 after:ease-out",
+      "after:pointer-events-none",
+      "disabled:hover:after:scale-0",
+    ].join(" ")
+    : "";
+
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled || loading}
       title={title}
-      className={cn(boxBase, sizeBox[size], variants[variant], radius, activeClass, className)}
+      className={cn(
+        boxBase, sizeBox[size], variants[variant], radius, activeClass, overlayClass,
+        toneClasses(variant, tone),
+        className
+      )}
       {...rest}
     >
       {children}
