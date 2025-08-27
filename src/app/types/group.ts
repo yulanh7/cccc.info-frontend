@@ -10,7 +10,8 @@ export interface GroupProps {
   creator: UserProps;
   subscribed: boolean;
   editable: boolean;
-  inviteOnly: boolean;
+  isPrivate: boolean;
+
 }
 
 export interface GroupListProps {
@@ -122,7 +123,7 @@ export const mapGroupApiToProps = (g: GroupApi): GroupProps => {
     },
     subscribed: g.is_member,
     editable: g.is_creator,
-    inviteOnly: g.isPrivate,
+    isPrivate: g.isPrivate,
   };
 };
 

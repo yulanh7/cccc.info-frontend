@@ -21,7 +21,7 @@ export default function GroupEditModal({
 
   const [name, setName] = useState(group?.title ?? '');
   const [description, setDescription] = useState(group?.description ?? '');
-  const [isPrivate, setIsPrivate] = useState<boolean>(group?.inviteOnly ?? false);
+  const [isPrivate, setIsPrivate] = useState<boolean>(group?.isPrivate ?? false);
 
   const handleSave = () => {
     const body: CreateOrUpdateGroupBody = {

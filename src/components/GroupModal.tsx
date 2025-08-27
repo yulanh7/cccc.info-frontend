@@ -27,7 +27,7 @@ export default function GroupEditModal({
     creator: mockUsers[1],
     subscribed: false,
     editable: true,
-    inviteOnly: false,
+    isPrivate: false,
   };
 
   const [editedItem, setEditedItem] = useState<GroupProps>(
@@ -157,8 +157,8 @@ export default function GroupEditModal({
           <label className="flex items-center">
             <input
               type="checkbox"
-              checked={editedItem.inviteOnly}
-              onChange={(e) => handleChange('inviteOnly', e.target.checked)}
+              checked={editedItem.isPrivate}
+              onChange={(e) => handleChange('isPrivate', e.target.checked)}
               className="mr-2"
             />
             <span className="text-sm text-dark-gray">Invite Only</span>

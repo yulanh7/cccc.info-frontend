@@ -10,7 +10,7 @@ import LoadingOverlay from "@/components/feedback/LoadingOverLay";
 import PostModal from "@/components/PostModal";
 import GroupEditModal from "@/components/groups/GroupEditModal";
 import SubscribersModal from "@/components/groups/SubscribersModal";
-import DeleteConfirmModal from "@/components/DeleteConfirmModal";
+import ConfirmModal from "@/components/ConfirmModal";
 import GroupInfoBar from "@/components/groups/GroupInfoBar";
 import PostsListWithSelect from "@/components/posts/PostsListWithSelect";
 
@@ -323,7 +323,7 @@ export default function GroupPage() {
       />
 
       {/* 删群确认 */}
-      <DeleteConfirmModal
+      <ConfirmModal
         isOpen={confirmGroupDelete.open}
         message={confirmGroupDelete.message}
         onCancel={confirmGroupDelete.cancel}
@@ -333,7 +333,7 @@ export default function GroupPage() {
       />
 
       {/* 批量删帖确认 */}
-      <DeleteConfirmModal
+      <ConfirmModal
         isOpen={confirmBulkDelete.open}
         message={confirmBulkDelete.message}
         onCancel={confirmBulkDelete.cancel}
@@ -344,7 +344,7 @@ export default function GroupPage() {
       />
 
       {/* 单个删帖确认 */}
-      <DeleteConfirmModal
+      <ConfirmModal
         isOpen={confirmSingleDelete.open}
         message={confirmSingleDelete.message}
         onCancel={confirmSingleDelete.cancel}

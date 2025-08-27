@@ -4,7 +4,7 @@ import { useState } from 'react';
 import {
   ChevronLeftIcon, TrashIcon, PencilIcon, PlusIcon, UserCircleIcon
 } from '@heroicons/react/24/outline';
-import DeleteConfirmModal from '../DeleteConfirmModal';
+import ConfirmModal from '../ConfirmModal';
 
 interface CustomHeaderProps {
   item?: any;
@@ -85,7 +85,7 @@ export default function CustomHeader({
         </div>
       </header>
 
-      <DeleteConfirmModal
+      <ConfirmModal
         isOpen={isDeleteConfirmOpen}
         onConfirm={confirmDelete}
         onCancel={cancelDelete}

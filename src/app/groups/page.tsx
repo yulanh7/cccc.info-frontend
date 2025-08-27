@@ -4,7 +4,7 @@ import { PlusIcon } from "@heroicons/react/24/outline";
 import { useRouter, useSearchParams } from "next/navigation";
 import PageTitle from "@/components/layout/PageTitle";
 import GroupModal from "@/components/GroupModal";
-import DeleteConfirmModal from "@/components/DeleteConfirmModal";
+import ConfirmModal from "@/components/ConfirmModal";
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
 import MobileSearchHeader from "@/components/layout/MobileSearchHeader";
 import SearchBar from "@/components/SearchBar";
@@ -127,7 +127,7 @@ export default function GroupsPage() {
     const body: CreateOrUpdateGroupBody = {
       name: updatedGroup.title.trim(),
       description: updatedGroup.description.trim(),
-      isPrivate: updatedGroup.inviteOnly,
+      isPrivate: updatedGroup.isPrivate,
     };
 
     if (isNew) {
@@ -319,7 +319,7 @@ export default function GroupsPage() {
       )}
 
       {/* 删除确认（用 useConfirm 驱动） */}
-      <DeleteConfirmModal
+      <ConfirmModal
         isOpen={confirmGroupDelete.open}
         message={confirmGroupDelete.message}
         onCancel={confirmGroupDelete.cancel}

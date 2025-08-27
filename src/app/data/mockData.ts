@@ -129,7 +129,7 @@ export const mockGroups: GroupProps[] = [
     creator: { id: 1, email: "alice@example.com", first_name: "Alice" },
     subscribed: true,
     editable: true,
-    inviteOnly: false,
+    isPrivate: false,
   },
   {
     id: 2,
@@ -139,7 +139,7 @@ export const mockGroups: GroupProps[] = [
     creator: { id: 2, email: "bob@example.com", first_name: "Bob" },
     subscribed: false,
     editable: false,
-    inviteOnly: true,
+    isPrivate: true,
   },
   {
     id: 3,
@@ -149,7 +149,7 @@ export const mockGroups: GroupProps[] = [
     creator: { id: 3, email: "charlie@example.com", first_name: "Charlie" },
     subscribed: true,
     editable: true,
-    inviteOnly: false,
+    isPrivate: false,
   },
 ];
 
