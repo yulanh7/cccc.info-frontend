@@ -78,11 +78,11 @@ export default function PostCardSimple({
         <div className="mt-2 space-y-1 text-xs text-gray">
 
 
-          <span className="inline-flex items-center gap-2">
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-dark-green/10 text-dark-green text-xs font-semibold">
+          <span className="inline-flex items-center gap-1 text-xs">
+            <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-dark-green/10 text-dark-green  font-semibold">
               {(author.firstName?.[0] || "?").toUpperCase()}
             </span>
-            <span>{author?.firstName}</span>
+            <span className="text-[9px]">{author?.firstName}</span>
           </span>
         </div>
       </div>
