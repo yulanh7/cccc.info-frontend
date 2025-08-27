@@ -12,6 +12,7 @@ export interface PostProps {
   videoUrls: string[];               // unified: list & detail both map to this
   files?: { url: string; name: string }[];
   hasVideo?: boolean;
+  like_count: number;
 }
 
 /** Optional payloads used elsewhere */
@@ -73,6 +74,7 @@ export const mapGroupPostApiToPostProps = (p: GroupPostApi): PostProps => ({
   videoUrls: p.videos ?? [],
   files: [],
   hasVideo: (p.videos?.length ?? 0) > 0 || p.has_videos === true,
+  like_count: p.like_count
 });
 
 /** ===================== Post DETAIL API ===================== */
@@ -109,6 +111,7 @@ export const mapPostDetailApiToProps = (p: PostDetailApi): PostProps => ({
   videoUrls: (p.videos ?? []).map(v => v.url).filter(Boolean),
   files: (p.files ?? []).map(f => ({ url: f.url, name: f.filename })),
   hasVideo: (p.videos?.length ?? 0) > 0,
+  like_count: p.like_count,
 });
 
 /** ===================== Permissions ===================== */

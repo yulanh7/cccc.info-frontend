@@ -33,6 +33,7 @@ export default function PostModal({
       },
     group: (item as any)?.group ?? "",
     date: (item as any)?.date ?? new Date().toISOString().split("T")[0],
+    like_count: 0,
   };
 
   // —— 编辑态：用默认值兜底再覆盖传入，且强制 videoUrls / files 为数组

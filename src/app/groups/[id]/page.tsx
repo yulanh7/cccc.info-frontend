@@ -116,6 +116,7 @@ export default function GroupPage() {
     // 只从标准化函数取，确保发送给后端的是 string[]
     video_urls: normalizeVideoUrls(item),
     file_ids: [], // TODO: 上传后替换
+    like_count: item.like_count
   });
 
   // 保存 PostModal 返回的数据时，先统一标准化，再调用 create/update
@@ -282,7 +283,7 @@ export default function GroupPage() {
           formatDate={formatDate}
         />
       ) : null}
-      <div className="container mx-auto md:p-6 p-4 mt-5">
+      <div className="container mx-auto md:p-6 p-2">
         {/* 群信息条 + 右上角动作（含 Select） */}
 
         {/* 帖子列表（仅局部刷新） */}

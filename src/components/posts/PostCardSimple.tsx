@@ -4,6 +4,7 @@ import { PostProps } from "@/app/types/post";
 import {
   CalendarIcon,
   UserGroupIcon,
+  HandThumbUpIcon
 } from "@heroicons/react/24/outline";
 import { PlayIcon } from '@heroicons/react/24/solid';
 import { ellipsize } from '@/app/ultility';
@@ -21,7 +22,7 @@ export default function PostCardSimple({
   formatDate,
   showEnterArrow = true,
 }: Props) {
-  const { id, title, date, author, group, description, videoUrls } = post;
+  const { id, title, date, author, group, description, videoUrls, like_count } = post;
 
   const thumbnail = videoUrls && videoUrls[0] ? getYouTubeThumbnail(videoUrls[0], 'hqdefault') : null;
 
@@ -83,6 +84,12 @@ export default function PostCardSimple({
               {ellipsize(author.firstName, 10, { byWords: true })}
             </span>
           </span>
+          <div className="absolute bottom-2 right-2 z-10 pointer-events-none">
+            <div className="flex items-center gap-1 bg-white/80 backdrop-blur-sm rounded-full px-2 py-1 shadow">
+              <HandThumbUpIcon className="h-4 w-4 text-dark-gray" />
+              <span className="text-xs text-dark-gray">{like_count}</span>
+            </div>
+          </div>
         </div>
       </div>
 
