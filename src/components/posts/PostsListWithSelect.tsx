@@ -72,7 +72,7 @@ export default function PostsListWithSelect({
                 {canManage && (selectMode || showDelete) && (
                   <div className="absolute left-0 top-[20px] z-10 pointer-events-none">
                     <div
-                      className="flex items-center gap-1 bg-yellow border-t border-border rounded-xs shadow-sm  pointer-events-auto"
+                      className="flex items-center gap-2 bg-yellow border-t border-border rounded-xs shadow-sm  pointer-events-auto"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {selectMode && (
@@ -89,13 +89,13 @@ export default function PostsListWithSelect({
                       )}
 
                       {!selectMode && showDelete && (
-                        <div className="flex flex-col items-center gap-2">
+                        <div className="flex flex-col items-center gap-3">
                           <IconButton
                             title="Edit group"
                             aria-label="Edit group"
                             rounded="full"
                             variant="ghost"
-                            size="sm"
+                            size="xs"
                             onClick={() => onEditSingle(post)}
                           // tone="brand"
                           >
@@ -107,7 +107,7 @@ export default function PostsListWithSelect({
                             aria-label="Delete group"
                             rounded="full"
                             variant="ghost"
-                            size="sm"
+                            size="xs"
                             onClick={() => onDeleteSingle(post.id)}
                           // tone="brand"
                           >

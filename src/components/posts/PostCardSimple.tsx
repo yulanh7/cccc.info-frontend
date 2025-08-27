@@ -6,9 +6,6 @@ import {
   UserGroupIcon,
 } from "@heroicons/react/24/outline";
 import { PlayIcon } from '@heroicons/react/24/solid';
-import { CheckIcon, TrashIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
-import IconButton from "@/components/ui/IconButton";
-
 import { ellipsize } from '@/app/ultility';
 import Link from "next/link";
 import { getYouTubeThumbnail } from '@/app/ultility';
@@ -56,7 +53,7 @@ export default function PostCardSimple({
 
         ) : (
           <div
-            className="w-full pt-7 pb-4 px-3 min-h-20 bg-[url('/images/bg-for-homepage.png')] bg-cover bg-center rounded-t-xs md:rounded-t-sm flex items-center justify-center"
+            className="w-full pt-7 pb-4 px-3 min-h-18 bg-[url('/images/bg-for-homepage.png')] bg-cover bg-center rounded-t-xs md:rounded-t-sm flex items-center justify-center"
           >
             <h2 className="text-dark-gray  font-'Apple Color Emoji' font-semibold text-center px-4">
               {title}
