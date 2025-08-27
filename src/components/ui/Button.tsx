@@ -2,7 +2,7 @@
 import React from "react";
 import { cn } from "./cn";
 
-type Variant = "primary" | "warning" | "outline" | "ghost" | "danger";
+type Variant = "primary" | "secondary" | "warning" | "outline" | "ghost" | "danger";
 type Size = "sm" | "md";
 type Tone = "default" | "brand" | "danger";
 
@@ -34,9 +34,10 @@ const sizes: Record<Size, string> = {
 };
 
 const variants: Record<Variant, string> = {
-  primary: "bg-[#FBD402] text-[#1F2937] border border-transparent",
+  primary: "bg-yellow text-dark-gray border border-transparent",
+  secondary: "bg-[#4A7502] text-white hover:bg-[#3D6202] border border-transparent",
   warning: "bg-yellow text-dark-gray hover:bg-yellow/90 border border-transparent",
-  outline: "border border-dark-green text-foreground hover:bg-white/5",
+  outline: "border border-dark-yellow text-dark-yellow hover:bg-white/5",
   ghost: "bg-transparent text-foreground hover:bg-white/5 border border-transparent",
   danger: "border border-red/50 text-red hover:bg-red/10",
 };

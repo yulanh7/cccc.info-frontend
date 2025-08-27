@@ -1,5 +1,6 @@
 import React from "react";
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import Button from "@/components/ui/Button";
 
 type Props = {
   value: string;
@@ -23,7 +24,7 @@ export default function SearchBar({
   resultHint,
 }: Props) {
   return (
-    <div className={`${sticky ? "sticky top-0 bg-bg" : ""} ml-4 lg:p-4`}>
+    <div className={`${sticky ? "sticky top-0 bg-bg" : ""} ml-4 `}>
       <form onSubmit={onSubmit} className="flex items-center gap-2">
         <div className="relative flex-1">
           <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-2.5 text-gray-400" />
@@ -46,9 +47,17 @@ export default function SearchBar({
             </button>
           )}
         </div>
-        <button type="submit" className="px-4 py-2 bg-dark-green text-white rounded-sm hover:bg-green">
+
+        {/* 用通用 Button；保持提交逻辑不变 */}
+        <Button
+          type="submit"
+          variant="primary"
+          size="md"
+          className="rounded-sm"
+          aria-label="Search"
+        >
           Search
-        </button>
+        </Button>
       </form>
 
       {showResultHint && resultHint}

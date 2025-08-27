@@ -26,6 +26,8 @@ import type { GroupProps } from "@/app/types";
 import type { CreateOrUpdateGroupBody } from "@/app/types/group";
 import { formatDate } from "@/app/ultility";
 import { useConfirm } from "@/hooks/useConfirm";
+import Button from "@/components/ui/Button";
+import IconButton from "@/components/ui/IconButton";
 
 const PER_PAGE = 9;
 
@@ -49,6 +51,9 @@ export default function GroupsPage() {
   const [isNew, setIsNew] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<GroupProps | undefined>(undefined);
   const [qInput, setQInput] = useState("");
+
+  const canCreate = !!user?.admin;
+
 
   // Loading states
   const [listLoading, setListLoading] = useState(true); // 首次或换页/搜索时的整页加载
@@ -112,6 +117,10 @@ export default function GroupsPage() {
 
   // ===== Handlers
   const handleAdd = () => {
+    if (!canCreate) {
+      alert("Only admins can create groups.");
+      return;
+    }
     setSelectedGroup(undefined);
     setIsNew(true);
     setIsModalOpen(true);
@@ -165,7 +174,6 @@ export default function GroupsPage() {
 
     setIsModalOpen(false);
   };
-
 
   const handleDeleteClick = (id: number) => {
     confirmGroupDelete.ask(id);
@@ -226,17 +234,27 @@ export default function GroupsPage() {
         placeholder="Search groups…"
       />
 
-      {/* 移动端新建 */}
-      <button
-        onClick={handleAdd}
-        className="fixed md:hidden bottom-8 z-20 left-1/2 -translate-x-1/2 bg-yellow px-3 py-3 rounded-[50%]"
-      >
-        <PlusIcon className="h-7 w-7 text-white" />
-      </button>
+      {/* ✅ 移动端悬浮新增（IconButton，黄底圆形） */}
+      {canCreate && (
+        <button
+          onClick={handleAdd}
+          className="fixed md:hidden bottom-10 z-20 left-1/2 -translate-x-1/2 bg-yellow px-3 py-3 rounded-[50%]"
+        >
+          <PlusIcon className="h-7 w-7 text-white" />
+        </button>
+      )}
+
 
       <div className="mx-auto w-full p-4 min-h-screen lg:container">
-        {/* Desktop 搜索条 */}
-        <div className="hidden md:block">
+        <div className="hidden md:flex justify-between my-6">
+          <Button
+            onClick={handleAdd}
+            variant="secondary"
+            size="sm"
+            leftIcon={<PlusIcon className="h-5 w-5" />}
+          >
+            New Group
+          </Button>
           <SearchBar
             value={qInput}
             onChange={setQInput}
@@ -253,19 +271,7 @@ export default function GroupsPage() {
           />
         </div>
 
-        {/* Desktop 新建按钮 */}
-        <div className="hidden md:flex justify-start ml-4 mt-4">
-          <button
-            onClick={handleAdd}
-            className="mb-4 flex items-center px-4 py-2 bg-dark-green text-white rounded-sm hover:bg-green"
-            disabled={saving || deleting || toggling}
-          >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            New Group
-          </button>
-        </div>
-
-        {/* 桌面表格（已经支持分页 props） */}
+        {/* 桌面表格 */}
         <GroupsDesktopTable
           rows={rows}
           listLoading={listLoading}
@@ -283,7 +289,7 @@ export default function GroupsPage() {
           formatDate={formatDate}
         />
 
-        {/* 移动卡片列表（改为分页） */}
+        {/* 移动卡片列表 */}
         <GroupsMobileList
           rows={rows}
           listLoading={listLoading}

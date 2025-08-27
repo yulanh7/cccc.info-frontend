@@ -10,6 +10,7 @@ import Pagination from "@/components/Pagination";
 import { ellipsize } from "@/app/ultility";
 import Button from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
+import SubscribeToggleButton from "@/components/ui/SubscribeToggleButton";
 import ConfirmModal from "@/components/ConfirmModal"; // 复用并传自定义按钮
 
 type Props = {
@@ -119,6 +120,7 @@ export default function GroupsMobileList({
                           size="sm"
                           disabled={saving || deleting}
                           onClick={() => onEdit(group)}
+                          tone="brand"
                         >
                           <PencilSquareIcon className="h-5 w-5" />
                         </IconButton>
@@ -132,6 +134,8 @@ export default function GroupsMobileList({
                           size="sm"
                           disabled={saving || deleting}
                           onClick={() => onDelete(group.id)}
+                          tone="brand"
+
                         >
                           <TrashIcon className="h-5 w-5" />
                         </IconButton>
@@ -172,23 +176,12 @@ export default function GroupsMobileList({
                     </span>
 
                     <div onClick={(e) => e.stopPropagation()}>
-                      <Button
-                        className="min-w-28"
-                        variant={subbed ? "outline" : "primary"}
-                        disabled={saving || deleting || toggling}
-                        aria-pressed={subbed}
-                        aria-label={subbed ? "Unsubscribe" : "Subscribe"}
+                      <SubscribeToggleButton
+                        subbed={subbed}
+                        toggling={toggling}
+                        disabled={saving || deleting}
                         onClick={() => onToggleSubscription(group)}
-                      >
-                        {toggling ? (
-                          <span className="inline-flex items-center gap-1">
-                            <Spinner className="h-4 w-4" />
-                            {subbed ? "Unsubscribing…" : "Subscribing…"}
-                          </span>
-                        ) : (
-                          <>{subbed ? "Unsubscribe" : "Subscribe"}</>
-                        )}
-                      </Button>
+                      />
                     </div>
                   </div>
                 </div>

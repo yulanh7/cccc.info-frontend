@@ -32,8 +32,8 @@ const sizeBox: Record<Size, string> = {
 };
 
 const variants: Record<Variant, string> = {
-  primary: "bg-[#FBD402] text-[#1F2937] border border-transparent",
-  warning: "bg-yellow text-dark-gray hover:bg-yellow/90 border border-transparent",
+  warning: "bg-[#FBD402] text-[#1F2937] border border-transparent",
+  primary: "bg-yellow text-dark-gray hover:bg-yellow/90 border border-transparent",
   outline: "border border-border text-foreground hover:bg-white/5 bg-transparent",
   ghost: "bg-transparent text-foreground hover:bg-white/5 border border-transparent",
   danger: "border border-red/50 text-red hover:bg-red/10 bg-transparent",
