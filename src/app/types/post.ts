@@ -50,7 +50,7 @@ export interface CreatePostRequest {
   title: string;
   content: string;
   description: string;
-  video_urls: string[];
+  videos: string[];
   file_ids: number[];
 }
 export interface PostDetailFileApi {
@@ -95,6 +95,11 @@ export interface GroupPostsDataApi {
   total_posts: number;
 }
 export type GroupPostsResponseApi = ApiResponseProps<GroupPostsDataApi>;
+export type GroupPostsPaginationApi = {
+  total_pages: number;
+  current_page: number;
+  total_posts: number;
+};
 
 // 3.3 Detail
 export type PostDetailResponseApi = ApiResponseProps<PostDetailApi>;
@@ -102,6 +107,8 @@ export type PostDetailResponseApi = ApiResponseProps<PostDetailApi>;
 // 3.4 Update
 export interface UpdatePostRequest extends CreatePostRequest { }
 export type UpdatePostResponseApi = ApiResponseProps<{ post: PostDetailApi }>;
+
+
 
 // 3.6 / 3.7 Like / Unlike
 export type LikeCountResponseApi = ApiResponseProps<{ like_count: number }>;
@@ -199,7 +206,7 @@ export const toCreateRequest = (m: CreatePostFormModel): CreatePostRequest => ({
   title: m.title,
   content: m.contentHtml,
   description: m.description,
-  video_urls: m.videos,
+  videos: m.videos,
   file_ids: m.fileIds,
 });
 export const toUpdateRequest = (m: UpdatePostFormModel): UpdatePostRequest =>
@@ -226,3 +233,13 @@ export const mergeListWithDetailToUi = (
     created_at: detail.created_at ?? list.created_at,
     group_id: Number(groupId ?? detail.group_id),
   });
+
+
+export const mapPostDetailApiToUiWithAuthor = (
+  p: PostDetailApi,
+  fallbackAuthor?: string
+): PostDetailUi => {
+  const ui = mapPostDetailApiToUi(p);
+  if (fallbackAuthor) ui.author.firstName = fallbackAuthor;
+  return ui;
+};

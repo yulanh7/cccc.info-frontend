@@ -98,7 +98,7 @@ export default function GroupPage() {
   const postsLoading = status.posts === "loading" && groupMatchesRoute;
 
   const normalizeVideoUrls = (src: any): string[] => {
-    const raw = src?.videos ?? src?.video_urls ?? src?.videoUrl ?? [];
+    const raw = src?.videos ?? src?.videos ?? src?.videoUrl ?? [];
     let list: string[] = [];
     if (Array.isArray(raw)) {
       list = raw;
@@ -114,7 +114,7 @@ export default function GroupPage() {
     content: `<p>${(item.description ?? "").trim()}</p>`,
     description: item.description ?? "",
     // 只从标准化函数取，确保发送给后端的是 string[]
-    video_urls: normalizeVideoUrls(item),
+    videos: normalizeVideoUrls(item),
     file_ids: [], // TODO: 上传后替换
     like_count: item.like_count
   });

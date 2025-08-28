@@ -1,6 +1,6 @@
 "use client";
 
-import { PostProps } from "@/app/types/post";
+import { PostListUi } from "@/app/types/post";
 import {
   CalendarIcon,
   UserGroupIcon,
@@ -12,7 +12,7 @@ import Link from "next/link";
 import { getYouTubeThumbnail } from '@/app/ultility';
 
 type Props = {
-  post: PostProps;
+  post: PostListUi;
   formatDate: (timestamp: string, showTime?: boolean) => string;
   showEnterArrow?: boolean;
 };

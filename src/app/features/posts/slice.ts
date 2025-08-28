@@ -1,43 +1,8 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { apiRequest } from "../request";
-import type { PostProps } from "@/app/types/post";
+import type { PostDetailUi, LoadStatus, PostDetailApi } from "@/app/types";
+import { mapPostDetailApiToUiWithAuthor } from '@/app/types/post'
 
-/** ===== API <-> UI 映射 ===== */
-type LoadStatus = "idle" | "loading" | "succeeded" | "failed";
-
-type PostDetailApi = {
-  id: number;
-  title: string;
-  content?: string;
-  description?: string;
-  videos?: Array<{ id: number; url: string }>;
-  files?: Array<{
-    id: number;
-    filename: string;
-    url: string;
-    file_size: number;
-    file_type: string;
-    upload_time: string;
-  }>;
-  group_id: number;
-  user_id: number;
-  created_at: string;
-  like_count?: number;
-};
-
-const toPostProps = (p: PostDetailApi, fallbackAuthor = ""): PostProps => ({
-  id: p.id,
-  title: p.title || "",
-  date: p.created_at || "",
-  author: fallbackAuthor, // 详情里只有 user_id，没有 name，这里交由外部补充或保持空
-  group: String(p.group_id ?? ""),
-  description: p.description || "",
-  videoUrl: p.videos && p.videos[0]?.url ? p.videos[0].url : "",
-  files:
-    p.files && p.files.length
-      ? p.files.map((f) => ({ url: f.url, name: f.filename }))
-      : undefined,
-});
 
 /** ===== Endpoints ===== */
 const POSTS_ENDPOINTS = {
@@ -54,14 +19,14 @@ const POSTS_ENDPOINTS = {
 
 // 3.1 创建帖子
 export const createPost = createAsyncThunk<
-  PostProps,
+  PostDetailUi,
   {
     groupId: number;
     body: {
       title: string;
       content: string; // HTML
       description?: string;
-      video_urls?: string[];
+      videos?: string[];
       file_ids?: number[];
     };
     /** 可选：用于在 UI 映射 author 名称时回填 */
@@ -75,7 +40,7 @@ export const createPost = createAsyncThunk<
       body
     );
     if (!res.success || !res.data?.post) throw new Error(res.message || "Create post failed");
-    return toPostProps(res.data.post, authorNameHint);
+    return mapPostDetailApiToUiWithAuthor(res.data.post, authorNameHint);
   } catch (e: any) {
     return rejectWithValue(e.message || "Create post failed") as any;
   }
@@ -83,13 +48,13 @@ export const createPost = createAsyncThunk<
 
 // 3.3 获取帖子详情
 export const fetchPostDetail = createAsyncThunk<
-  PostProps,
+  PostDetailUi,
   { postId: number; authorNameHint?: string }
 >("posts/fetchPostDetail", async ({ postId, authorNameHint }, { rejectWithValue }) => {
   try {
     const res = await apiRequest<PostDetailApi>("GET", POSTS_ENDPOINTS.GET(postId));
     if (!res.success || !res.data) throw new Error(res.message || "Fetch post failed");
-    return toPostProps(res.data, authorNameHint);
+    return mapPostDetailApiToUiWithAuthor(res.data, authorNameHint);
   } catch (e: any) {
     return rejectWithValue(e.message || "Fetch post failed") as any;
   }
@@ -97,14 +62,14 @@ export const fetchPostDetail = createAsyncThunk<
 
 // 3.4 更新帖子
 export const updatePost = createAsyncThunk<
-  PostProps,
+  PostDetailUi,
   {
     postId: number;
     body: {
       title: string;
       content: string; // HTML
       description?: string;
-      video_urls?: string[];
+      videos?: string[];
       file_ids?: number[];
     };
     authorNameHint?: string;
@@ -117,7 +82,7 @@ export const updatePost = createAsyncThunk<
       body
     );
     if (!res.success || !res.data?.post) throw new Error(res.message || "Update post failed");
-    return toPostProps(res.data.post, authorNameHint);
+    return mapPostDetailApiToUiWithAuthor(res.data.post, authorNameHint);
   } catch (e: any) {
     return rejectWithValue(e.message || "Update post failed") as any;
   }
@@ -212,8 +177,8 @@ export const fetchPostFileIds = createAsyncThunk<{ postId: number; file_ids: num
 /** ===== Slice ===== */
 
 interface PostsState {
-  byId: Record<number, PostProps>;
-  current: PostProps | null;
+  byId: Record<number, PostDetailUi>;
+  current: PostDetailUi | null;
   likes: Record<
     number,
     {
@@ -318,7 +283,7 @@ const postsSlice = createSlice({
         setError(s, "deletePost", (a.payload as string) || "Delete post failed");
       });
 
-    // like / unlike （这里仅记录 likes 数，如需展示可扩展 PostProps）
+    // like / unlike （这里仅记录 likes 数，如需展示可扩展 PostDetailUi）
     builder
       .addCase(likePost.pending, (s) => setStatus(s, "likePost", "loading"))
       .addCase(likePost.fulfilled, (s) => setStatus(s, "likePost", "succeeded"))

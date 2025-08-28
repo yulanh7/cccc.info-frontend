@@ -7,11 +7,11 @@ import type {
   CreateOrUpdateGroupBody,
   GroupsListData,
   GroupListPaginationApi,
-  GroupDetailData
-} from '@/app/types/group';
+  GroupDetailData,
+  LoadStatus
+} from '@/app/types';
 import { mapGroupApiToProps } from '@/app/types/group';
 
-type LoadStatus = 'idle' | 'loading' | 'succeeded' | 'failed';
 
 const GROUP_ENDPOINTS = {
   CREATE_GROUP: '/groups',

@@ -14,11 +14,11 @@ export default function Post({ post }: { post: PostProps }) {
     author,
     group,
     description,
-    videoUrl,
+    videos,
     files,
   } = post
   const truncatedDescription = description.length > 100 ? `${description.slice(0, 100)}...` : description;
-  const thumbnail = videoUrl ? getYouTubeThumbnail(videoUrl, 'hqdefault') : null;
+  const thumbnail = videos ? getYouTubeThumbnail(videos[0], 'hqdefault') : null;
 
   return (
     <div className="card cursor-pointer">
@@ -56,7 +56,7 @@ export default function Post({ post }: { post: PostProps }) {
           </div>
           <div className='flex justify-between items-center mt-2 md:mt-4'>
             <span className='flex items-center text-[10px] md:text-sm text-gray'>
-              <UserCircleIcon className="h-4 w-4 mr-1 text-gray" /> {author}
+              <UserCircleIcon className="h-4 w-4 mr-1 text-gray" /> {author.firstName}
             </span>
           </div>
         </div>
