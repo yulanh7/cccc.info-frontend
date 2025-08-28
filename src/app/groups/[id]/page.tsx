@@ -3,9 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
-
 import CustomHeader from "@/components/layout/CustomHeader";
-import PageTitle from "@/components/layout/PageTitle";
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
 import PostModal from "@/components/posts/PostModal";
 import GroupModal from "@/components/groups/GroupModal";
@@ -23,13 +21,11 @@ import {
 
 import {
   createPost,
-  updatePost as updatePostThunk,
   deletePost as deletePostThunk,
 } from "@/app/features/posts/slice";
-
 import { updateGroup, deleteGroup } from "@/app/features/groups/slice";
 import type { CreateOrUpdateGroupBody } from "@/app/types/group";
-import type { PostProps } from "@/app/types";
+import { toCreateRequest, type CreatePostFormModel } from "@/app/types/post";
 
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { useConfirm } from "@/hooks/useConfirm";
@@ -56,7 +52,6 @@ export default function GroupPage() {
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showSubsModal, setShowSubsModal] = useState(false);
-  const [editingPost, setEditingPost] = useState<PostProps | null>(null);
 
 
   // 选择模式 & 批量删除
@@ -97,51 +92,42 @@ export default function GroupPage() {
   const pageLoading = !groupMatchesRoute || status.group === "loading";
   const postsLoading = status.posts === "loading" && groupMatchesRoute;
 
-  const normalizeVideoUrls = (src: any): string[] => {
-    const raw = src?.videos ?? src?.videos ?? src?.videoUrl ?? [];
-    let list: string[] = [];
-    if (Array.isArray(raw)) {
-      list = raw;
-    } else if (typeof raw === "string") {
-      // 允许用户输入用逗号/换行分隔的多个链接
-      list = raw.split(/[\n,]+/);
-    }
-    return list.map(s => String(s).trim()).filter(Boolean);
-  };
 
-  const toApiBody = (item: any) => ({
-    title: (item.title ?? "").trim(),
-    content: `<p>${(item.description ?? "").trim()}</p>`,
-    description: item.description ?? "",
-    // 只从标准化函数取，确保发送给后端的是 string[]
-    videos: normalizeVideoUrls(item),
-    file_ids: [], // TODO: 上传后替换
-    like_count: item.like_count
-  });
 
   // 保存 PostModal 返回的数据时，先统一标准化，再调用 create/update
-  const handlePostModalSave = async (item: PostProps) => {
+  const handlePostModalSave = async (form: CreatePostFormModel) => {
     setIsPostModalOpen(false);
-    const normalized = { ...item, videos: normalizeVideoUrls(item) };
+    if (!safeGroup) return;
     try {
-      if (editingPost) {
-        await onEditPost(normalized as PostProps);
-      } else {
-        await onCreatePost(normalized as PostProps);
-      }
-    } finally {
-      setEditingPost(null);
+      const body = toCreateRequest({
+        title: form.title?.trim() ?? "",
+        contentHtml: form.contentHtml ?? "",
+        description: form.description ?? "",
+        videos: form.videos ?? [],
+        fileIds: form.fileIds ?? [],
+      });
+      await dispatch(
+        createPost({
+          groupId: safeGroup.id,
+          body,
+          authorNameHint: safeGroup.creator?.firstName || "",
+        })
+      ).unwrap();
+      // 新建成功后刷新列表
+      dispatch(fetchGroupPosts({ groupId: safeGroup.id, page: 1, per_page: 20, append: false }));
+    } catch (e: any) {
+      alert(e?.message || "Create post failed");
     }
   };
 
   // ====== 新建 / 编辑 / 删除（单个） / 批量删除 ======
-  const onCreatePost = async (item: PostProps) => {
+  const onCreatePost = async (item: CreatePostFormModel) => {
     if (!safeGroup) return;
     try {
       await dispatch(
         createPost({
           groupId: safeGroup.id,
-          body: toApiBody(item),
+          body: toCreateRequest(item),
           authorNameHint: safeGroup.creator?.firstName || "",
         })
       ).unwrap();
@@ -151,18 +137,7 @@ export default function GroupPage() {
     }
   };
 
-  const onEditPost = async (item: PostProps) => {
-    try {
-      await dispatch(
-        updatePostThunk({ postId: item.id, body: toApiBody(item), authorNameHint: item.author.firstName })
-      ).unwrap();
-      if (safeGroup) {
-        dispatch(fetchGroupPosts({ groupId: safeGroup.id, page: 1, per_page: 20, append: false }));
-      }
-    } catch (e: any) {
-      alert(e?.message || "Update post failed");
-    }
-  };
+
 
   const onDeleteSingle = async (postId: number) => {
     try {
@@ -266,7 +241,7 @@ export default function GroupPage() {
           group={safeGroup}
           subscriberCount={subscriberCount ?? 0}
           onShowMembers={() => setShowSubsModal(true)}
-          onNewPost={() => { setEditingPost(null); setIsPostModalOpen(true); }}
+          onNewPost={() => setIsPostModalOpen(true)}
           onEditGroup={handleEditGroup}
           onDeleteGroup={() => confirmGroupDelete.ask()}
           selectMode={selectMode}
@@ -321,7 +296,7 @@ export default function GroupPage() {
                 onToggleSelect={toggleSelect}
                 canEdit={(p) => canEditPost(p, user)}
                 onDeleteSingle={(postId) => confirmSingleDelete.ask(postId)}
-                onEditSingle={(p) => { setEditingPost(p); setIsPostModalOpen(true); }}
+                onEditSingle={(id) => router.push(`/posts/${id}?edit=1`)}
                 deleting={status.posts === "loading" && safePosts.length > 0}
                 hasMore={Boolean(
                   safePagination &&
@@ -390,10 +365,10 @@ export default function GroupPage() {
 
       {isPostModalOpen && (
         <PostModal
-          item={editingPost ?? undefined}
-          isNew={!editingPost}
+          item={undefined}
+          isNew={true}
           onSave={handlePostModalSave}
-          onClose={() => { setIsPostModalOpen(false); setEditingPost(null); }}
+          onClose={() => setIsPostModalOpen(false)}
         />
       )}
 
@@ -401,7 +376,7 @@ export default function GroupPage() {
       {/* 移动端新增按钮 */}
       {!pageLoading && safeGroup?.editable && (
         <button
-          onClick={() => { setEditingPost(null); setIsPostModalOpen(true); }}
+          onClick={() => setIsPostModalOpen(true)}
           className="fixed md:hidden bottom-8 z-20 left-1/2 -translate-x-1/2 bg-yellow px-3 py-3 rounded-[50%]"
         >
           <PlusIcon className="h-7 w-7 text-white" />
