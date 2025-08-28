@@ -20,7 +20,8 @@ const mapPostApiToProps = (p: GroupPostApi, groupId: number): PostProps => ({
   description: p.summary ?? "",
   videoUrls: Array.isArray((p as any).videos) ? (p as any).videos : [],
   hasVideo: Boolean(p.has_videos),
-  files: p.has_files ? [] : undefined, // 先给空数组/undefined；详情页再补完整
+  files: p.has_files ? [] : undefined,
+  like_count: p.like_count
 });
 
 
@@ -49,7 +50,6 @@ interface GroupDetailState {
 
 const initialState: GroupDetailState = {
   currentGroupId: null,
-
   group: null,
   subscriberCount: null,
   subscribers: [],
