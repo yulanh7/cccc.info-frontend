@@ -19,12 +19,12 @@ export default function PostModal({
   onSave,
   onClose,
 }: PostModalProps) {
-  // —— 安全默认值（只允许 videoUrls: string[]）
+  // —— 安全默认值（只允许 videos: string[]）
   const defaultItem: PostProps = {
     id: isNew ? Date.now() : (item?.id as number) ?? 0,
     title: "",
     description: "",
-    videoUrls: [],
+    videos: [],
     files: [],
     author:
       (item as any)?.author ?? {
@@ -36,12 +36,12 @@ export default function PostModal({
     like_count: 0,
   };
 
-  // —— 编辑态：用默认值兜底再覆盖传入，且强制 videoUrls / files 为数组
+  // —— 编辑态：用默认值兜底再覆盖传入，且强制 videos / files 为数组
   const initial: PostProps = {
     ...defaultItem,
     ...(item as any),
-    videoUrls: Array.isArray((item as any)?.videoUrls)
-      ? [...((item as any).videoUrls as string[])]
+    videos: Array.isArray((item as any)?.videos)
+      ? [...((item as any).videos as string[])]
       : [],
     files: Array.isArray((item as any)?.files) ? [...(item as any).files] : [],
   };
@@ -55,13 +55,13 @@ export default function PostModal({
   };
 
   // —— 多个视频链接的输入与解析：每行一个（也兼容 , 或 ;）
-  const videoUrlsString = (editedItem.videoUrls ?? []).join("\n");
+  const videosString = (editedItem.videos ?? []).join("\n");
   const handleVideoUrlsChange = (value: string) => {
     const list = value
       .split(/[\n,;]+/)
       .map((s) => s.trim())
       .filter(Boolean);
-    handleChange("videoUrls", list);
+    handleChange("videos", list);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -87,15 +87,15 @@ export default function PostModal({
   };
 
   const handleSave = async () => {
-    // 清洗 videoUrls 与 files，确保类型正确
-    const cleanedVideoUrls = Array.isArray(editedItem.videoUrls)
-      ? editedItem.videoUrls.map((s) => String(s).trim()).filter(Boolean)
+    // 清洗 videos 与 files，确保类型正确
+    const cleanedVideoUrls = Array.isArray(editedItem.videos)
+      ? editedItem.videos.map((s) => String(s).trim()).filter(Boolean)
       : [];
 
     const baseFiles = Array.isArray(editedItem.files) ? editedItem.files : [];
     const cleanedItem: PostProps = {
       ...editedItem,
-      videoUrls: cleanedVideoUrls,
+      videos: cleanedVideoUrls,
       files: baseFiles.map(({ name, url, file }: any) => ({ name, url, file })),
     };
 
@@ -166,7 +166,7 @@ export default function PostModal({
         {/* 多个视频 URL：每行一个（也兼容逗号/分号分隔） */}
         <label className="block text-sm text-dark-gray mb-2">Video URLs</label>
         <textarea
-          value={videoUrlsString}
+          value={videosString}
           onChange={(e) => handleVideoUrlsChange(e.target.value)}
           className="w-full p-2 mb-4 border border-border rounded-sm min-h-[84px] resize-y overflow-y-auto"
           placeholder={`One URL per line\n(also supports comma or semicolon separated)`}

@@ -1,6 +1,3 @@
-export interface ApiResponseProps<T = any> {
-  success: boolean;
-  code: number;
-  message: string;
-  data: T | null;
-}
+export type ApiResponseProps<T = any> =
+  | { success: true; code: number; message: string; data: T }
+  | { success: false; code: number; message: string; data: null };

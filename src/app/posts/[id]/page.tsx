@@ -48,9 +48,9 @@ export default function PostDetailPage({ params: paramsPromise }: { params: Prom
         onAdd={handleAdd}
       />
       <div className="aspect-w-16 aspect-h-9 mb-4 mt-16">
-        {post.videoUrls ? (
+        {post.videos ? (
           <iframe
-            src={post.videoUrls[0]}
+            src={post.videos[0]}
             title={post.title}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen

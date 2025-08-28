@@ -98,7 +98,7 @@ export default function GroupPage() {
   const postsLoading = status.posts === "loading" && groupMatchesRoute;
 
   const normalizeVideoUrls = (src: any): string[] => {
-    const raw = src?.videoUrls ?? src?.video_urls ?? src?.videoUrl ?? [];
+    const raw = src?.videos ?? src?.video_urls ?? src?.videoUrl ?? [];
     let list: string[] = [];
     if (Array.isArray(raw)) {
       list = raw;
@@ -122,7 +122,7 @@ export default function GroupPage() {
   // 保存 PostModal 返回的数据时，先统一标准化，再调用 create/update
   const handlePostModalSave = async (item: PostProps) => {
     setIsPostModalOpen(false);
-    const normalized = { ...item, videoUrls: normalizeVideoUrls(item) };
+    const normalized = { ...item, videos: normalizeVideoUrls(item) };
     try {
       if (editingPost) {
         await onEditPost(normalized as PostProps);

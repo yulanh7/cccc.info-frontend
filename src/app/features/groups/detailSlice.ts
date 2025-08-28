@@ -4,25 +4,13 @@ import { apiRequest } from '../request';
 import type { GroupProps, GroupDetailData } from '@/app/types/group';
 import { mapGroupApiToProps } from '@/app/types/group';
 import type { PostProps, GroupPostApi } from '@/app/types';
+import { mapGroupPostApiToListUi } from "@/app/types/post";
+
 
 type LoadStatus = 'idle' | 'loading' | 'succeeded' | 'failed';
 
 
-const mapPostApiToProps = (p: GroupPostApi, groupId: number): PostProps => ({
-  id: p.id,
-  title: p.title,
-  date: p.created_at,
-  author: {
-    id: Number(p.author?.id ?? 0),
-    firstName: p.author?.firstName ?? "",
-  },
-  group: String(groupId),
-  description: p.summary ?? "",
-  videoUrls: Array.isArray((p as any).videos) ? (p as any).videos : [],
-  hasVideo: Boolean(p.has_videos),
-  files: p.has_files ? [] : undefined,
-  like_count: p.like_count
-});
+
 
 
 interface GroupDetailState {
@@ -104,7 +92,7 @@ export const fetchGroupPosts = createAsyncThunk<
 
     if (!res.success || !res.data) throw new Error(res.message || 'Fetch posts failed');
 
-    const posts = (res.data.posts || []).map((p) => mapPostApiToProps(p, groupId));
+    const posts = (res.data.posts || []).map((p) => mapGroupPostApiToListUi(p, groupId));
 
     return {
       posts,

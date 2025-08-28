@@ -22,9 +22,9 @@ export default function PostCardSimple({
   formatDate,
   showEnterArrow = true,
 }: Props) {
-  const { id, title, date, author, group, description, videoUrls, like_count } = post;
+  const { id, title, date, author, group, description, videos, like_count } = post;
 
-  const thumbnail = videoUrls && videoUrls[0] ? getYouTubeThumbnail(videoUrls[0], 'hqdefault') : null;
+  const thumbnail = videos && videos[0] ? getYouTubeThumbnail(videos[0], 'hqdefault') : null;
 
   return (
     <div className="card relative cursor-pointer border border-border">
