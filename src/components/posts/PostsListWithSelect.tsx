@@ -5,30 +5,26 @@ import Link from "next/link";
 import { CheckIcon, TrashIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
 import CardSkeleton from "@/components/feedback/CardSkeleton";
 import Spinner from "@/components/feedback/Spinner";
-import type { PostProps } from "@/app/types/post";
+import type { PostListUi } from "@/app/types/post";
 import PostCardSimple from "./PostCardSimple";
 import Button from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
 
 type Props = {
-  rows: PostProps[];
+  rows: PostListUi[];
   listLoading: boolean;
   selectMode: boolean;
   selectedIds: Set<number>;
   onToggleSelect: (id: number) => void;
-
-  // 单删（选择模式关闭时才出现）
-  canEdit?: (p: PostProps) => boolean;      // ← 外部传入：当前用户是否为作者
+  canEdit?: (p: PostListUi) => boolean;
   onDeleteSingle?: (id: number) => void;
-  onEditSingle?: (p: PostProps) => void;
+  onEditSingle?: (id: number) => void;
   deleting?: boolean;
 
-  // 分页
   hasMore?: boolean;
   loadMore?: () => Promise<void> | void;
   loadingMore?: boolean;
 
-  // 工具
   formatDate: (timestamp: string, showTime?: boolean) => string;
 };
 
@@ -96,7 +92,7 @@ export default function PostsListWithSelect({
                             rounded="full"
                             variant="ghost"
                             size="xs"
-                            onClick={() => onEditSingle(post)}
+                            onClick={() => onEditSingle(post.id)}
                           // tone="brand"
                           >
                             <PencilSquareIcon className="h-5 w-5" />
