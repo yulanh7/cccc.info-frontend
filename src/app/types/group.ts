@@ -7,11 +7,11 @@ export interface GroupProps {
   id: number;
   title: string;
   description: string;
-  createdDate: string;      // from API's time/created_at
-  creator: UserProps;       // normalized to full user shape
-  subscribed: boolean;      // is_member
-  editable: boolean;        // is_creator
-  isPrivate: boolean;       // isPrivate / is_private
+  createdDate: string;
+  creator: UserProps;
+  subscribed: boolean;
+  editable: boolean;
+  isPrivate: boolean;
 }
 
 export interface GroupListProps {
@@ -35,10 +35,10 @@ export interface GroupApi {
   id: number;
   name: string;
   description: string;
-  creator: number | string;      // sometimes id, sometimes name
-  creator_name?: string;         // optional creator display name
-  time: string;                  // created time (ISO)
-  isPrivate: boolean;            // NOTE: some backends use is_private
+  creator: number | string;
+  creator_name?: string;
+  time: string;
+  isPrivate: boolean;
   subscriber_count: number;
   is_member: boolean;
   is_creator: boolean;
@@ -94,6 +94,11 @@ export type CreateGroupResponse = ApiResponseProps<{ group: GroupApi }>;
 export type UpdateGroupResponse = ApiResponseProps<{ group: GroupApi }>;
 export type GroupsListResponseApi = ApiResponseProps<GroupsListData>;
 export type GroupDetailResponseApi = ApiResponseProps<GroupDetailData>;
+export type AddMemberRequest = { user_id?: number; email?: string };
+export type AddMemberResponseApi = ApiResponseProps<{
+  member: { id: number; firstName: string; email: string; is_creator?: boolean };
+}>;
+export type KickMemberResponseApi = ApiResponseProps<{}>;
 export type MembersListResponseApi = ApiResponseProps<MembersListData>;
 export type GroupStatsResponseApi = ApiResponseProps<GroupStats>;
 
@@ -133,7 +138,6 @@ export const mapGroupApiToProps = (g: GroupApi): GroupProps => {
     },
     subscribed: Boolean(g.is_member),
     editable: Boolean(g.is_creator),
-    // tolerate both isPrivate and is_private from backend
     isPrivate: Boolean((g as any).isPrivate ?? (g as any).is_private ?? g.isPrivate),
   };
 };

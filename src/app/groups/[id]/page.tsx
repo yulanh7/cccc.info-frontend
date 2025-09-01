@@ -17,6 +17,9 @@ import { formatDate, mapApiErrorToFields } from "@/app/ultility";
 import {
   fetchGroupDetail,
   fetchGroupPosts,
+  fetchGroupMembers,
+  addGroupMember,
+  kickGroupMember,
 } from "@/app/features/groups/detailSlice";
 
 import {
@@ -30,14 +33,9 @@ import { toCreateRequest, type CreatePostFormModel } from "@/app/types/post";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { useConfirm } from "@/hooks/useConfirm";
 
-/** 轻量骨架 */
-function TitleSkeleton() {
-  return (
-    <div className="mx-auto lg:container px-4 pt-2">
-      <div className="h-7 w-48 md:w-64 bg-gray-200 rounded animate-pulse" />
-    </div>
-  );
-}
+const POST_PER_PAGE = 9;
+const MEMBERS_PER_PAGE = 9;
+
 
 export default function GroupPage() {
   const { id } = useParams<{ id: string }>();
@@ -80,7 +78,7 @@ export default function GroupPage() {
   useEffect(() => {
     if (!Number.isFinite(groupId)) return;
     dispatch(fetchGroupDetail(groupId));
-    dispatch(fetchGroupPosts({ groupId, page: 1, per_page: 20, append: false }));
+    dispatch(fetchGroupPosts({ groupId, page: 1, per_page: POST_PER_PAGE, append: false }));
     setPostsFetchStarted(true);
   }, [dispatch, groupId]);
 
@@ -94,6 +92,8 @@ export default function GroupPage() {
   const pageLoading = !groupMatchesRoute || status.group === "loading";
   const postsLoading = status.posts === "loading" && groupMatchesRoute;
 
+  const toMsg = (err: unknown) =>
+    typeof err === 'string' ? err : (err as any)?.message || '';
 
 
   // 保存 PostModal 返回的数据时，先统一标准化，再调用 create/update
@@ -116,9 +116,9 @@ export default function GroupPage() {
         })
       ).unwrap();
       // 新建成功后刷新列表
-      dispatch(fetchGroupPosts({ groupId: safeGroup.id, page: 1, per_page: 20, append: false }));
+      dispatch(fetchGroupPosts({ groupId: safeGroup.id, page: 1, per_page: POST_PER_PAGE, append: false }));
     } catch (e: any) {
-      alert(e?.message || "Create post failed");
+      alert(toMsg(e) || "Create post failed");
     }
   };
 
@@ -133,9 +133,9 @@ export default function GroupPage() {
           authorNameHint: safeGroup.creator?.firstName || "",
         })
       ).unwrap();
-      dispatch(fetchGroupPosts({ groupId: safeGroup.id, page: 1, per_page: 20, append: false }));
+      dispatch(fetchGroupPosts({ groupId: safeGroup.id, page: 1, per_page: POST_PER_PAGE, append: false }));
     } catch (e: any) {
-      alert(e?.message || "Create post failed");
+      alert(toMsg(e) || "Create post failed");
     }
   };
 
@@ -145,10 +145,10 @@ export default function GroupPage() {
     try {
       await dispatch(deletePostThunk(postId)).unwrap();
       if (safeGroup) {
-        dispatch(fetchGroupPosts({ groupId: safeGroup.id, page: 1, per_page: 20, append: false }));
+        dispatch(fetchGroupPosts({ groupId: safeGroup.id, page: 1, per_page: POST_PER_PAGE, append: false }));
       }
     } catch (e: any) {
-      alert(e?.message || "Delete post failed");
+      alert(toMsg(e) || "Delete post failed");
     }
   };
 
@@ -157,7 +157,7 @@ export default function GroupPage() {
     await Promise.allSettled(ids.map((id) => dispatch(deletePostThunk(id)).unwrap()));
     setSelectMode(false);
     setSelectedIds(new Set());
-    dispatch(fetchGroupPosts({ groupId: safeGroup.id, page: 1, per_page: 20, append: false }));
+    dispatch(fetchGroupPosts({ groupId: safeGroup.id, page: 1, per_page: POST_PER_PAGE, append: false }));
   };
 
 
@@ -178,11 +178,9 @@ export default function GroupPage() {
 
     try {
       const updated = await dispatch(updateGroup({ groupId: safeGroup.id, body })).unwrap();
-      // 成功：刷新权威数据并关闭
       await dispatch(fetchGroupDetail(updated.id));
       setShowEditModal(false);
     } catch (e: any) {
-      // 失败：把长度类错误显示在表单
       const msg = e?.message as string | undefined;
       const fieldErrors = mapApiErrorToFields(msg);
       if (fieldErrors.title || fieldErrors.description) {
@@ -202,7 +200,7 @@ export default function GroupPage() {
       await dispatch(deleteGroup(safeGroup.id)).unwrap();
       router.push("/groups");
     } catch (e: any) {
-      alert(e?.message || "Delete group failed");
+      alert(toMsg(e) || "Delete group failed");
     }
   };
 
@@ -210,7 +208,7 @@ export default function GroupPage() {
     if (!safePagination || !safeGroup) return;
     const next = safePagination.current_page + 1;
     if (next <= safePagination.total_pages) {
-      dispatch(fetchGroupPosts({ groupId: safeGroup.id, page: next, per_page: 20, append: true }));
+      dispatch(fetchGroupPosts({ groupId: safeGroup.id, page: next, per_page: POST_PER_PAGE, append: true }));
     }
   };
 
@@ -228,6 +226,58 @@ export default function GroupPage() {
     });
   };
 
+  // 打开成员弹窗
+  const onShowMembers = () => {
+    if (!safeGroup) return;
+    // 初次打开拉第一页
+    dispatch(fetchGroupMembers({ groupId: safeGroup.id, page: 1, per_page: MEMBERS_PER_PAGE }));
+    setShowSubsModal(true);
+  };
+
+  const onMembersPageChange = (page: number) => {
+    if (!safeGroup) return;
+    dispatch(fetchGroupMembers({ groupId: safeGroup.id, page, per_page: MEMBERS_PER_PAGE }));
+  };
+
+  // 仅群主/管理员可管理（你项目里已有 safeGroup.editable 判定）
+  const canManageMembers = !!safeGroup?.editable || !!user?.admin;
+
+  const membersPagination = useAppSelector((s) => s.groupDetail.membersPagination);
+  const membersLoading = useAppSelector(s => s.groupDetail.status.members) === 'loading';
+
+  const onAddMember = async (input: string) => {
+    if (!safeGroup) return;
+    const trimmed = input.trim();
+    if (!trimmed) return;
+
+    const payload: { groupId: number; user_id?: number; email?: string } = { groupId: safeGroup.id };
+    const maybeId = Number(trimmed);
+    if (Number.isFinite(maybeId) && String(maybeId) === trimmed) {
+      payload.user_id = maybeId;
+    } else {
+      payload.email = trimmed;
+    }
+    try {
+      await dispatch(addGroupMember(payload)).unwrap();
+      dispatch(fetchGroupMembers({ groupId: safeGroup.id, page: 1, per_page: MEMBERS_PER_PAGE }));
+    } catch (e: any) {
+      alert(toMsg(e) || "Add member failed");
+    }
+  };
+
+  const onKickMember = async (userId: number) => {
+    if (!safeGroup) return;
+    try {
+      await dispatch(kickGroupMember({ groupId: safeGroup.id, userId })).unwrap();
+      // 刷新当前页保持数据一致
+      const p = membersPagination?.page ?? 1;
+      dispatch(fetchGroupMembers({ groupId: safeGroup.id, page: p, per_page: MEMBERS_PER_PAGE }));
+    } catch (e: any) {
+      alert(toMsg(e) || "Kick member failed");
+    }
+  };
+
+
   const headerItem = safeGroup
     ? { id: safeGroup.id, author: safeGroup.creator?.firstName }
     : undefined;
@@ -236,13 +286,6 @@ export default function GroupPage() {
 
   return (
     <>
-      {/* 标题 */}
-      {/* {pageLoading ? (
-        <TitleSkeleton />
-      ) : (
-        <PageTitle title={safeGroup?.title} showPageTitle={true} />
-      )} */}
-
       <CustomHeader
         item={headerItem}
         pageTitle={safeGroup?.title || "Group"}
@@ -257,7 +300,7 @@ export default function GroupPage() {
         <GroupInfoBar
           group={safeGroup}
           subscriberCount={subscriberCount ?? 0}
-          onShowMembers={() => setShowSubsModal(true)}
+          onShowMembers={onShowMembers}
           onNewPost={() => setIsPostModalOpen(true)}
           onEditGroup={handleEditGroup}
           onDeleteGroup={() => confirmGroupDelete.ask()}
@@ -331,13 +374,19 @@ export default function GroupPage() {
       {/* —— 整页 Overlay（群详情加载） */}
       <LoadingOverlay show={pageLoading} text="Loading group…" />
 
-      {/* —— 弹窗们 */}
       <SubscribersModal
         open={showSubsModal}
         onClose={() => setShowSubsModal(false)}
-        subscribers={subscribers}
+        members={subscribers}
+        pagination={membersPagination}
+        loading={membersLoading}
+        canManage={canManageMembers}
+        onPageChange={onMembersPageChange}
+        onAdd={canManageMembers ? onAddMember : undefined}
+        onKick={canManageMembers ? onKickMember : undefined}
         title="Subscribers"
       />
+
 
       {showEditModal && (
         <GroupModal

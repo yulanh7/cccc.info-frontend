@@ -1,7 +1,7 @@
 // app/features/groupDetail/slice.ts
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { apiRequest } from '../request';
-
+import { unwrapData } from "@/app/types/group";
 import type {
   LoadStatus,
 } from '@/app/types'; // 如果没有 barrel，就删掉这行，换成你放 LoadStatus 的地方
@@ -11,54 +11,55 @@ import type {
   GroupDetailData,
   GroupListPaginationApi,
   GroupSubscriberUi,
+  MembersListData,
+  AddMemberRequest,
+  AddMemberResponseApi,
+  KickMemberResponseApi
 } from '@/app/types/group';
-
 import type {
   GroupPostApi,
   PostListUi,
-  GroupPostsPaginationApi, // 确保在 posts.ts 导出了这个类型
+  GroupPostsPaginationApi,
 } from '@/app/types/post';
 
-import { mapGroupApiToProps } from '@/app/types/group';
+import { mapGroupApiToProps, mapMembersListApiToUi } from '@/app/types/group';
 import { mapGroupPostApiToListUi } from '@/app/types/post';
 
 interface GroupDetailState {
   currentGroupId: number | null;
   group: GroupProps | null;
-
   subscriberCount: number | null;
   subscribers: GroupSubscriberUi[];
-
   posts: PostListUi[];
-
   postsPagination: GroupPostsPaginationApi | null;
-
+  membersPagination: GroupListPaginationApi | null;
   status: {
     group: LoadStatus;
     posts: LoadStatus;
+    members: LoadStatus;
+    addMember: LoadStatus;
+    kickMember: LoadStatus;
   };
   error: {
     group: string | null;
     posts: string | null;
+    members: string | null;
+    addMember: string | null;
+    kickMember: string | null;
   };
 }
 
 // 如果这个 state 不是本 slice 使用，建议挪到对应的 groups 列表 slice；保留也无妨
 interface GroupsState {
   currentGroup: GroupProps | null;
-
   availableGroups: GroupProps[];
   availableGroupsPagination: GroupListPaginationApi | null;
-
   userGroups: GroupProps[];
   userGroupsPagination: GroupListPaginationApi | null;
-
   userMembership: Record<number, true>;
-
   searchQuery: string;
   searchResults: GroupProps[];
   searchPagination: GroupListPaginationApi | null;
-
   status: Record<string, LoadStatus>;
   error: Record<string, string | null>;
 }
@@ -70,8 +71,9 @@ const initialState: GroupDetailState = {
   subscribers: [],
   posts: [],
   postsPagination: null,
-  status: { group: 'idle', posts: 'idle' },
-  error: { group: null, posts: null },
+  membersPagination: null,
+  status: { group: 'idle', posts: 'idle', members: 'idle', addMember: 'idle', kickMember: 'idle' },
+  error: { group: null, posts: null, members: null, addMember: null, kickMember: null },
 };
 
 // 获取单个群详情：/groups/:id
@@ -101,7 +103,7 @@ export const fetchGroupDetail = createAsyncThunk<
 // 获取群帖子：/groups/:id/posts?page=&per_page=
 export const fetchGroupPosts = createAsyncThunk<
   {
-    posts: PostListUi[];              // ✅ 修正为 PostListUi[]
+    posts: PostListUi[];
     current_page: number;
     total_pages: number;
     total_posts: number;
@@ -140,6 +142,72 @@ export const fetchGroupPosts = createAsyncThunk<
   }
 });
 
+// ===== 订阅成员：获取列表 /api/groups/{group_id}/members?page=&per_page=
+export const fetchGroupMembers = createAsyncThunk<
+  { members: GroupSubscriberUi[]; pagination: GroupListPaginationApi },
+  { groupId: number; page?: number; per_page?: number }
+>(
+  'groupDetail/fetchGroupMembers',
+  async ({ groupId, page = 1, per_page = 20 }, { rejectWithValue }) => {
+    try {
+      const qs = new URLSearchParams();
+      qs.set('page', String(page));
+      qs.set('per_page', String(per_page));
+
+      const res = await apiRequest<MembersListData>('GET', `/groups/${groupId}/members?${qs.toString()}`);
+      const data = unwrapData(res);
+
+      const members: GroupSubscriberUi[] = (data.members ?? []).map(m => ({
+        id: m.id,
+        firstName: m.firstName ?? "",
+        email: m.email ?? "",
+      }));
+
+      return { members, pagination: data.pagination };
+    } catch (e: any) {
+      return rejectWithValue(e.message || 'Fetch members failed') as any;
+    }
+  }
+);
+
+// ===== 订阅成员：添加成员 /api/groups/{group_id}/members (POST)
+export const addGroupMember = createAsyncThunk<
+  { member: GroupSubscriberUi; message?: string },
+  { groupId: number } & AddMemberRequest
+>('groupDetail/addGroupMember', async ({ groupId, ...body }, { rejectWithValue }) => {
+  try {
+    const res = await apiRequest<AddMemberResponseApi['data']>('POST', `/groups/${groupId}/members`, body);
+    if (!res.success || !res.data) throw new Error(res.message || 'Add member failed');
+    const m = res.data.member;
+    return {
+      member: {
+        id: m.id,
+        firstName: m.firstName ?? '',
+        email: m.email ?? '',
+        is_creator: !!m.is_creator,
+      },
+      message: res.message,
+    };
+  } catch (e: any) {
+    return rejectWithValue(e.message || 'Add member failed') as any;
+  }
+});
+
+// ===== 订阅成员：踢成员 /api/groups/{group_id}/members/{user_id}/kick (POST)
+export const kickGroupMember = createAsyncThunk<
+  { userId: number; message?: string },
+  { groupId: number; userId: number }
+>('groupDetail/kickGroupMember', async ({ groupId, userId }, { rejectWithValue }) => {
+  try {
+    const res = await apiRequest<KickMemberResponseApi['data']>('POST', `/groups/${groupId}/members/${userId}/kick`);
+    if (!res.success) throw new Error(res.message || 'Kick member failed');
+    return { userId, message: res.message };
+  } catch (e: any) {
+    return rejectWithValue(e.message || 'Kick member failed') as any;
+  }
+});
+
+
 const groupDetailSlice = createSlice({
   name: 'groupDetail',
   initialState,
@@ -155,12 +223,10 @@ const groupDetailSlice = createSlice({
         s.status.group = 'loading';
         s.error.group = null;
 
-        // 切换群时：立即清空旧数据，避免旧数据闪现
         s.group = null;
         s.subscriberCount = null;
         s.subscribers = [];
 
-        // 也清空 posts（页面里只做 posts 局部加载提示）
         s.posts = [];
         s.postsPagination = null;
         s.status.posts = 'idle';
@@ -168,7 +234,7 @@ const groupDetailSlice = createSlice({
       })
       .addCase(fetchGroupDetail.fulfilled, (s, a) => {
         const id = a.meta.arg as number;
-        if (s.currentGroupId !== id) return; // 竞态防护
+        if (s.currentGroupId !== id) return;
         s.status.group = 'succeeded';
         s.group = a.payload.group;
         s.subscriberCount = a.payload.subscriberCount;
@@ -176,7 +242,7 @@ const groupDetailSlice = createSlice({
       })
       .addCase(fetchGroupDetail.rejected, (s, a) => {
         const id = a.meta.arg as number;
-        if (s.currentGroupId !== id) return; // 竞态防护
+        if (s.currentGroupId !== id) return;
         s.status.group = 'failed';
         s.error.group = (a.payload as string) || 'Fetch group detail failed';
       });
@@ -185,14 +251,13 @@ const groupDetailSlice = createSlice({
     builder
       .addCase(fetchGroupPosts.pending, (s, a) => {
         const { groupId } = a.meta.arg as { groupId: number };
-        if (s.currentGroupId !== groupId) return; // 竞态防护
+        if (s.currentGroupId !== groupId) return;
         s.status.posts = 'loading';
         s.error.posts = null;
-        // 不清空 s.posts，保持 UI 只出现局部轻提示
       })
       .addCase(fetchGroupPosts.fulfilled, (s, a) => {
         const { groupId, append } = a.meta.arg as { groupId: number; append?: boolean };
-        if (s.currentGroupId !== groupId) return; // 竞态防护
+        if (s.currentGroupId !== groupId) return;
         s.status.posts = 'succeeded';
         const { posts, current_page, total_pages, total_posts } = a.payload;
         s.posts = append ? [...s.posts, ...posts] : posts;
@@ -200,10 +265,68 @@ const groupDetailSlice = createSlice({
       })
       .addCase(fetchGroupPosts.rejected, (s, a) => {
         const { groupId } = a.meta.arg as { groupId: number };
-        if (s.currentGroupId !== groupId) return; // 竞态防护
+        if (s.currentGroupId !== groupId) return;
         s.status.posts = 'failed';
         s.error.posts = (a.payload as string) || 'Fetch posts failed';
       });
+
+    // ===== members list =====
+    builder
+      .addCase(fetchGroupMembers.pending, (s, a) => {
+        const { groupId } = a.meta.arg;
+        if (s.currentGroupId !== groupId) return;
+        s.status.members = 'loading';
+        s.error.members = null;
+      })
+      .addCase(fetchGroupMembers.fulfilled, (s, a) => {
+        s.status.members = 'succeeded';
+        s.subscribers = a.payload.members;
+        s.membersPagination = a.payload.pagination;
+        s.subscriberCount = a.payload.pagination?.total ?? a.payload.members.length;
+      })
+      .addCase(fetchGroupMembers.rejected, (s, a) => {
+        s.status.members = 'failed';
+        s.error.members = (a.payload as string) || 'Fetch members failed';
+      });
+
+    // ===== add member =====
+    builder
+      .addCase(addGroupMember.pending, (s, a) => {
+        const { groupId } = a.meta.arg;
+        if (s.currentGroupId !== groupId) return;
+        s.status.addMember = 'loading';
+        s.error.addMember = null;
+      })
+      .addCase(addGroupMember.fulfilled, (s, a) => {
+        s.status.addMember = 'succeeded';
+        // 乐观插入到当前列表顶部
+        s.subscribers = [a.payload.member, ...s.subscribers];
+        if (typeof s.subscriberCount === 'number') s.subscriberCount += 1;
+      })
+      .addCase(addGroupMember.rejected, (s, a) => {
+        s.status.addMember = 'failed';
+        s.error.addMember = (a.payload as string) || 'Add member failed';
+      });
+
+    // ===== kick member =====
+    builder
+      .addCase(kickGroupMember.pending, (s, a) => {
+        const { groupId } = a.meta.arg;
+        if (s.currentGroupId !== groupId) return;
+        s.status.kickMember = 'loading';
+        s.error.kickMember = null;
+      })
+      .addCase(kickGroupMember.fulfilled, (s, a) => {
+        s.status.kickMember = 'succeeded';
+        const kickedId = a.payload.userId;
+        s.subscribers = s.subscribers.filter((m) => m.id !== kickedId);
+        if (typeof s.subscriberCount === 'number' && s.subscriberCount > 0) s.subscriberCount -= 1;
+      })
+      .addCase(kickGroupMember.rejected, (s, a) => {
+        s.status.kickMember = 'failed';
+        s.error.kickMember = (a.payload as string) || 'Kick member failed';
+      });
+
   },
 });
 
