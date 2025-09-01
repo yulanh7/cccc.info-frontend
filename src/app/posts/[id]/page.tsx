@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import CustomHeader from "@/components/layout/CustomHeader";
 import PostModal from "@/components/posts/PostModal";
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
-import { CalendarIcon, UserGroupIcon, EyeIcon } from "@heroicons/react/24/outline";
-
+import { CalendarIcon, UserGroupIcon, EyeIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { formatDate } from "@/app/ultility";
 import { fetchPostDetail, updatePost, deletePost } from "@/app/features/posts/slice";
 import type { CreatePostFormModel, PostDetailUi } from "@/app/types/post";
 import { splitFiles } from "@/app/types/post";
@@ -25,18 +25,35 @@ export default function PostDetailPage() {
   // 编辑弹窗
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
 
+  // —— 内容折叠
+  const [expanded, setExpanded] = useState(false);
+  const [maxChars, setMaxChars] = useState(300);
+
+  // —— 图片灯箱
+  const { images, documents } = useMemo(() => splitFiles(post?.files || []), [post?.files]);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIdx, setLightboxIdx] = useState(0);
+  const touchStartX = useRef<number | null>(null);
+
+
+
   useEffect(() => {
     if (!Number.isFinite(postId)) return;
     dispatch(fetchPostDetail({ postId }));
   }, [dispatch, postId]);
 
+  // 根据屏幕大小决定折叠长度（<768 走 200）
+  useEffect(() => {
+    const compute = () => setMaxChars(window.innerWidth < 768 ? 200 : 300);
+    compute();
+    window.addEventListener("resize", compute);
+    return () => window.removeEventListener("resize", compute);
+  }, []);
+
   const pageLoading = status === "loading" || !post;
   const pageError = status === "failed" && error;
 
-  // 顶部图片与底部文档分区
-  const { images, documents } = useMemo(() => splitFiles(post?.files || []), [post?.files]);
-
-  // —— 删除 & 编辑（这里给出最小实现；你可以接入 confirm）
+  // —— 删除 & 编辑（最小实现）
   const handleDelete = async (id: number) => {
     try {
       await dispatch(deletePost(id)).unwrap();
@@ -55,7 +72,7 @@ export default function PostDetailPage() {
           postId: post.id,
           body: {
             title: form.title,
-            content: form.contentText, // ✅ 纯文本，后端字段仍叫 content
+            content: form.contentText, // 纯文本发到后端字段 content
             description: form.description,
             videos: form.videos,
             file_ids: form.fileIds,
@@ -68,24 +85,188 @@ export default function PostDetailPage() {
     }
   };
 
+  // —— contentText 折叠/展开
+  const content = post?.contentText ?? "";
+  const isLong = content.length > maxChars;
+  const shown = expanded || !isLong ? content : content.slice(0, maxChars);
+
+  // —— 灯箱控制
+  const openLightbox = (idx: number) => {
+    setLightboxIdx(idx);
+    setLightboxOpen(true);
+  };
+  const closeLightbox = () => setLightboxOpen(false);
+  const prevImg = useCallback(() => {
+    setLightboxIdx((i) => (i - 1 + images.length) % images.length);
+  }, [images.length]);
+  const nextImg = useCallback(() => {
+    setLightboxIdx((i) => (i + 1) % images.length);
+  }, [images.length]);
+
+  // 键盘左右/Escape
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeLightbox();
+      else if (e.key === "ArrowLeft") prevImg();
+      else if (e.key === "ArrowRight") nextImg();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightboxOpen, prevImg, nextImg]);
+
+  // 触摸滑动
+  const onTouchStart: React.TouchEventHandler<HTMLDivElement> = (e) => {
+    touchStartX.current = e.changedTouches[0].clientX;
+  };
+  const onTouchEnd: React.TouchEventHandler<HTMLDivElement> = (e) => {
+    if (touchStartX.current == null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    // 阈值 40px
+    if (dx > 40) prevImg();
+    if (dx < -40) nextImg();
+    touchStartX.current = null;
+  };
+  // ===== 在 PostDetailPage 顶部的 import 附近加 =====
+
+  // 工具：从常见的 YouTube 链接里提取 videoId（尽量健壮）
+  function getYouTubeId(url: string): string | null {
+    try {
+      const u = new URL(url);
+      if (u.hostname.includes("youtu.be")) {
+        return u.pathname.slice(1) || null;
+      }
+      if (u.hostname.includes("youtube.com")) {
+        if (u.pathname === "/watch") return u.searchParams.get("v");
+        if (u.pathname.startsWith("/embed/")) return u.pathname.split("/embed/")[1];
+        if (u.pathname.startsWith("/shorts/")) return u.pathname.split("/shorts/")[1];
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  // 懒加载 IFrame API（只加载一次）
+  function loadYouTubeAPI(): Promise<void> {
+    return new Promise((resolve) => {
+      if (typeof window === "undefined") return resolve();
+      const w = window as any;
+      if (w.YT && w.YT.Player) {
+        resolve();
+        return;
+      }
+      // 已经在加载中：挂个回调
+      if (w._ytApiLoading) {
+        w._ytApiReadyCbs = w._ytApiReadyCbs || [];
+        w._ytApiReadyCbs.push(resolve);
+        return;
+      }
+      w._ytApiLoading = true;
+      w._ytApiReadyCbs = [resolve];
+
+      const tag = document.createElement("script");
+      tag.src = "https://www.youtube.com/iframe_api";
+      document.body.appendChild(tag);
+
+      w.onYouTubeIframeAPIReady = () => {
+        (w._ytApiReadyCbs || []).forEach((cb: () => void) => cb());
+        w._ytApiReadyCbs = [];
+      };
+    });
+  }
+
+  type VideosGridProps = { urls: string[] };
+
+  function VideosGrid({ urls }: VideosGridProps) {
+    const containerIds = useMemo(
+      () => urls.map((_, i) => `yt-player-${i}`),
+      [urls]
+    );
+
+    // 保存所有 player 实例
+    const playersRef = useRef<Record<number, YT.Player>>({});
+
+    // 只允许一个播放
+    const pauseOthers = (activeIndex: number) => {
+      Object.entries(playersRef.current).forEach(([k, p]) => {
+        const idx = Number(k);
+        if (idx !== activeIndex && p && p.pauseVideo) {
+          p.pauseVideo();
+        }
+      });
+    };
+
+    useEffect(() => {
+      let destroyed = false;
+
+      (async () => {
+        await loadYouTubeAPI();
+        if (destroyed) return;
+
+        // 初始化/更新所有播放器
+        urls.forEach((url, i) => {
+          const videoId = getYouTubeId(url);
+          const containerId = containerIds[i];
+          if (!videoId || !containerId) return;
+
+          // 已存在则跳过
+          if (playersRef.current[i]) return;
+
+          playersRef.current[i] = new (window as any).YT.Player(containerId, {
+            videoId,
+            playerVars: {
+              modestbranding: 1,
+              rel: 0,
+              playsinline: 1,
+            },
+            events: {
+              onStateChange: (e: YT.OnStateChangeEvent) => {
+                if (e.data === (window as any).YT.PlayerState.PLAYING) {
+                  pauseOthers(i);
+                }
+              },
+            },
+          });
+        });
+      })();
+
+      // 清理
+      return () => {
+        destroyed = true;
+        Object.values(playersRef.current).forEach((p) => {
+          try {
+            p.destroy();
+          } catch { }
+        });
+        playersRef.current = {};
+      };
+    }, [urls, containerIds]);
+
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {urls.map((_, i) => (
+          <div key={i} className="aspect-w-16 aspect-h-9">
+            {/* 由 YT.Player 注入 iframe */}
+            <div id={containerIds[i]} className="w-full h-full rounded overflow-hidden" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+
   return (
     <div className="container mx-auto p-4">
       <LoadingOverlay show={pageLoading} text="Loading post…" />
-      {pageError && (
-        <div className="text-red-600 mt-20">Failed to load post: {String(pageError)}</div>
-      )}
+      {pageError && <div className="text-red-600 mt-20">Failed to load post: {String(pageError)}</div>}
+
       {!pageLoading && post && (
         <>
           {/* 顶部横幅：视频优先，否则背景图 */}
-          <div className="aspect-w-16 aspect-h-9 mb-4 mt-16">
+          <div className="mb-4 mt-16">
             {post.videos && post.videos.length > 0 ? (
-              <iframe
-                src={post.videos[0]}
-                title={post.title}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="w-full h-[200px] md:h-[400px] rounded-sm"
-              />
+              <VideosGrid urls={post.videos} />
             ) : (
               <div className="w-full min-h-30 md:min-h-60 bg-[url('/images/bg-for-homepage.png')] bg-cover bg-center rounded-t-xs md:rounded-t-sm flex items-center justify-center">
                 <h2 className="text-dark-gray text-xl md:text-5xl font-'Apple Color Emoji' font-semibold text-center px-4">
@@ -94,25 +275,6 @@ export default function PostDetailPage() {
               </div>
             )}
           </div>
-
-          {/* ✅ 顶部图片区域（按你的要求“图片在页面上方”） */}
-          {images.length > 0 && (
-            <div className="mb-4">
-              <ul className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {images.map((img, idx) => (
-                  <li key={`${img.id ?? img.url}-${idx}`} className="border border-border rounded-sm p-1">
-                    <img
-                      src={img.url}
-                      alt={img.name}
-                      className="w-full h-40 md:h-56 object-cover rounded-xs"
-                    />
-                    <div className="mt-1 text-xs truncate text-dark-gray">{img.name}</div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
           <CustomHeader
             item={{ id: post.id, author: post.author?.firstName }}
             showEdit={true}
@@ -124,16 +286,64 @@ export default function PostDetailPage() {
           />
 
           <h1 className="text-2xl mb-2">{post.title}</h1>
-          <div className="text-xs text-dark-green md:text-sm mb-1 flex items-center">
-            <UserGroupIcon className="h-4 w-4 mr-1 text-dark-green" />
-            {post.group}
-          </div>
-          <div className="text-xs text-dark-green md:text-sm mb-4 flex items-center">
-            <CalendarIcon className="h-4 w-4 mr-1 text-dark-green" /> {post.date}
+          <div className="flex gap-3">
+            <div className="text-xs text-dark-green md:text-sm mb-1 flex items-center">
+              <UserGroupIcon className="h-4 w-4 mr-1 text-dark-green" />
+              {post.group}
+            </div>
+            <div className="text-xs text-dark-green md:text-sm flex items-center">
+              <CalendarIcon className="h-4 w-4 mr-1 text-dark-green" /> {formatDate(post.date)}
+            </div>
           </div>
 
           {/* 正文（纯文本 + 保留换行） */}
-          <p className="text-gray whitespace-pre-wrap">{post.contentText}</p>
+          {/* 正文（纯文本 + 保留换行，点击文字本身可收起） */}
+          <div
+            className="text-gray whitespace-pre-wrap cursor-pointer"
+            onClick={() => {
+              if (expanded) {
+                setExpanded(false); // 展开状态 -> 点击正文收起
+              }
+            }}
+          >
+            {shown}
+            {isLong && !expanded && (
+              <>
+                {"… "}
+                <button
+                  className="text-dark-green underline text-sm"
+                  onClick={(e) => {
+                    e.stopPropagation(); // 阻止冒泡，避免触发上面的收起逻辑
+                    setExpanded(true);
+                  }}
+                >
+                  See more
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* 顶部图片缩略图 */}
+          {images.length > 0 && (
+            <div className="mb-4">
+              <ul className="grid grid-cols-3 md:grid-cols-4 gap-2">
+                {images.map((img, idx) => (
+                  <li
+                    key={`${img.id ?? img.url}-${idx}`}
+                    className="relative cursor-zoom-in"
+                    onClick={() => openLightbox(idx)}
+                    title="Click to preview"
+                  >
+                    <img
+                      src={img.url}
+                      alt={img.name}
+                      className="w-full h-28 md:h-36 object-cover rounded-sm border border-border"
+                    />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* ✅ 底部文档区域（「課件」） */}
           {documents.length > 0 && (
@@ -158,7 +368,7 @@ export default function PostDetailPage() {
             </div>
           )}
 
-          {/* 编辑弹窗（可把现有文件传给 PostModal 的 existingFiles） */}
+          {/* 编辑弹窗（把现有文件传进 PostModal） */}
           {isPostModalOpen && (
             <PostModal
               item={{
@@ -175,6 +385,57 @@ export default function PostDetailPage() {
               onClose={() => setIsPostModalOpen(false)}
               existingFiles={post.files}
             />
+          )}
+
+          {/* ✅ 图片灯箱（左右切换 + 触摸滑动） */}
+          {lightboxOpen && images.length > 0 && (
+            <div
+              className="fixed inset-0 z-40 bg-black/80 flex items-center justify-center"
+              onClick={closeLightbox}
+              onTouchStart={onTouchStart}
+              onTouchEnd={onTouchEnd}
+            >
+              <button
+                className="absolute top-4 right-4 text-white p-1 rounded hover:bg-white/10"
+                onClick={(e) => { e.stopPropagation(); closeLightbox(); }}
+                aria-label="Close preview"
+                title="Close"
+              >
+                <XMarkIcon className="h-7 w-7" />
+              </button>
+
+              <button
+                className="absolute left-3 md:left-6 text-white p-2 rounded hover:bg-white/10"
+                onClick={(e) => { e.stopPropagation(); prevImg(); }}
+                aria-label="Previous image"
+                title="Previous"
+              >
+                <ChevronLeftIcon className="h-8 w-8" />
+              </button>
+
+              <img
+                src={images[lightboxIdx].url}
+                alt={images[lightboxIdx].name}
+                className="max-h-[85vh] max-w-[90vw] object-contain rounded"
+                onClick={(e) => e.stopPropagation()}
+              />
+
+              <button
+                className="absolute right-3 md:right-6 text-white p-2 rounded hover:bg-white/10"
+                onClick={(e) => { e.stopPropagation(); nextImg(); }}
+                aria-label="Next image"
+                title="Next"
+              >
+                <ChevronRightIcon className="h-8 w-8" />
+              </button>
+
+              <div
+                className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white text-sm bg-black/40 px-3 py-1 rounded"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {lightboxIdx + 1}/{images.length}
+              </div>
+            </div>
           )}
         </>
       )}
