@@ -5,14 +5,41 @@ import type { UserProps } from "./user";
 /* ===================== Shared UI fragments ===================== */
 export type AuthorLite = { id: number; firstName: string };
 
+export type UiFileKind = "image" | "document" | "other";
+
 export type UiFile = {
+  id?: number;
   url: string;
   name: string;
   size?: number;
   type?: string;
   uploadedAt?: string;
+  kind?: UiFileKind;
 };
 
+const IMAGE_EXT = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"];
+const DOC_EXT = [".doc", ".docx", ".pdf"];
+
+const isImageMime = (mime?: string) =>
+  !!mime && /^image\//i.test(mime);
+
+const isDocMime = (mime?: string) =>
+  !!mime && /^(application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/i.test(mime);
+
+const endsWithOneOf = (filename = "", exts: string[]) => {
+  const lower = filename.toLowerCase();
+  return exts.some((ext) => lower.endsWith(ext));
+};
+
+export const classifyFileKind = (f: { type?: string; name?: string; url?: string }): UiFileKind => {
+  if (isImageMime(f.type)) return "image";
+  if (isDocMime(f.type)) return "document";
+  const fname = f.name || f.url || "";
+  if (endsWithOneOf(fname, IMAGE_EXT)) return "image";
+  if (endsWithOneOf(fname, DOC_EXT)) return "document";
+
+  return "other";
+};
 
 /* ===================== UI Base & Variants ===================== */
 /** 最小公共 UI 基类：列表/详情都具备 */
@@ -162,13 +189,18 @@ export const mapGroupPostApiToListUi = (
 // 详情 → PostDetailUi
 export const mapPostDetailApiToUi = (p: PostDetailApi): PostDetailUi => {
   const videos = (p.videos ?? []).map(v => v.url).filter(Boolean);
-  const files: UiFile[] = (p.files ?? []).map(f => ({
-    url: f.url,
-    name: f.filename,
-    size: f.file_size,
-    type: f.file_type,
-    uploadedAt: f.upload_time,
-  }));
+  const files: UiFile[] = (p.files ?? []).map(f => {
+    const file: UiFile = {
+      id: f.id,
+      url: f.url,
+      name: f.filename,
+      size: f.file_size,
+      type: f.file_type,
+      uploadedAt: f.upload_time,
+    };
+    file.kind = classifyFileKind({ type: file.type, name: file.name, url: file.url });
+    return file;
+  });
 
   return {
     id: p.id,
@@ -220,7 +252,17 @@ export const canEditPost = (post: PostBaseUi, user?: UserProps | null) =>
 export const hasVideos = (post: PostDetailUi | PostListUi) =>
   post.videos.length > 0;
 
-/* ============ 可选：列表 + 详情“补水合并”到完整 UI（用于卡片点开后） ============ */
+/** ✅ UI 直接调用的分类便捷函数 */
+export const isImageFile = (f: UiFile) => f.kind === "image";
+export const isDocumentFile = (f: UiFile) => f.kind === "document";
+
+export const splitFiles = (files: UiFile[]) => ({
+  images: files.filter(isImageFile),
+  documents: files.filter(isDocumentFile),
+  others: files.filter((f) => f.kind === "other" || !f.kind),
+});
+
+/* ============ 列表 + 详情“补水合并”到完整 UI（用于卡片点开后） ============ */
 export const mergeListWithDetailToUi = (
   list: GroupPostApi,
   detail: PostDetailApi,
@@ -228,13 +270,11 @@ export const mergeListWithDetailToUi = (
 ): PostDetailUi =>
   mapPostDetailApiToUi({
     ...detail,
-    // 以详情为准，但可用列表的 title/summary 兜底
     title: detail.title ?? list.title,
     description: detail.description ?? list.summary ?? "",
     created_at: detail.created_at ?? list.created_at,
     group_id: Number(groupId ?? detail.group_id),
   });
-
 
 export const mapPostDetailApiToUiWithAuthor = (
   p: PostDetailApi,
