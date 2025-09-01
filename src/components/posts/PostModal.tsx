@@ -16,6 +16,9 @@ type PostModalProps = {
   saving?: boolean;
 };
 
+// —— 文本长度限制（可按需调整）
+const MAX_TITLE = 70;
+const MAX_DESC = 300;
 
 export default function PostModal({
   item,
@@ -27,7 +30,7 @@ export default function PostModal({
   // —— 初始表单
   const [title, setTitle] = useState(item?.title ?? "");
   const [description, setDescription] = useState(item?.description ?? "");
-  const [contentHtml, setContentHtml] = useState(item?.contentHtml ?? "");
+  const [contentText, setContentHtml] = useState(item?.contentText ?? "");
   const [videos, setVideos] = useState<string[]>(item?.videos ?? []);
   const [fileIds, setFileIds] = useState<number[]>(item?.fileIds ?? []);
   const [localFiles, setLocalFiles] = useState<File[]>([]);
@@ -36,7 +39,7 @@ export default function PostModal({
   const [videoInput, setVideoInput] = useState("");
 
   // —— 简易校验错误
-  const [errors, setErrors] = useState<{ title?: string; contentHtml?: string }>(
+  const [errors, setErrors] = useState<{ title?: string; contentText?: string }>(
     {}
   );
 
@@ -52,22 +55,24 @@ export default function PostModal({
     if (!item) return;
     setTitle(item.title ?? "");
     setDescription(item.description ?? "");
-    setContentHtml(item.contentHtml ?? "");
+    setContentHtml(item.contentText ?? "");
     setVideos(item.videos ?? []);
     setFileIds(item.fileIds ?? []);
     setLocalFiles([]); // 每次打开弹窗都清空本地新选文件
   }, [item]);
 
   const validate = (): boolean => {
-    const next: { title?: string; contentHtml?: string } = {};
+    const next: { title?: string; contentText?: string } = {};
     if (!title.trim()) next.title = "Title is required";
+    if (titleLen > MAX_TITLE) next.title = `Title cannot exceed ${MAX_TITLE} characters.`;
 
-    if (!contentHtml.trim()) next.contentHtml = "Content is required";
+    // 如果你要求正文必填，打开下面一行
+    // if (!contentText.trim()) next.contentText = "Content is required";
 
     setErrors(next);
 
     if (next.title && titleRef.current) titleRef.current.focus();
-    else if (next.contentHtml && contentRef.current) contentRef.current.focus();
+    else if (next.contentText && contentRef.current) contentRef.current.focus();
 
     return Object.keys(next).length === 0;
   };
@@ -114,7 +119,7 @@ export default function PostModal({
     const cleaned: CreatePostFormModel = {
       title: title.trim(),
       description: description.replace(/\s+$/, ""),
-      contentHtml,
+      contentText,
       videos,
       fileIds,
       localFiles
@@ -123,8 +128,8 @@ export default function PostModal({
   };
 
   const hasAny = useMemo(
-    () => title || description || contentHtml || videos.length || fileIds.length || localFiles.length,
-    [title, description, contentHtml, videos, fileIds, localFiles]
+    () => title || description || contentText || videos.length || fileIds.length || localFiles.length,
+    [title, description, contentText, videos, fileIds, localFiles]
   );
 
   return (
@@ -154,8 +159,15 @@ export default function PostModal({
           className={`w-full p-2 mb-1 border rounded-sm ${errors.title ? "border-red-500" : "border-border"
             }`}
           placeholder="Enter a short, descriptive title"
+          maxLength={MAX_TITLE + 100}
         />
-
+        <div
+          className={`text-xs mb-2 ${titleLen > MAX_TITLE ? "text-red-600" : "text-dark-gray"
+            }`}
+        >
+          {titleLen}/{MAX_TITLE}
+          {titleLen > MAX_TITLE ? " — over limit" : ""}
+        </div>
         {errors.title && (
           <p className="text-red-600 text-sm mb-3">{errors.title}</p>
         )}
@@ -174,27 +186,33 @@ export default function PostModal({
           rows={3}
           placeholder="Optional summary shown in lists or previews"
         />
-
+        <div
+          className={`text-xs mb-2 ${descLen > MAX_DESC ? "text-red-600" : "text-dark-gray"
+            }`}
+        >
+          {descLen}/{MAX_DESC}
+          {descLen > MAX_DESC ? " — over limit" : ""}
+        </div>
 
         {/* Content (HTML) */}
         <label
           htmlFor="post-content"
           className="block text-sm font-medium mb-1"
         >
-          Content
+          Content (HTML)
         </label>
         <textarea
           id="post-content"
           ref={contentRef}
-          value={contentHtml}
+          value={contentText}
           onChange={(e) => setContentHtml(e.target.value)}
-          className={`w-full p-2 mb-1 border rounded-sm ${errors.contentHtml ? "border-red-500" : "border-border"
+          className={`w-full p-2 mb-1 border rounded-sm ${errors.contentText ? "border-red-500" : "border-border"
             }`}
           rows={8}
           placeholder='<p>Support HTML here, e.g. <strong>bold</strong> text.</p>'
         />
-        {errors.contentHtml && (
-          <p className="text-red-600 text-sm mb-3">{errors.contentHtml}</p>
+        {errors.contentText && (
+          <p className="text-red-600 text-sm mb-3">{errors.contentText}</p>
         )}
 
         {/* Video URLs */}
