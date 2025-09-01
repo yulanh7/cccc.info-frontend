@@ -8,10 +8,12 @@ type Tone = "default" | "brand" | "danger";
 
 type ButtonProps = {
   children: React.ReactNode;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
   type?: "button" | "submit" | "reset";
   disabled?: boolean;
   loading?: boolean;
+  loadingText?: React.ReactNode;
+  blockWhileLoading?: boolean;
   variant?: Variant;
   size?: Size;
   className?: string;
@@ -23,19 +25,20 @@ type ButtonProps = {
   hoverOverlay?: boolean;
   /** 统一控制文字/边框色（只对 outline/ghost 真正生效） */
   tone?: Tone;
+  fullWidth?: boolean;
 };
 
 const base =
-  "inline-flex items-center justify-center rounded-md transition-colors font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-border disabled:opacity-50 disabled:cursor-not-allowed";
+  "inline-flex items-center justify-center rounded-sm transition-colors font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-border disabled:opacity-50 disabled:cursor-not-allowed";
 
 const sizes: Record<Size, string> = {
-  sm: "px-2.5 py-1.5 text-sm",
+  sm: "px-2.5 py-1 text-xs",
   md: "px-3 py-2 text-sm",
 };
 
 const variants: Record<Variant, string> = {
   primary: "bg-yellow text-dark-gray border border-transparent",
-  secondary: "bg-[#4A7502] text-white hover:bg-[#3D6202] border border-transparent",
+  secondary: "bg-dark-green text-white hover:bg-green border border-transparent",
   warning: "bg-yellow text-dark-gray hover:bg-yellow/90 border border-transparent",
   outline: "border border-dark-yellow text-dark-yellow hover:bg-white/5",
   ghost: "bg-transparent text-foreground hover:bg-white/5 border border-transparent",
@@ -45,14 +48,27 @@ const variants: Record<Variant, string> = {
 function toneClasses(variant: Variant, tone: Tone) {
   if (tone === "default") return "";
   if (variant === "outline") {
-    if (tone === "brand") return "text-[#4A7502] border-[#4A7502]";
-    if (tone === "danger") return "text-red-600 border-red-600";
+    if (tone === "brand") return "text-dark-green border-dark-green";
+    if (tone === "danger") return "text-red border-red";
   }
   if (variant === "ghost") {
-    if (tone === "brand") return "text-[#4A7502]";
-    if (tone === "danger") return "text-red-600";
+    if (tone === "brand") return "text-dark-green";
+    if (tone === "danger") return "text-red";
   }
   return "";
+}
+
+function Spinner({ size = "md" as Size }: { size?: Size }) {
+  const dim = size === "sm" ? "h-3 w-3 border" : "h-4 w-4 border-2";
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "inline-block rounded-full border-current border-t-transparent animate-spin",
+        dim
+      )}
+    />
+  );
 }
 
 export default function Button({
@@ -60,7 +76,9 @@ export default function Button({
   onClick,
   type = "button",
   disabled,
-  loading,
+  loading = false,
+  loadingText,
+  blockWhileLoading = true,
   variant = "outline",
   size = "md",
   className,
@@ -70,8 +88,11 @@ export default function Button({
   title,
   hoverOverlay = true,
   tone = "default",
+  fullWidth = false,
   ...rest
 }: ButtonProps) {
+  const isDisabled = disabled || loading;
+
   const activeClass = active
     ? variant === "outline"
       ? "bg-white/5"
@@ -91,22 +112,45 @@ export default function Button({
     ].join(" ")
     : "";
 
+  const widthClass = fullWidth ? "w-full" : "";
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (blockWhileLoading && loading) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    onClick?.(e);
+  };
+
+  const showLeft = loading ? <Spinner size={size} /> : leftIcon;
+  const label = loading ? (loadingText ?? children) : children;
+
   return (
     <button
       type={type}
-      onClick={onClick}
-      disabled={disabled || loading}
+      onClick={handleClick}
+      disabled={isDisabled}
+      aria-busy={loading || undefined}
+      aria-disabled={isDisabled || undefined}
       className={cn(
-        base, sizes[size], variants[variant], activeClass, overlayClass,
+        base,
+        sizes[size],
+        variants[variant],
+        activeClass,
+        overlayClass,
         toneClasses(variant, tone),
+        widthClass,
+        // loading 时略微减小透明覆盖的干扰
+        loading ? "cursor-wait" : "",
         className
       )}
       title={title}
       {...rest}
     >
-      {leftIcon ? <span className="mr-1.5">{leftIcon}</span> : null}
-      {children}
-      {rightIcon ? <span className="ml-1.5">{rightIcon}</span> : null}
+      {showLeft ? <span className="mr-1.5">{showLeft}</span> : null}
+      <span className="inline-flex items-center">{label}</span>
+      {rightIcon && !loading ? <span className="ml-1.5">{rightIcon}</span> : null}
     </button>
   );
 }

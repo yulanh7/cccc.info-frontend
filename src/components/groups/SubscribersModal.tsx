@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { XMarkIcon, UsersIcon, TrashIcon, PlusIcon } from "@heroicons/react/24/outline";
+import Button from '@/components/ui/Button'
 
 export interface Subscriber {
   id: number;
@@ -66,7 +67,7 @@ export default function SubscribersModal({
           <h3 className="text-lg font-semibold">
             {title} <span className="text-dark-gray font-normal">({pagination?.total ?? members.length})</span>
           </h3>
-          <button onClick={onClose} className="text-dark-gray hover:text-foreground">×</button>
+          <button onClick={onClose} className="text-3xl text-dark-gray hover:text-foreground -mt-2">×</button>
         </div>
 
         {/* 顶部：添加成员（仅可管理时显示） */}
@@ -79,18 +80,17 @@ export default function SubscribersModal({
               className="flex-1 border border-border rounded px-2 py-1"
               disabled={adding}
             />
-            <button
+            <Button
+              variant="primary"
+              size="sm"
               onClick={handleAdd}
-              disabled={adding || !input.trim()}
-              className="px-3 py-1.5 rounded bg-yellow text-dark-gray disabled:opacity-50"
+              loading={adding}
+              loadingText="Adding…"
+              disabled={!input.trim()}
             >
-              {adding ? (
-                <span className="inline-flex items-center gap-2">
-                  <span className="inline-block h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                  Adding…
-                </span>
-              ) : 'Add'}
-            </button>
+              Add
+            </Button>
+
           </div>
         )}
 
@@ -116,18 +116,16 @@ export default function SubscribersModal({
                 {/* <div className="text-xs text-dark-gray">{u.email}</div> */}
               </div>
               {canManage && (
-                <button
+                <Button
+                  variant="outline"
+                  tone="danger"
+                  size="sm"
+                  loading={kickingId === u.id}
+                  loadingText="Kicking…"
                   onClick={() => handleKick(u.id)}
-                  disabled={kickingId === u.id}
-                  className="px-3 py-1 text-xs rounded border border-red-500 text-red-600 disabled:opacity-50"
                 >
-                  {kickingId === u.id ? (
-                    <span className="inline-flex items-center gap-2">
-                      <span className="inline-block h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                      Kicking…
-                    </span>
-                  ) : 'Kick'}
-                </button>
+                  Kick
+                </Button>
               )}
             </div>
           ))}
