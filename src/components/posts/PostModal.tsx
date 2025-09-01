@@ -16,9 +16,6 @@ type PostModalProps = {
   saving?: boolean;
 };
 
-// —— 文本长度限制（可按需调整）
-const MAX_TITLE = 120;
-const MAX_DESC = 5000;
 
 export default function PostModal({
   item,
@@ -64,10 +61,8 @@ export default function PostModal({
   const validate = (): boolean => {
     const next: { title?: string; contentHtml?: string } = {};
     if (!title.trim()) next.title = "Title is required";
-    if (titleLen > MAX_TITLE) next.title = `Title cannot exceed ${MAX_TITLE} characters.`;
 
-    // 如果你要求正文必填，打开下面一行
-    // if (!contentHtml.trim()) next.contentHtml = "Content is required";
+    if (!contentHtml.trim()) next.contentHtml = "Content is required";
 
     setErrors(next);
 
@@ -135,7 +130,6 @@ export default function PostModal({
   return (
     <div className="fixed inset-0 z-30 bg-black/40 flex items-center justify-center">
       <div className="bg-white max-h-[90vh] w-full md:max-w-3xl overflow-y-auto rounded-md shadow-lg p-4 md:p-6 relative">
-        {/* Close */}
         <button
           onClick={onClose}
           className="absolute right-4 top-4 text-dark-gray hover:text-dark-green"
@@ -148,7 +142,6 @@ export default function PostModal({
           {isNew ? "Create Post" : "Edit Post"}
         </h2>
 
-        {/* Title */}
         <label htmlFor="post-title" className="block text-sm font-medium mb-1">
           Title <span className="text-red-500">*</span>
         </label>
@@ -161,20 +154,12 @@ export default function PostModal({
           className={`w-full p-2 mb-1 border rounded-sm ${errors.title ? "border-red-500" : "border-border"
             }`}
           placeholder="Enter a short, descriptive title"
-          maxLength={MAX_TITLE + 100} // 允许输入但提示超长
         />
-        <div
-          className={`text-xs mb-2 ${titleLen > MAX_TITLE ? "text-red-600" : "text-dark-gray"
-            }`}
-        >
-          {titleLen}/{MAX_TITLE}
-          {titleLen > MAX_TITLE ? " — over limit" : ""}
-        </div>
+
         {errors.title && (
           <p className="text-red-600 text-sm mb-3">{errors.title}</p>
         )}
 
-        {/* Description */}
         <label
           htmlFor="post-desc"
           className="block text-sm font-medium mb-1"
@@ -189,20 +174,14 @@ export default function PostModal({
           rows={3}
           placeholder="Optional summary shown in lists or previews"
         />
-        <div
-          className={`text-xs mb-2 ${descLen > MAX_DESC ? "text-red-600" : "text-dark-gray"
-            }`}
-        >
-          {descLen}/{MAX_DESC}
-          {descLen > MAX_DESC ? " — over limit" : ""}
-        </div>
+
 
         {/* Content (HTML) */}
         <label
           htmlFor="post-content"
           className="block text-sm font-medium mb-1"
         >
-          Content (HTML)
+          Content
         </label>
         <textarea
           id="post-content"
