@@ -124,19 +124,30 @@ export default function GroupInfoBar({
                 </time>
               </span>
 
-              <Button
-                onClick={onShowMembers}
-                className="border-white text-white"
-                variant="outline"
-                size="sm"
-                leftIcon={<UserPlusIcon className="h-4 w-4 text-white" />}
-                title="View members"
-              >
-                <span className="text-[11px] uppercase tracking-wide">
-                  Members
+              {canManage ? (
+
+                <Button
+                  onClick={onShowMembers}
+                  className="border-white text-white"
+                  variant="outline"
+                  size="sm"
+                  leftIcon={<UserPlusIcon className="h-4 w-4 text-white" />}
+                  title="View members"
+                >
+                  <span className="text-[11px] uppercase tracking-wide">
+                    Members
+                  </span>
+                  <span className="ml-1 font-semibold">{subscriberCount}</span>
+                </Button>
+              ) : (
+                <span>
+                  <span className="tracking-wide">
+                    Members:
+                  </span>
+                  <span className="ml-1 ">{subscriberCount}</span>
                 </span>
-                <span className="ml-1 font-semibold">{subscriberCount}</span>
-              </Button>
+              )}
+
             </div>
             {canManage && (
               <section className="hidden md:flex justify-end gap-2 px-4">

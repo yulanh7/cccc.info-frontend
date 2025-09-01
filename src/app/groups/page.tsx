@@ -267,14 +267,17 @@ export default function GroupsPage() {
 
       <div className="mx-auto w-full p-4 min-h-screen lg:container">
         <div className="hidden md:flex justify-between my-6">
-          <Button
-            onClick={handleAdd}
-            variant="secondary"
-            size="sm"
-            leftIcon={<PlusIcon className="h-5 w-5" />}
-          >
-            New Group
-          </Button>
+          {canCreate && (
+            <Button
+              onClick={handleAdd}
+              className="mr-4"
+              variant="secondary"
+              size="sm"
+              leftIcon={<PlusIcon className="h-5 w-5" />}
+            >
+              New Group
+            </Button>
+          )}
           <SearchBar
             value={qInput}
             onChange={setQInput}
