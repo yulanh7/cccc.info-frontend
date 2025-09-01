@@ -199,6 +199,7 @@ export interface CreatePostFormModel {
   description: string;
   videos: string[];
   fileIds: number[];
+  localFiles?: File[];
 }
 export type UpdatePostFormModel = CreatePostFormModel;
 

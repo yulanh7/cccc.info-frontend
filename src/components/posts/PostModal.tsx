@@ -1,230 +1,337 @@
-// components/groups/GroupModal.tsx
+// components/posts/PostModal.tsx
 "use client";
 
-import { useState, useRef, useMemo } from 'react';
-import { mockUsers } from '@/app/data/mockData';
-import { GroupProps, GroupEditModalProps } from '@/app/types';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { XMarkIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Button from "@/components/ui/Button";
-import SaveConfirmModal from "../SaveConfirmModal";
+import type { CreatePostFormModel } from "@/app/types/post";
 
 
 
-const MAX_NAME = 50;
-const MAX_DESC = 500;
+type PostModalProps = {
+  item?: Partial<CreatePostFormModel>;
+  isNew: boolean;
+  onSave: (form: CreatePostFormModel) => void | Promise<void>; // ✅ 允许 Promise
+  onClose: () => void;
+  saving?: boolean;
+};
 
-export default function GroupEditModal({
-  group = {},
-  isNew = false,
+// —— 文本长度限制（可按需调整）
+const MAX_TITLE = 120;
+const MAX_DESC = 5000;
+
+export default function PostModal({
+  item,
+  isNew,
   onSave,
   onClose,
   saving = false,
-  externalErrors = null,
-}: GroupEditModalProps) {
-  const defaultItem: GroupProps = {
-    id: isNew ? Date.now() : group?.id || 0,
-    title: '',
-    description: '',
-    createdDate: new Date().toISOString().split('T')[0],
-    creator: mockUsers[1],
-    subscribed: false,
-    editable: true,
-    isPrivate: false,
-  };
+}: PostModalProps) {
+  // —— 初始表单
+  const [title, setTitle] = useState(item?.title ?? "");
+  const [description, setDescription] = useState(item?.description ?? "");
+  const [contentHtml, setContentHtml] = useState(item?.contentHtml ?? "");
+  const [videos, setVideos] = useState<string[]>(item?.videos ?? []);
+  const [fileIds, setFileIds] = useState<number[]>(item?.fileIds ?? []);
+  const [localFiles, setLocalFiles] = useState<File[]>([]);
 
-  const [editedItem, setEditedItem] = useState<GroupProps>(
-    isNew ? defaultItem : { ...group }
+  // —— 临时输入的视频 URL
+  const [videoInput, setVideoInput] = useState("");
+
+  // —— 简易校验错误
+  const [errors, setErrors] = useState<{ title?: string; contentHtml?: string }>(
+    {}
   );
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
-  // 本地错误
-  const [errors, setErrors] = useState<{ title?: string; description?: string }>({});
   const titleRef = useRef<HTMLInputElement>(null);
-  const descRef = useRef<HTMLTextAreaElement>(null);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const contentRef = useRef<HTMLTextAreaElement>(null);
 
-  const titleLen = editedItem.title?.length ?? 0;
-  const descLen = editedItem.description?.length ?? 0;
+  // —— 统计
+  const titleLen = title.trim().length;
+  const descLen = description.length;
 
-  const overTitle = Math.max(0, titleLen - MAX_NAME);
-  const overDesc = Math.max(0, descLen - MAX_DESC);
+  // —— 补：从父层变更（如再次打开编辑）
+  useEffect(() => {
+    if (!item) return;
+    setTitle(item.title ?? "");
+    setDescription(item.description ?? "");
+    setContentHtml(item.contentHtml ?? "");
+    setVideos(item.videos ?? []);
+    setFileIds(item.fileIds ?? []);
+    setLocalFiles([]); // 每次打开弹窗都清空本地新选文件
+  }, [item]);
 
-  const mergedErrors = useMemo(() => {
-    // 父层错误优先显示
-    return {
-      title: externalErrors?.title ?? errors.title,
-      description: externalErrors?.description ?? errors.description,
-    };
-  }, [externalErrors, errors]);
+  const validate = (): boolean => {
+    const next: { title?: string; contentHtml?: string } = {};
+    if (!title.trim()) next.title = "Title is required";
+    if (titleLen > MAX_TITLE) next.title = `Title cannot exceed ${MAX_TITLE} characters.`;
 
-  const handleChange = (field: keyof GroupProps, value: any) => {
-    setEditedItem((prev) => ({ ...prev, [field]: value }));
-    // 清理本地错误（父层 externalErrors 由父层自行清空）
-    if (field === 'title' && errors.title) setErrors((e) => ({ ...e, title: undefined }));
-    if (field === 'description' && errors.description) setErrors((e) => ({ ...e, description: undefined }));
-  };
-
-  // 校验必填 + 长度限制
-  const validate = () => {
-    const next: { title?: string; description?: string } = {};
-
-    if (!editedItem.title.trim()) next.title = 'Title is required';
-    if (!editedItem.description.trim()) next.description = 'Description is required';
-
-    if (titleLen > MAX_NAME) {
-      next.title = `Group name cannot exceed ${MAX_NAME} characters (over by ${titleLen - MAX_NAME}).`;
-    }
-    if (descLen > MAX_DESC) {
-      next.description = `Group description cannot exceed ${MAX_DESC} characters (over by ${descLen - MAX_DESC}).`;
-    }
+    // 如果你要求正文必填，打开下面一行
+    // if (!contentHtml.trim()) next.contentHtml = "Content is required";
 
     setErrors(next);
 
-    if (next.title && titleRef.current) {
-      titleRef.current.focus();
-    } else if (next.description && descRef.current) {
-      descRef.current.focus();
-    }
+    if (next.title && titleRef.current) titleRef.current.focus();
+    else if (next.contentHtml && contentRef.current) contentRef.current.focus();
+
     return Object.keys(next).length === 0;
   };
 
+  const handlePickFiles: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    const files = e.target.files;
+    if (!files || !files.length) return;
+
+    const picked = Array.from(files);
+    const existing = new Map(localFiles.map((f) => [`${f.name}-${f.size}`, true]));
+    const deduped = picked.filter((f) => !existing.has(`${f.name}-${f.size}`));
+
+    setLocalFiles((prev) => [...prev, ...deduped]);
+
+    e.currentTarget.value = "";
+  };
+
+  const removeLocalFile = (index: number) => {
+    setLocalFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeFileId = (id: number) => {
+    setFileIds((prev) => prev.filter((x) => x !== id));
+  };
+
+  const addVideo = () => {
+    const v = videoInput.trim();
+    if (!v) return;
+    // 简单校验：以 http(s) 开头
+    if (!/^https?:\/\//i.test(v)) {
+      alert("Please input a valid URL (must start with http/https).");
+      return;
+    }
+    setVideos((prev) => [...prev, v]);
+    setVideoInput("");
+  };
+
+  const removeVideo = (idx: number) => {
+    setVideos((prev) => prev.filter((_, i) => i !== idx));
+  };
+
   const handleSave = () => {
-    if (!validate()) return; // 阻止提交
-    const cleaned: GroupProps = {
-      ...editedItem,
-      title: editedItem.title.trim(),
-      // 不移除内部换行；仅去掉首尾空白
-      description: editedItem.description.replace(/\s+$/, '').replace(/^\s+/, ''),
+    if (!validate()) return;
+    const cleaned: CreatePostFormModel = {
+      title: title.trim(),
+      description: description.replace(/\s+$/, ""),
+      contentHtml,
+      videos,
+      fileIds,
+      localFiles
     };
     onSave(cleaned);
-    // 注意：这里不关闭，由父组件在成功后关闭
   };
 
-  const hasChanges =
-    JSON.stringify(editedItem) !== JSON.stringify(isNew ? defaultItem : group);
-
-  const handleCloseClick = () => {
-    if (hasChanges) setIsConfirmOpen(true);
-    else onClose();
-  };
-
-  const confirmSaveAndClose = () => {
-    handleSave();
-    setIsConfirmOpen(false);
-  };
-
-  const confirmCancel = () => {
-    setIsConfirmOpen(false);
-  };
-
-  const confirmCloseWithoutSaving = () => {
-    onClose();
-    setIsConfirmOpen(false);
-  };
-
-  const getConfirmPosition = () => {
-    if (closeButtonRef.current) {
-      const rect = closeButtonRef.current.getBoundingClientRect();
-      return { top: rect.bottom - rect.top + 8, right: 8 };
-    }
-    return { top: 0, right: 0 };
-  };
-
-  const nameId = "group-name";
-  const descId = "group-description";
+  const hasAny = useMemo(
+    () => title || description || contentHtml || videos.length || fileIds.length || localFiles.length,
+    [title, description, contentHtml, videos, fileIds, localFiles]
+  );
 
   return (
-    <div className="fixed inset-0 min-h-screen bg-gray bg-opacity-50 flex items-center justify-center z-20 overflow-y-auto">
-      <div className="bg-white p-6 rounded-sm shadow-lg w-full md:max-w-[80vw] max-h[90vh] overflow-y-auto relative">
+    <div className="fixed inset-0 z-30 bg-black/40 flex items-center justify-center">
+      <div className="bg-white max-h-[90vh] w-full md:max-w-3xl overflow-y-auto rounded-md shadow-lg p-4 md:p-6 relative">
+        {/* Close */}
         <button
-          ref={closeButtonRef}
-          onClick={handleCloseClick}
-          className="absolute top-6 right-4 text-dark-gray hover:text-dark-green focus:outline-none"
+          onClick={onClose}
+          className="absolute right-4 top-4 text-dark-gray hover:text-dark-green"
+          aria-label="Close"
         >
           <XMarkIcon className="h-6 w-6" />
         </button>
 
-        <h2 className="text-xl mb-4">{isNew ? 'Add New Group' : 'Edit Group'}</h2>
+        <h2 className="text-xl font-medium mb-4">
+          {isNew ? "Create Post" : "Edit Post"}
+        </h2>
 
         {/* Title */}
-        <label htmlFor={nameId} className="block text-sm font-medium mb-1">
-          Title
+        <label htmlFor="post-title" className="block text-sm font-medium mb-1">
+          Title <span className="text-red-500">*</span>
         </label>
         <input
-          id={nameId}
+          id="post-title"
           ref={titleRef}
           type="text"
-          value={editedItem.title}
-          onChange={(e) => handleChange('title', e.target.value)}
-          className={`w-full p-2 mb-1 border rounded-sm ${mergedErrors.title ? 'border-red-500' : 'border-border'}`}
-          aria-invalid={!!mergedErrors.title}
-          aria-describedby={mergedErrors.title ? 'title-error' : `${nameId}-counter`}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className={`w-full p-2 mb-1 border rounded-sm ${errors.title ? "border-red-500" : "border-border"
+            }`}
+          placeholder="Enter a short, descriptive title"
+          maxLength={MAX_TITLE + 100} // 允许输入但提示超长
         />
-        {/* 计数提示 */}
-        <div id={`${nameId}-counter`} className={`text-xs mb-2 ${overTitle ? 'text-red-600' : 'text-dark-gray'}`}>
-          {titleLen}/{MAX_NAME}{overTitle ? ` — over by ${overTitle}` : ''}
+        <div
+          className={`text-xs mb-2 ${titleLen > MAX_TITLE ? "text-red-600" : "text-dark-gray"
+            }`}
+        >
+          {titleLen}/{MAX_TITLE}
+          {titleLen > MAX_TITLE ? " — over limit" : ""}
         </div>
-        {mergedErrors.title && (
-          <p id="title-error" className="text-red-600 text-sm mb-3">
-            {mergedErrors.title}
-          </p>
+        {errors.title && (
+          <p className="text-red-600 text-sm mb-3">{errors.title}</p>
         )}
 
         {/* Description */}
-        <label htmlFor={descId} className="block text-sm font-medium mb-1">
+        <label
+          htmlFor="post-desc"
+          className="block text-sm font-medium mb-1"
+        >
           Description
         </label>
         <textarea
-          id={descId}
-          ref={descRef}
-          value={editedItem.description}
-          onChange={(e) => handleChange('description', e.target.value)}
-          className={`w-full p-2 mb-1 border rounded-sm ${mergedErrors.description ? 'border-red-500' : 'border-border'}`}
-          placeholder="Description"
-          aria-invalid={!!mergedErrors.description}
-          aria-describedby={mergedErrors.description ? 'description-error' : `${descId}-counter`}
-          rows={6}
+          id="post-desc"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="w-full p-2 mb-1 border rounded-sm border-border"
+          rows={3}
+          placeholder="Optional summary shown in lists or previews"
         />
-        {/* 计数提示 */}
-        <div id={`${descId}-counter`} className={`text-xs mb-2 ${overDesc ? 'text-red-600' : 'text-dark-gray'}`}>
-          {descLen}/{MAX_DESC}{overDesc ? ` — over by ${overDesc}` : ''}
+        <div
+          className={`text-xs mb-2 ${descLen > MAX_DESC ? "text-red-600" : "text-dark-gray"
+            }`}
+        >
+          {descLen}/{MAX_DESC}
+          {descLen > MAX_DESC ? " — over limit" : ""}
         </div>
-        {mergedErrors.description && (
-          <p id="description-error" className="text-red-600 text-sm mb-3">
-            {mergedErrors.description}
-          </p>
+
+        {/* Content (HTML) */}
+        <label
+          htmlFor="post-content"
+          className="block text-sm font-medium mb-1"
+        >
+          Content (HTML)
+        </label>
+        <textarea
+          id="post-content"
+          ref={contentRef}
+          value={contentHtml}
+          onChange={(e) => setContentHtml(e.target.value)}
+          className={`w-full p-2 mb-1 border rounded-sm ${errors.contentHtml ? "border-red-500" : "border-border"
+            }`}
+          rows={8}
+          placeholder='<p>Support HTML here, e.g. <strong>bold</strong> text.</p>'
+        />
+        {errors.contentHtml && (
+          <p className="text-red-600 text-sm mb-3">{errors.contentHtml}</p>
         )}
 
-        {/* Invite Only */}
-        <div className="mb-4">
-          <label className="flex items-center">
+        {/* Video URLs */}
+        <div className="mt-4">
+          <label className="block text-sm font-medium mb-1">Video URLs</label>
+          <div className="flex gap-2">
             <input
-              type="checkbox"
-              checked={editedItem.isPrivate}
-              onChange={(e) => handleChange('isPrivate', e.target.checked)}
-              className="mr-2"
+              type="url"
+              value={videoInput}
+              onChange={(e) => setVideoInput(e.target.value)}
+              className="flex-1 p-2 border rounded-sm border-border"
+              placeholder="https://youtube.com/watch?v=..."
             />
-            <span className="text-sm text-dark-gray">Invite Only</span>
-          </label>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={addVideo}
+              disabled={!videoInput.trim()}
+            >
+              <PlusIcon className="h-4 w-4 mr-1" />
+              Add
+            </Button>
+          </div>
+
+          {videos.length > 0 && (
+            <ul className="mt-2 space-y-1">
+              {videos.map((v, i) => (
+                <li
+                  key={`${v}-${i}`}
+                  className="text-sm flex items-center justify-between bg-gray-50 border border-border rounded px-2 py-1"
+                >
+                  <span className="truncate mr-2">{v}</span>
+                  <button
+                    className="text-red-600 hover:underline text-xs"
+                    onClick={() => removeVideo(i)}
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Files: existing fileIds + new localFiles */}
+        <div className="mt-5">
+          <label className="block text-sm font-medium mb-1">Attachments</label>
+
+          {/* 已存在的附件（编辑态） */}
+          {fileIds.length > 0 && (
+            <div className="mb-2">
+              <div className="text-xs text-dark-gray mb-1">Existing files (IDs):</div>
+              <ul className="space-y-1">
+                {fileIds.map((id) => (
+                  <li
+                    key={id}
+                    className="text-sm flex items-center justify-between bg-gray-50 border border-border rounded px-2 py-1"
+                  >
+                    <span>#{id}</span>
+                    <button
+                      className="text-red-600 hover:underline text-xs"
+                      onClick={() => removeFileId(id)}
+                    >
+                      Remove
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2">
+            <input
+              type="file"
+              multiple
+              onChange={handlePickFiles}
+              className="block w-full text-sm text-dark-gray file:mr-3 file:py-2 file:px-3 file:rounded-sm file:border-0 file:text-sm file:font-medium file:bg-gray-100 hover:file:bg-gray-200"
+              accept=".doc,.docx,.pdf,.png,.jpg,.jpeg,.gif,.bmp,.webp"
+            />
+          </div>
+
+          {localFiles.length > 0 && (
+            <ul className="mt-2 divide-y divide-gray-200 border border-border rounded">
+              {localFiles.map((f, i) => (
+                <li key={`${f.name}-${f.size}-${i}`} className="flex items-center justify-between px-2 py-1 text-sm">
+                  <div className="min-w-0">
+                    <div className="truncate">{f.name}</div>
+                    <div className="text-xs text-dark-gray">
+                      {(f.size / 1024 / 1024).toFixed(2)} MB
+                    </div>
+                  </div>
+                  <button
+                    className="p-1 text-red-600 hover:bg-red-50 rounded"
+                    onClick={() => removeLocalFile(i)}
+                    aria-label="Remove file"
+                    title="Remove file"
+                  >
+                    <TrashIcon className="h-4 w-4" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         {/* Actions */}
-        <div className="mt-5 flex justify-end gap-3">
+        <div className="mt-6 flex justify-end gap-3">
           <Button variant="outline" size="sm" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
           <Button variant="primary" size="sm" onClick={handleSave} disabled={saving}>
-            {saving ? 'Saving…' : 'Save'}
+            {saving ? "Saving…" : isNew ? "Create" : "Save"}
           </Button>
         </div>
 
-        <SaveConfirmModal
-          onConfirm={confirmSaveAndClose}
-          onCancel={confirmCloseWithoutSaving}
-          onOutsideClick={confirmCancel}
-          isOpen={isConfirmOpen}
-          position={getConfirmPosition()}
-        />
+        {/* 离开确认（可选）：如果你有通用 ConfirmModal，这里可以接入；当前简化由外层处理 */}
       </div>
     </div>
   );

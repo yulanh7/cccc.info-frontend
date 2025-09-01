@@ -27,6 +27,8 @@ import {
   deletePost as deletePostThunk,
 } from "@/app/features/posts/slice";
 import { updateGroup, deleteGroup } from "@/app/features/groups/slice";
+import { uploadAllFiles } from "@/app/ultility";
+
 import type { CreateOrUpdateGroupBody } from "@/app/types/group";
 import { toCreateRequest, type CreatePostFormModel } from "@/app/types/post";
 
@@ -97,29 +99,52 @@ export default function GroupPage() {
 
 
   // 保存 PostModal 返回的数据时，先统一标准化，再调用 create/update
-  const handlePostModalSave = async (form: CreatePostFormModel) => {
-    setIsPostModalOpen(false);
-    if (!safeGroup) return;
-    try {
-      const body = toCreateRequest({
-        title: form.title?.trim() ?? "",
-        contentHtml: form.contentHtml ?? "",
-        description: form.description ?? "",
-        videos: form.videos ?? [],
-        fileIds: form.fileIds ?? [],
-      });
-      await dispatch(
-        createPost({
-          groupId: safeGroup.id,
-          body,
-          authorNameHint: safeGroup.creator?.firstName || "",
-        })
-      ).unwrap();
-      // 新建成功后刷新列表
-      dispatch(fetchGroupPosts({ groupId: safeGroup.id, page: 1, per_page: POST_PER_PAGE, append: false }));
-    } catch (e: any) {
-      alert(toMsg(e) || "Create post failed");
-    }
+  const handlePostModalSave = (form: CreatePostFormModel) => {
+    // onSave 的签名是 void，这里用 IIFE 跑异步，避免类型冲突
+    (async () => {
+      setIsPostModalOpen(false);
+      if (!safeGroup) return;
+
+      try {
+        // 1) 先上传本地文件（如果有）
+        const newIds = form.localFiles?.length
+          ? await uploadAllFiles(form.localFiles, dispatch /*, (idx, p) => console.log(idx, p)*/)
+          : [];
+
+        // 2) 合并已有 fileIds（编辑态可能带进来）
+        const fileIds = [...(form.fileIds ?? []), ...newIds];
+
+        // 3) 组装创建请求体（注意映射成 video_urls / file_ids）
+        const body = toCreateRequest({
+          title: form.title?.trim() ?? "",
+          contentHtml: form.contentHtml ?? "",
+          description: form.description ?? "",
+          videos: form.videos ?? [],
+          fileIds, // ✅ 这里用合并后的
+        });
+
+        // 4) 建帖
+        await dispatch(
+          createPost({
+            groupId: safeGroup.id,
+            body,
+            authorNameHint: safeGroup.creator?.firstName || "",
+          })
+        ).unwrap();
+
+        // 5) 刷新列表
+        dispatch(
+          fetchGroupPosts({
+            groupId: safeGroup.id,
+            page: 1,
+            per_page: POST_PER_PAGE,
+            append: false,
+          })
+        );
+      } catch (e: any) {
+        alert((e?.message as string) || "Create post failed");
+      }
+    })();
   };
 
   // ====== 新建 / 编辑 / 删除（单个） / 批量删除 ======
