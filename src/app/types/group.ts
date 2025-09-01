@@ -202,3 +202,12 @@ export const toCreateOrUpdateGroupBody = (
   description: g.description,
   isPrivate: g.isPrivate,
 });
+
+export interface GroupEditModalProps {
+  group?: GroupProps | any;
+  isNew?: boolean;
+  onSave: (updatedGroup: GroupProps) => void;
+  onClose: () => void;
+  saving?: boolean;
+  externalErrors?: { title?: string; description?: string } | null;
+}

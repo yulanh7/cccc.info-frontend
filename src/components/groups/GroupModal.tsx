@@ -1,24 +1,22 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from "react";
 import { mockUsers } from '@/app/data/mockData';
-import { GroupProps } from '@/app/types';
+import { GroupProps, GroupEditModalProps } from '@/app/types';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import Button from "@/components/ui/Button";
 import SaveConfirmModal from "../SaveConfirmModal";
 
-interface GroupEditModalProps {
-  group?: GroupProps | any;
-  isNew?: boolean;
-  onSave: (updatedGroup: GroupProps) => void;
-  onClose: () => void;
-}
+const MAX_NAME = 50;
+const MAX_DESC = 500;
 
 export default function GroupEditModal({
   group = {},
   isNew = false,
   onSave,
   onClose,
+  saving = false,
+  externalErrors = null,
 }: GroupEditModalProps) {
   const defaultItem: GroupProps = {
     id: isNew ? Date.now() : group?.id || 0,
@@ -42,37 +40,52 @@ export default function GroupEditModal({
   const descRef = useRef<HTMLTextAreaElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
+  const titleLen = editedItem.title?.length ?? 0;
+  const descLen = editedItem.description?.length ?? 0;
+  const overTitle = Math.max(0, titleLen - MAX_NAME);
+  const overDesc = Math.max(0, descLen - MAX_DESC);
+
+  const displayErrors = useMemo(
+    () => ({
+      title: externalErrors?.title ?? errors.title,
+      description: externalErrors?.description ?? errors.description,
+    }),
+    [externalErrors, errors]
+  );
+
   const handleChange = (field: keyof GroupProps, value: any) => {
     setEditedItem((prev) => ({ ...prev, [field]: value }));
-    // clear error on typing
-    if (field === 'title' && errors.title) setErrors((e) => ({ ...e, title: undefined }));
-    if (field === 'description' && errors.description) setErrors((e) => ({ ...e, description: undefined }));
+    if (field === "title" && errors.title) setErrors((e) => ({ ...e, title: undefined }));
+    if (field === "description" && errors.description)
+      setErrors((e) => ({ ...e, description: undefined }));
   };
 
   // Validate required fields and focus the first invalid
   const validate = () => {
     const next: { title?: string; description?: string } = {};
-    if (!editedItem.title.trim()) next.title = 'Title is required';
-    if (!editedItem.description.trim()) next.description = 'Description is required';
+    if (!editedItem.title.trim()) next.title = "Title is required";
+    if (!editedItem.description.trim()) next.description = "Description is required";
+    if (titleLen > MAX_NAME)
+      next.title = `Group name cannot exceed ${MAX_NAME} characters.`;
+    if (descLen > MAX_DESC)
+      next.description = `Group description cannot exceed ${MAX_DESC} characters.`;
+
     setErrors(next);
 
-    if (next.title && titleRef.current) {
-      titleRef.current.focus();
-    } else if (next.description && descRef.current) {
-      descRef.current.focus();
-    }
+    if (next.title && titleRef.current) titleRef.current.focus();
+    else if (next.description && descRef.current) descRef.current.focus();
+
     return Object.keys(next).length === 0;
   };
 
   const handleSave = () => {
-    if (!validate()) return; // stop submit, show errors, focus invalid
+    if (!validate()) return;
     const cleaned: GroupProps = {
       ...editedItem,
       title: editedItem.title.trim(),
-      description: editedItem.description.trim(),
+      description: (editedItem.description ?? "").replace(/\r\n/g, "\n"),
     };
     onSave(cleaned);
-    onClose();
   };
 
   const hasChanges =
@@ -107,7 +120,6 @@ export default function GroupEditModal({
 
   const nameId = "group-name";
   const descId = "group-description";
-  const privId = "group-private";
 
   return (
     <div className="fixed inset-0 min-h-screen bg-gray bg-opacity-50 flex items-center justify-center z-20 overflow-y-auto">
@@ -120,7 +132,7 @@ export default function GroupEditModal({
           <XMarkIcon className="h-6 w-6" />
         </button>
 
-        <h2 className="text-xl mb-4">{isNew ? 'Add New Group' : 'Edit Group'}</h2>
+        <h2 className="text-xl mb-4">{isNew ? "Add New Group" : "Edit Group"}</h2>
 
         {/* Title */}
         <label htmlFor={nameId} className="block text-sm font-medium mb-1">
@@ -131,16 +143,16 @@ export default function GroupEditModal({
           ref={titleRef}
           type="text"
           value={editedItem.title}
-          onChange={(e) => handleChange('title', e.target.value)}
-          className={`w-full p-2 mb-1 border rounded-sm ${errors.title ? 'border-red-500' : 'border-border'
+          onChange={(e) => handleChange("title", e.target.value)}
+          className={`w-full p-2 mb-1 border rounded-sm ${displayErrors.title ? "border-red-500" : "border-border"
             }`}
-          aria-invalid={!!errors.title}
-          aria-describedby={errors.title ? 'title-error' : undefined}
         />
-        {errors.title && (
-          <p id="title-error" className="text-red-600 text-sm mb-3">
-            {errors.title}
-          </p>
+        <div className={`text-xs mb-1 ${overTitle ? "text-red-600" : "text-dark-gray"}`}>
+          {titleLen}/{MAX_NAME}
+          {/* {overTitle ? ` — over by ${overTitle}` : ""} */}
+        </div>
+        {displayErrors.title && (
+          <p className="text-red-600 text-sm mb-3">{displayErrors.title}</p>
         )}
 
         {/* Description */}
@@ -151,18 +163,17 @@ export default function GroupEditModal({
           id={descId}
           ref={descRef}
           value={editedItem.description}
-          onChange={(e) => handleChange('description', e.target.value)}
-          className={`w-full p-2 mb-1 border rounded-sm ${errors.description ? 'border-red-500' : 'border-border'
+          onChange={(e) => handleChange("description", e.target.value)}
+          className={`w-full p-2 mb-1 border rounded-sm ${displayErrors.description ? "border-red-500" : "border-border"
             }`}
-          placeholder="Description"
-          aria-invalid={!!errors.description}
-          aria-describedby={errors.description ? 'description-error' : undefined}
           rows={6}
         />
-        {errors.description && (
-          <p id="description-error" className="text-red-600 text-sm mb-3">
-            {errors.description}
-          </p>
+        <div className={`text-xs mb-1 ${overDesc ? "text-red-600" : "text-dark-gray"}`}>
+          {descLen}/{MAX_DESC}
+          {/* {overDesc ? ` — over by ${overDesc}` : ""} */}
+        </div>
+        {displayErrors.description && (
+          <p className="text-red-600 text-sm mb-3">{displayErrors.description}</p>
         )}
 
         {/* Invite Only */}
@@ -171,7 +182,7 @@ export default function GroupEditModal({
             <input
               type="checkbox"
               checked={editedItem.isPrivate}
-              onChange={(e) => handleChange('isPrivate', e.target.checked)}
+              onChange={(e) => handleChange("isPrivate", e.target.checked)}
               className="mr-2"
             />
             <span className="text-sm text-dark-gray">Invite Only</span>
@@ -180,11 +191,11 @@ export default function GroupEditModal({
 
         {/* Actions */}
         <div className="mt-5 flex justify-end gap-3">
-          <Button variant="outline" size="sm" onClick={onClose}>
+          <Button variant="outline" size="sm" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
-          <Button variant="primary" size="sm" onClick={handleSave}>
-            Save
+          <Button variant="primary" size="sm" onClick={handleSave} disabled={saving}>
+            {saving ? "Saving…" : "Save"}
           </Button>
         </div>
 

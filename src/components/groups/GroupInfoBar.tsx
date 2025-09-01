@@ -72,7 +72,7 @@ export default function GroupInfoBar({
               </div>
 
               {group.description && (
-                <p className="mt-2 text-sm text-white">{group.description}</p>
+                <p className="my-2 md:mr-10  text-sm text-white whitespace-pre-line">{group.description}</p>
               )}
             </div>
 

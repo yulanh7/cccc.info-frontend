@@ -13,7 +13,7 @@ import GroupInfoBar from "@/components/groups/GroupInfoBar";
 import PostsListWithSelect from "@/components/posts/PostsListWithSelect";
 import type { GroupProps } from "@/app/types";
 import { canEditPost } from "@/app/types/post";
-import { formatDate } from "@/app/ultility";
+import { formatDate, mapApiErrorToFields } from "@/app/ultility";
 import {
   fetchGroupDetail,
   fetchGroupPosts,
@@ -52,6 +52,8 @@ export default function GroupPage() {
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showSubsModal, setShowSubsModal] = useState(false);
+  const [modalSaving, setModalSaving] = useState(false);
+  const [modalErrors, setModalErrors] = useState<{ title?: string; description?: string } | null>(null);
 
 
   // 选择模式 & 批量删除
@@ -163,21 +165,36 @@ export default function GroupPage() {
   const handleEditGroup = () => setShowEditModal(true);
 
   const submitEditGroup = async (updatedGroup: GroupProps) => {
+    if (!safeGroup) return;
+
+    setModalErrors(null);
+    setModalSaving(true);
+
     const body: CreateOrUpdateGroupBody = {
       name: updatedGroup.title.trim(),
-      description: updatedGroup.description.trim(),
+      description: (updatedGroup.description ?? "").replace(/\r\n/g, "\n"),
       isPrivate: updatedGroup.isPrivate,
     };
 
-    if (!safeGroup) return;
     try {
       const updated = await dispatch(updateGroup({ groupId: safeGroup.id, body })).unwrap();
-      await dispatch(fetchGroupDetail(updated.id)); // 方案A：服务端权威刷新
+      // 成功：刷新权威数据并关闭
+      await dispatch(fetchGroupDetail(updated.id));
       setShowEditModal(false);
     } catch (e: any) {
-      alert(e?.message || "Update group failed");
+      // 失败：把长度类错误显示在表单
+      const msg = e?.message as string | undefined;
+      const fieldErrors = mapApiErrorToFields(msg);
+      if (fieldErrors.title || fieldErrors.description) {
+        setModalErrors(fieldErrors);
+      } else {
+        alert(msg || "Update group failed");
+      }
+    } finally {
+      setModalSaving(false);
     }
   };
+
 
   const handleDeleteGroup = async () => {
     if (!safeGroup) return;
@@ -325,9 +342,11 @@ export default function GroupPage() {
       {showEditModal && (
         <GroupModal
           group={safeGroup ?? undefined}
+          isNew={false}
           onSave={submitEditGroup}
           onClose={() => setShowEditModal(false)}
-          isNew={false}
+          saving={modalSaving}
+          externalErrors={modalErrors}
         />
       )}
 

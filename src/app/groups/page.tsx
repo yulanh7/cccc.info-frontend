@@ -24,7 +24,7 @@ import {
 } from "@/app/features/groups/slice";
 import type { GroupProps } from "@/app/types";
 import type { CreateOrUpdateGroupBody } from "@/app/types/group";
-import { formatDate } from "@/app/ultility";
+import { formatDate, mapApiErrorToFields } from "@/app/ultility";
 import { useConfirm } from "@/hooks/useConfirm";
 import Button from "@/components/ui/Button";
 import { canEditGroup } from "@/app/types/group";
@@ -51,6 +51,8 @@ export default function GroupsPage() {
   const [isNew, setIsNew] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<GroupProps | undefined>(undefined);
   const [qInput, setQInput] = useState("");
+  const [modalSaving, setModalSaving] = useState(false);
+  const [modalErrors, setModalErrors] = useState<{ title?: string; description?: string } | null>(null);
 
   const canCreate = !!user?.admin;
 
@@ -123,57 +125,76 @@ export default function GroupsPage() {
     }
     setSelectedGroup(undefined);
     setIsNew(true);
+    setSelectedGroup(undefined);
+    setIsNew(true);
+    setModalErrors(null);
     setIsModalOpen(true);
   };
 
   const handleEdit = (group: GroupProps) => {
     setSelectedGroup(group);
     setIsNew(false);
+    setModalErrors(null);
     setIsModalOpen(true);
   };
 
+
   const handleSave = async (updatedGroup: GroupProps) => {
+    setModalErrors(null);
+    setModalSaving(true);
+
     const body: CreateOrUpdateGroupBody = {
       name: updatedGroup.title.trim(),
-      description: updatedGroup.description.trim(),
+      description: updatedGroup.description,
       isPrivate: updatedGroup.isPrivate,
     };
 
     if (isNew) {
-      setSaving(true);
       const action = await dispatch(createGroup(body));
-      setSaving(false);
+      setModalSaving(false);
 
       if (createGroup.fulfilled.match(action)) {
+        // 成功后再关闭
         if (searchQuery) {
           dispatch(clearSearch());
           router.push("/groups?page=1");
-          return;
-        }
-
-        if (currentPage !== 1) {
+        } else if (currentPage !== 1) {
           router.push(buildHref(1));
-          return;
+        } else {
+          await refreshPage(1);
         }
-
-        await refreshPage(1);
+        setIsModalOpen(false);
       } else {
-        alert((action.payload as string) ?? "Create group failed");
+        // 失败：展示到表单字段
+        const msg = (action.payload as string) ?? "Create group failed";
+        const fieldErrors = mapApiErrorToFields(msg);
+        if (fieldErrors.title || fieldErrors.description) {
+          setModalErrors(fieldErrors);
+        } else {
+          // 不是长度类错误，才用 alert
+          alert(msg);
+        }
       }
     } else {
-      // 原有编辑逻辑保持
-      setSaving(true);
       const action = await dispatch(updateGroup({ groupId: updatedGroup.id, body }));
-      setSaving(false);
+      setModalSaving(false);
+
       if (updateGroup.fulfilled.match(action)) {
         await refreshPage(currentPage);
+        // 成功后再关闭
+        setIsModalOpen(false);
       } else {
-        alert((action.payload as string) ?? "Update group failed");
+        const msg = (action.payload as string) ?? "Update group failed";
+        const fieldErrors = mapApiErrorToFields(msg);
+        if (fieldErrors.title || fieldErrors.description) {
+          setModalErrors(fieldErrors);
+        } else {
+          alert(msg);
+        }
       }
     }
-
-    setIsModalOpen(false);
   };
+
 
   const handleDeleteClick = (id: number) => {
     confirmGroupDelete.ask(id);
@@ -320,6 +341,8 @@ export default function GroupsPage() {
           isNew={isNew}
           onSave={handleSave}
           onClose={() => setIsModalOpen(false)}
+          saving={modalSaving}
+          externalErrors={modalErrors}
         />
       )}
 

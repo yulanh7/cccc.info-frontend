@@ -158,7 +158,10 @@ export default function GroupsMobileList({
                   </p>
 
                   {/* 描述 */}
-                  <p className="text-gray text-sm" title={group.description || ""}>
+                  <p
+                    className="text-gray text-sm whitespace-pre-line"
+                    title={group.description || ""}
+                  >
                     {ellipsize(group.description || "", 160, { byWords: true })}
                   </p>
 

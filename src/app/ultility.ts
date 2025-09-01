@@ -78,3 +78,17 @@ export function ellipsize(
 
   return chars.slice(0, max).join('') + suffix;
 }
+
+export const mapApiErrorToFields = (msg?: string) => {
+  const lower = (msg || "").toLowerCase();
+  const next: { title?: string; description?: string } = {};
+  if (lower.includes("name") && lower.includes("exceed")) {
+    const m = lower.match(/(\d+)\s*characters?/);
+    next.title = m ? `Group name cannot exceed ${m[1]} characters.` : "Group name is too long.";
+  }
+  if (lower.includes("description") && lower.includes("exceed")) {
+    const m = lower.match(/(\d+)\s*characters?/);
+    next.description = m ? `Group description cannot exceed ${m[1]} characters.` : "Group description is too long.";
+  }
+  return next;
+};
