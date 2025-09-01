@@ -5,7 +5,8 @@ import axios, {
   AxiosResponse,
 } from 'axios';
 
-import { ApiResponseProps } from '@/app/types/api';
+import { ApiResponseProps, ApiResponseRaw } from '@/app/types/api';
+import { normalizeApiResponse } from '@/app/lib/api/normalize'
 import {
   getToken,
   getRefreshToken,
@@ -191,42 +192,25 @@ export const apiRequest = async <T>(
   requireAuth: boolean = true
 ): Promise<ApiResponseProps<T>> => {
   try {
-    const config: AxiosRequestConfig = {
-      method,
-      url: endpoint, // baseURL 已设置
-      data,
-    };
+    const config: AxiosRequestConfig = { method, url: endpoint, data };
 
-    // 需要鉴权但没有 token（仅浏览器环境）
     if (requireAuth && typeof window !== 'undefined') {
       const token = getToken();
       if (!token) {
-        // 弹提示并引导登录
         promptLoginRedirect('该操作需要登录。现在前往登录页？');
-        // 抛一个一致的错误给调用方
         throw { code: 401, message: '未登录或会话已过期' };
       }
-      config.headers = {
-        ...(config.headers || {}),
-        Authorization: `Bearer ${token}`,
-      };
+      config.headers = { ...(config.headers || {}), Authorization: `Bearer ${token}` };
     }
 
-    const response: AxiosResponse<ApiResponseProps<T>> =
-      await api.request<ApiResponseProps<T>>(config);
+    const response: AxiosResponse<ApiResponseRaw<T>> =
+      await api.request<ApiResponseRaw<T>>(config);
 
-    const res = response.data;
-    if (res == null) throw new Error('Invalid API response: Missing data');
+    return normalizeApiResponse<T>(response.data, response.status);
 
-    return {
-      success: res.success ?? true,
-      code: res.code ?? response.status,
-      message: res.message ?? 'Success',
-      data: res.data as T,
-    };
   } catch (error: any) {
     const status = error?.response?.status ?? 500;
-    const code = typeof status === "number" ? status : 500;
+    const code = typeof status === 'number' ? status : 500;
     const serverMsg = pickServerMessage(error?.response?.data);
     let message =
       serverMsg ??
