@@ -117,7 +117,7 @@ export default function GroupPage() {
         // 3) 组装创建请求体（注意映射成 video_urls / file_ids）
         const body = toCreateRequest({
           title: form.title?.trim() ?? "",
-          contentHtml: form.contentHtml ?? "",
+          contentText: form.contentText ?? "",
           description: form.description ?? "",
           videos: form.videos ?? [],
           fileIds, // ✅ 这里用合并后的

@@ -64,14 +64,14 @@ export default function PostCardSimple({
       </div>
       <div className='px-2 pb-2'>
         <h2 className="font-semibold text-dark-gray leading-[1.3] md:leading-[1.3] mb-2">
-          {title}
+          {ellipsize(title, 50, { byWords: true })}
         </h2>
         {/* <div className="flex items-center">
           <UserGroupIcon className="h-4 w-4 mr-1 text-dark-gray" />
           <span className="truncate">{group}</span>
         </div> */}
         {description && (
-          <p className="text-gray text-sm line-clamp-3 leading-[1.1] md:leading-[1.2]">
+          <p className="text-gray text-sm line-clamp-3 leading-[1.1] md:leading-[1.2] whitespace-pre-line">
             {ellipsize(description, 160, { byWords: true })}
           </p>
         )}

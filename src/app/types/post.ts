@@ -36,7 +36,7 @@ export interface PostListUi extends PostBaseUi {
 export interface PostDetailUi extends PostBaseUi {
   group: string;
   description: string;
-  contentHtml?: string;
+  contentText?: string;
   videos: string[];
   files: UiFile[];
 }
@@ -178,7 +178,7 @@ export const mapPostDetailApiToUi = (p: PostDetailApi): PostDetailUi => {
     like_count: p.like_count ?? 0,
     group: String(p.group_id ?? ""),
     description: p.description ?? "",
-    contentHtml: p.content ?? "",
+    contentText: p.content ?? "",
     videos,
     files,
   };
@@ -195,7 +195,7 @@ export const mapCreateOrUpdateResponseToPostProps = (
 /* ===================== UI → API DTO (表单到请求体) ===================== */
 export interface CreatePostFormModel {
   title: string;
-  contentHtml: string;
+  contentText: string;
   description: string;
   videos: string[];
   fileIds: number[];
@@ -205,7 +205,7 @@ export type UpdatePostFormModel = CreatePostFormModel;
 
 export const toCreateRequest = (m: CreatePostFormModel): CreatePostRequest => ({
   title: m.title,
-  content: m.contentHtml,
+  content: m.contentText,
   description: m.description,
   videos: m.videos,
   file_ids: m.fileIds,
