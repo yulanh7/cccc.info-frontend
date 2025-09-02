@@ -16,7 +16,7 @@ export default function Header({
 }) {
   const headerRef = useRef<HTMLElement>(null);
   const pathname = usePathname();
-  const hideHeader = pathname.startsWith('/posts/') || pathname.startsWith('/messages/') || pathname.startsWith('/auth');
+  const hideHeader = pathname.startsWith('/messages/') || pathname.startsWith('/auth');
   const hideMobileHeader = pathname.startsWith('/groups');
   const [isFixed, setIsFixed] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
@@ -69,11 +69,11 @@ export default function Header({
     <>
       <header
         ref={headerRef}
-        className={`transition-all duration-600 ease-in-out w-full bg-bg ${isFixed ? 'fixed top-0 left-0 right-0 z-10 shadow-md' : 'static'
+        className={`transition-all duration-600 border-b-1 border-border ease-in-out container mx-auto bg-bg ${isFixed ? 'fixed top-0 left-0 right-0 z-10 shadow-md' : 'static'
           }`}
       >
         <div
-          className={`md-header hidden md:flex items-center justify-between px-6 ${isFixed ? 'py-2 shadow-lg' : 'py-4'
+          className={`md-header hidden md:flex items-center justify-between px-4 lg:px-6 ${isFixed ? 'py-2 shadow-lg' : 'py-4'
             }`}
         >
           <Logo isScrolled={isFixed} />
