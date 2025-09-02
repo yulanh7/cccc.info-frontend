@@ -296,10 +296,11 @@ export default function PostModal({
         aria-hidden
       />
       <div
-        className="bg-white max-h-[90vh] w-full md:max-w-3xl overflow-y-auto rounded-md shadow-lg p-4 md:p-6 relative"
+        className="bg-white w-full md:max-w-3xl  rounded-md shadow-lg p-4 md:p-6 relative"
         // 阻止内部点击冒泡到遮罩
         onClick={(e) => e.stopPropagation()}
       >
+
         <button
           onClick={handleCloseClick}
           ref={closeButtonRef}
@@ -311,210 +312,213 @@ export default function PostModal({
 
         <h2 className="text-xl font-medium mb-4">{isNew ? "Create Post" : "Edit Post"}</h2>
 
-        {/* ===== 标题 ===== */}
-        <label htmlFor="post-title" className="block text-sm font-medium mb-1 text-gray-900">
-          Title <span className="text-red-500">*</span>
-        </label>
-        <input
-          id="post-title"
-          ref={titleRef}
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className={`w-full p-2 mb-1 border rounded-sm ${errors.title ? "border-red-500" : "border-border"}`}
-          placeholder="Enter a short, descriptive title"
-          maxLength={MAX_TITLE + 100}
-        />
-        <div className={`text-xs mb-2 ${titleLen > MAX_TITLE ? "text-red-600" : "text-dark-gray"}`}>
-          {titleLen}/{MAX_TITLE}
-          {titleLen > MAX_TITLE ? " — over limit" : ""}
-        </div>
-        {errors.title && <p className="text-red-600 text-sm mb-3">{errors.title}</p>}
+        <div className="overflow-y-auto max-h-[80vh] ">
 
-        {/* ===== 正文（纯文本，保留换行） ===== */}
-        <label htmlFor="post-content" className="block text-gray-900 text-sm font-medium mb-1">
-          Content
-        </label>
-        <textarea
-          id="post-content"
-          ref={contentRef}
-          value={contentText}
-          onChange={(e) => setContentText(e.target.value)}
-          className={`w-full p-2 mb-1 border text-gray-600 rounded-sm ${errors.contentText ? "border-red-500" : "border-border"}`}
-          rows={10}
-          placeholder="Write your content here. Line breaks will be preserved."
-        />
-        {errors.contentText && <p className="text-red-600 text-sm mb-3">{errors.contentText}</p>}
 
-        {/* ===== 视频 URL ===== */}
-        <div className="mt-4">
-          <label className="block text-sm font-medium mb-1 text-gray-900">Video URLs</label>
-          <div className="flex gap-2">
-            <input
-              type="url"
-              value={videoInput}
-              onChange={(e) => setVideoInput(e.target.value)}
-              className="flex-1 p-2 border rounded-sm border-border"
-              placeholder="https://youtube.com/watch?v=..."
-            />
-            <Button variant="primary" size="sm" onClick={addVideo} disabled={!videoInput.trim()}>
-              <PlusIcon className="h-4 w-4 mr-1" />
-              Add
-            </Button>
+          {/* ===== 标题 ===== */}
+          <label htmlFor="post-title" className="block text-sm font-medium mb-1 text-gray-900">
+            Title <span className="text-red-500">*</span>
+          </label>
+          <input
+            id="post-title"
+            ref={titleRef}
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className={`w-full p-2 mb-1 border rounded-sm ${errors.title ? "border-red-500" : "border-border"}`}
+            placeholder="Enter a short, descriptive title"
+            maxLength={MAX_TITLE + 100}
+          />
+          <div className={`text-xs mb-2 ${titleLen > MAX_TITLE ? "text-red-600" : "text-dark-gray"}`}>
+            {titleLen}/{MAX_TITLE}
+            {titleLen > MAX_TITLE ? " — over limit" : ""}
           </div>
+          {errors.title && <p className="text-red-600 text-sm mb-3">{errors.title}</p>}
 
-          {videos.length > 0 && (
-            <ul className="mt-2 space-y-1">
-              {videos.map((v, i) => (
-                <li
-                  key={`${v}-${i}`}
-                  className="text-sm flex items-center justify-between bg-gray-50 border border-border rounded px-2 py-1"
-                >
-                  <span className="truncate mr-2">{v}</span>
-                  <button className="text-red-600 hover:underline text-xs" onClick={() => removeVideo(i)}>
-                    Remove
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+          {/* ===== 正文（纯文本，保留换行） ===== */}
+          <label htmlFor="post-content" className="block text-gray-900 text-sm font-medium mb-1">
+            Content
+          </label>
+          <textarea
+            id="post-content"
+            ref={contentRef}
+            value={contentText}
+            onChange={(e) => setContentText(e.target.value)}
+            className={`w-full p-2 mb-1 border text-gray-600 rounded-sm ${errors.contentText ? "border-red-500" : "border-border"}`}
+            rows={10}
+            placeholder="Write your content here. Line breaks will be preserved."
+          />
+          {errors.contentText && <p className="text-red-600 text-sm mb-3">{errors.contentText}</p>}
 
-        <div className="border border-border p-2 mt-2">
-
-          {/* ===== 已有图片（编辑态） ===== */}
-          {existingImages.length > 0 && (
-            <div>
-              <div className="text-sm font-medium mb-1 text-gray-900">Existing Images</div>
-
-              <ul className="mt-2 grid grid-cols-4 md:grid-cols-8 gap-2">
-                {existingImages.map((f) => (
-                  <li key={`${f.id}-${f.url}`} className="border border-border rounded p-1">
-                    <img src={f.url} alt={f.name} className="w-full object-cover rounded mb-2 aspect-square" />
-                    <div className="text-[10px] truncate">{f.name}</div>
-                    {/* {typeof f.size === "number" && (
-                    <div className="text-[11px] text-dark-gray">{(f.size / 1024 / 1024).toFixed(2)} MB</div>
-                  )} */}
-                    {f.id != null && (
-                      <button
-                        className="mt-1 p-1 text-red-600 hover:bg-red-50 rounded text-xs"
-                        onClick={() => removeFileId(f.id)}
-                        title="Unlink this image from the post"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
+          {/* ===== 视频 URL ===== */}
+          <div className="mt-4">
+            <label className="block text-sm font-medium mb-1 text-gray-900">Video URLs</label>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                value={videoInput}
+                onChange={(e) => setVideoInput(e.target.value)}
+                className="flex-1 p-2 border rounded-sm border-border"
+                placeholder="https://youtube.com/watch?v=..."
+              />
+              <Button variant="primary" size="sm" onClick={addVideo} disabled={!videoInput.trim()}>
+                <PlusIcon className="h-4 w-4 mr-1" />
+                Add
+              </Button>
             </div>
-          )}
-          {/* ===== 新增上传：图片 ===== */}
-          <div className="mt-6">
-            <label className="block text-sm font-medium mb-1 text-gray-900">Add Images</label>
-            <input
-              type="file"
-              multiple
-              accept={IMAGE_ACCEPT}
-              onChange={onPickImages}
-              className="block w-full text-sm text-dark-gray file:mr-3 file:py-2 file:px-3 file:rounded-sm file:border-0 file:text-sm file:font-medium file:bg-gray-100 hover:file:bg-gray-200"
-            />
-            <p id="image-size-hint" className="mt-1 text-xs text-dark-gray">
-              * Each img ≤ {formatMB(MAX_FILE_SIZE)}.
-            </p>
 
-            {localImages.length > 0 && (
-              <ul className="mt-2 grid grid-cols-4 md:grid-cols-8 gap-2">
-                {localImages.map((f, i) => (
-                  <li key={`${f.name}-${f.size}-${i}`} className="border border-border rounded p-1">
-                    <img src={URL.createObjectURL(f)} alt={f.name} className="w-full object-cover rounded mb-2 aspect-square" />
-                    <div className="text-xs truncate">{f.name}</div>
-                    <div className="text-[11px] text-dark-gray">{(f.size / 1024 / 1024).toFixed(2)} MB</div>
-                    <button
-                      className="mt-1 p-1 text-red-600 hover:bg-red-50 rounded text-xs"
-                      onClick={() => removeLocalImage(i)}
-                      title="Remove file"
-                    >
-                      <TrashIcon className="h-4 w-4" />
+            {videos.length > 0 && (
+              <ul className="mt-2 space-y-1">
+                {videos.map((v, i) => (
+                  <li
+                    key={`${v}-${i}`}
+                    className="text-sm flex items-center justify-between bg-gray-50 border border-border rounded px-2 py-1"
+                  >
+                    <span className="truncate mr-2">{v}</span>
+                    <button className="text-red-600 hover:underline text-xs" onClick={() => removeVideo(i)}>
+                      Remove
                     </button>
                   </li>
                 ))}
               </ul>
             )}
           </div>
-        </div>
 
-        <div className="border border-border p-2 mt-2">
+          <div className="border border-border p-2 mt-2">
 
-          {/* ===== 已有文档（编辑态） ===== */}
-          {existingDocs.length > 0 && (
-            <div>
-              <div className="flex items-center justify-between text-gray-900">
-                <div className="text-sm font-medium mb-1">Existing Documents</div>
-              </div>
-              <ul className="mt-2 divide-y divide-gray-200 border border-border rounded">
-                {existingDocs.map((f) => (
-                  <li key={`${f.id}-${f.url}`} className="flex items-center justify-between px-2 py-1 text-sm">
-                    <a href={f.url} target="_blank" rel="noreferrer" className="truncate hover:underline" title={f.name}>
-                      {f.name}
-                    </a>
-                    <div className="flex items-center gap-2">
-                      {typeof f.size === "number" && (
-                        <span className="text-xs text-dark-gray">{(f.size / 1024 / 1024).toFixed(2)} MB</span>
-                      )}
+            {/* ===== 已有图片（编辑态） ===== */}
+            {existingImages.length > 0 && (
+              <div>
+                <div className="text-sm font-medium mb-1 text-gray-900">Existing Images</div>
+
+                <ul className="mt-2 grid grid-cols-4 md:grid-cols-8 gap-2">
+                  {existingImages.map((f) => (
+                    <li key={`${f.id}-${f.url}`} className="border border-border rounded p-1">
+                      <img src={f.url} alt={f.name} className="w-full object-cover rounded mb-2 aspect-square" />
+                      <div className="text-[10px] truncate">{f.name}</div>
+                      {/* {typeof f.size === "number" && (
+                    <div className="text-[11px] text-dark-gray">{(f.size / 1024 / 1024).toFixed(2)} MB</div>
+                  )} */}
                       {f.id != null && (
                         <button
-                          className="p-1 text-red-600 hover:bg-red-50 rounded text-xs"
+                          className="mt-1 p-1 text-red-600 hover:bg-red-50 rounded text-xs"
                           onClick={() => removeFileId(f.id)}
-                          title="Unlink this document from the post"
+                          title="Unlink this image from the post"
                         >
                           Remove
                         </button>
                       )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-
-
-          {/* ===== 新增上传：文档 ===== */}
-          <div className="mt-6">
-            <label className="block text-sm font-medium mb-1 text-gray-900">Add Documents</label>
-            <input
-              type="file"
-              multiple
-              accept={DOC_ACCEPT}
-              onChange={onPickDocs}
-              className="block w-full text-sm text-dark-gray file:mr-3 file:py-2 file:px-3 file:rounded-sm file:border-0 file:text-sm file:font-medium file:bg-gray-100 hover:file:bg-gray-200"
-            />
-            <p id="doc-size-hint" className="mt-1 text-xs text-dark-gray">
-              * Each file ≤ {formatMB(MAX_FILE_SIZE)}.
-            </p>
-            {localDocs.length > 0 && (
-              <ul className="mt-2 divide-y divide-gray-200 border border-border rounded">
-                {localDocs.map((f, i) => (
-                  <li key={`${f.name}-${f.size}-${i}`} className="flex items-center justify-between px-2 py-1 text-sm">
-                    <div className="min-w-0">
-                      <div className="truncate">{f.name}</div>
-                      <div className="text-xs text-dark-gray">{(f.size / 1024 / 1024).toFixed(2)} MB</div>
-                    </div>
-                    <button
-                      className="p-1 text-red-600 hover:bg-red-50 rounded text-xs"
-                      onClick={() => removeLocalDoc(i)}
-                      title="Remove file"
-                    >
-                      <TrashIcon className="h-4 w-4" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
+            {/* ===== 新增上传：图片 ===== */}
+            <div className="mt-6">
+              <label className="block text-sm font-medium mb-1 text-gray-900">Add Images</label>
+              <input
+                type="file"
+                multiple
+                accept={IMAGE_ACCEPT}
+                onChange={onPickImages}
+                className="block w-full text-sm text-dark-gray file:mr-3 file:py-2 file:px-3 file:rounded-sm file:border-0 file:text-sm file:font-medium file:bg-gray-100 hover:file:bg-gray-200"
+              />
+              <p id="image-size-hint" className="mt-1 text-xs text-dark-gray">
+                * Each img ≤ {formatMB(MAX_FILE_SIZE)}.
+              </p>
+
+              {localImages.length > 0 && (
+                <ul className="mt-2 grid grid-cols-4 md:grid-cols-8 gap-2">
+                  {localImages.map((f, i) => (
+                    <li key={`${f.name}-${f.size}-${i}`} className="border border-border rounded p-1">
+                      <img src={URL.createObjectURL(f)} alt={f.name} className="w-full object-cover rounded mb-2 aspect-square" />
+                      <div className="text-xs truncate">{f.name}</div>
+                      <div className="text-[11px] text-dark-gray">{(f.size / 1024 / 1024).toFixed(2)} MB</div>
+                      <button
+                        className="mt-1 p-1 text-red-600 hover:bg-red-50 rounded text-xs"
+                        onClick={() => removeLocalImage(i)}
+                        title="Remove file"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+
+          <div className="border border-border p-2 mt-2">
+
+            {/* ===== 已有文档（编辑态） ===== */}
+            {existingDocs.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between text-gray-900">
+                  <div className="text-sm font-medium mb-1">Existing Documents</div>
+                </div>
+                <ul className="mt-2 divide-y divide-gray-200 border border-border rounded">
+                  {existingDocs.map((f) => (
+                    <li key={`${f.id}-${f.url}`} className="flex items-center justify-between px-2 py-1 text-sm">
+                      <a href={f.url} target="_blank" rel="noreferrer" className="truncate hover:underline" title={f.name}>
+                        {f.name}
+                      </a>
+                      <div className="flex items-center gap-2">
+                        {typeof f.size === "number" && (
+                          <span className="text-xs text-dark-gray">{(f.size / 1024 / 1024).toFixed(2)} MB</span>
+                        )}
+                        {f.id != null && (
+                          <button
+                            className="p-1 text-red-600 hover:bg-red-50 rounded text-xs"
+                            onClick={() => removeFileId(f.id)}
+                            title="Unlink this document from the post"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+
+
+            {/* ===== 新增上传：文档 ===== */}
+            <div className="mt-6">
+              <label className="block text-sm font-medium mb-1 text-gray-900">Add Documents</label>
+              <input
+                type="file"
+                multiple
+                accept={DOC_ACCEPT}
+                onChange={onPickDocs}
+                className="block w-full text-sm text-dark-gray file:mr-3 file:py-2 file:px-3 file:rounded-sm file:border-0 file:text-sm file:font-medium file:bg-gray-100 hover:file:bg-gray-200"
+              />
+              <p id="doc-size-hint" className="mt-1 text-xs text-dark-gray">
+                * Each file ≤ {formatMB(MAX_FILE_SIZE)}.
+              </p>
+              {localDocs.length > 0 && (
+                <ul className="mt-2 divide-y divide-gray-200 border border-border rounded">
+                  {localDocs.map((f, i) => (
+                    <li key={`${f.name}-${f.size}-${i}`} className="flex items-center justify-between px-2 py-1 text-sm">
+                      <div className="min-w-0">
+                        <div className="truncate">{f.name}</div>
+                        <div className="text-xs text-dark-gray">{(f.size / 1024 / 1024).toFixed(2)} MB</div>
+                      </div>
+                      <button
+                        className="p-1 text-red-600 hover:bg-red-50 rounded text-xs"
+                        onClick={() => removeLocalDoc(i)}
+                        title="Remove file"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         </div>
-
 
         {/* ===== Actions ===== */}
         <div className="mt-6 flex justify-end gap-3">

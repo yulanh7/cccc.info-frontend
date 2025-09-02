@@ -176,7 +176,7 @@ export default function GroupEditModal({
       {/* 点击遮罩：有改动才弹确认 */}
       <div className="absolute inset-0" onClick={handleCloseClick} aria-hidden />
       <div
-        className="bg-white p-6 rounded-sm shadow-lg w-full md:max-w-[80vw] max-h-[90vh] overflow-y-auto relative"
+        className="bg-white p-6 rounded-sm shadow-lg w-full  relative"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -190,53 +190,56 @@ export default function GroupEditModal({
 
         <h2 className="text-xl mb-4">{isNew ? "Add New Group" : "Edit Group"}</h2>
 
-        {/* Title */}
-        <label htmlFor={nameId} className="block text-sm font-medium mb-1">
-          Title
-        </label>
-        <input
-          id={nameId}
-          ref={titleRef}
-          type="text"
-          value={editedItem.title}
-          onChange={(e) => handleChange("title", e.target.value)}
-          className={`w-full p-2 mb-1 border rounded-sm ${displayErrors.title ? "border-red-500" : "border-border"}`}
-        />
-        <div className={`text-xs mb-1 ${overTitle ? "text-red-600" : "text-dark-gray"}`}>
-          {titleLen}/{MAX_NAME}
-        </div>
-        {displayErrors.title && <p className="text-red-600 text-sm mb-3">{displayErrors.title}</p>}
+        <div className="md:max-w-[80vw] max-h-[90vh] overflow-y-auto">
 
-        {/* Description */}
-        <label htmlFor={descId} className="block text-sm font-medium mb-1">
-          Description
-        </label>
-        <textarea
-          id={descId}
-          ref={descRef}
-          value={editedItem.description}
-          onChange={(e) => handleChange("description", e.target.value)}
-          className={`w-full p-2 mb-1 border rounded-sm ${displayErrors.description ? "border-red-500" : "border-border"}`}
-          rows={6}
-        />
-        <div className={`text-xs mb-1 ${overDesc ? "text-red-600" : "text-dark-gray"}`}>
-          {descLen}/{MAX_DESC}
-        </div>
-        {displayErrors.description && <p className="text-red-600 text-sm mb-3">{displayErrors.description}</p>}
 
-        {/* Invite Only */}
-        <div className="mb-4">
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              checked={editedItem.isPrivate}
-              onChange={(e) => handleChange("isPrivate", e.target.checked)}
-              className="mr-2"
-            />
-            <span className="text-sm text-dark-gray">Invite Only</span>
+          {/* Title */}
+          <label htmlFor={nameId} className="block text-sm font-medium mb-1">
+            Title
           </label>
-        </div>
+          <input
+            id={nameId}
+            ref={titleRef}
+            type="text"
+            value={editedItem.title}
+            onChange={(e) => handleChange("title", e.target.value)}
+            className={`w-full p-2 mb-1 border rounded-sm ${displayErrors.title ? "border-red-500" : "border-border"}`}
+          />
+          <div className={`text-xs mb-1 ${overTitle ? "text-red-600" : "text-dark-gray"}`}>
+            {titleLen}/{MAX_NAME}
+          </div>
+          {displayErrors.title && <p className="text-red-600 text-sm mb-3">{displayErrors.title}</p>}
 
+          {/* Description */}
+          <label htmlFor={descId} className="block text-sm font-medium mb-1">
+            Description
+          </label>
+          <textarea
+            id={descId}
+            ref={descRef}
+            value={editedItem.description}
+            onChange={(e) => handleChange("description", e.target.value)}
+            className={`w-full p-2 mb-1 border rounded-sm ${displayErrors.description ? "border-red-500" : "border-border"}`}
+            rows={6}
+          />
+          <div className={`text-xs mb-1 ${overDesc ? "text-red-600" : "text-dark-gray"}`}>
+            {descLen}/{MAX_DESC}
+          </div>
+          {displayErrors.description && <p className="text-red-600 text-sm mb-3">{displayErrors.description}</p>}
+
+          {/* Invite Only */}
+          <div className="mb-4">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={editedItem.isPrivate}
+                onChange={(e) => handleChange("isPrivate", e.target.checked)}
+                className="mr-2"
+              />
+              <span className="text-sm text-dark-gray">Invite Only</span>
+            </label>
+          </div>
+        </div>
         {/* Actions */}
         <div className="mt-5 flex justify-end gap-3">
           <Button
@@ -266,10 +269,10 @@ export default function GroupEditModal({
           onCancel={confirmCloseWithoutSaving}
           onOutsideClick={confirmCancel}
           isOpen={isConfirmOpen}
-          anchorEl={anchorEl}       // 👈 新增：触发元素
-          placement={placement}     // 👈 "above" | "below"
-          align="end"               // 👈 右对齐按钮
-          offset={8}                // 👈 间距
+          anchorEl={anchorEl}
+          placement={placement}
+          align="end"
+          offset={8}
         />
       </div>
     </div>
