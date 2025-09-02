@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import { PencilIcon, TrashIcon, CalendarIcon, UserGroupIcon } from "@heroicons/react/24/outline";
+import { PencilSquareIcon, TrashIcon, CalendarIcon, UserGroupIcon } from "@heroicons/react/24/outline";
 import IconButton from "@/components/ui/IconButton";
 import type { PostDetailUi } from "@/app/types/post";
 
@@ -56,7 +56,7 @@ export default function PostInfoBar({
                 size="md"
                 onClick={onEditPost}
               >
-                <PencilIcon className="h-5 w-5" />
+                <PencilSquareIcon className="h-5 w-5" />
               </IconButton>
 
               <IconButton

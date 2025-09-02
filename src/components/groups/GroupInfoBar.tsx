@@ -2,7 +2,7 @@
 
 import React from "react";
 import {
-  PencilIcon,
+  PencilSquareIcon,
   PlusIcon,
   TrashIcon,
   CalendarIcon,
@@ -88,7 +88,7 @@ export default function GroupInfoBar({
                   size="md"
                   onClick={onEditGroup}
                 >
-                  <PencilIcon className="h-5 w-5" />
+                  <PencilSquareIcon className="h-5 w-5" />
                 </IconButton>
 
                 <IconButton

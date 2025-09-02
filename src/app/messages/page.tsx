@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { mockUsers, mockMessages } from '@/app/data/mockData';
-import { PencilIcon, UserCircleIcon } from '@heroicons/react/24/outline';
+import { PencilSquareIcon, UserCircleIcon } from '@heroicons/react/24/outline';
 import { formatDate } from '@/app/ultility';
 import PageTitle from '@/components/layout/PageTitle';
 import MessageContactModal from '@/components/MessageContactModal';
@@ -47,7 +47,7 @@ export default function MessagesPage() {
           className="fixed bottom-32 right-10 z-99 shadow-lg rounded-[50%] bg-bg p-3"
           onClick={() => setIsNewChatOpen(true)}
         >
-          <PencilIcon className="h-7 w-7 text-green" />
+          <PencilSquareIcon className="h-7 w-7 text-green" />
         </button>
         <ul className="space-y-2">
           {messages.map((message) => (

@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ChevronLeftIcon, TrashIcon, PencilIcon, PlusIcon, UserCircleIcon
+  ChevronLeftIcon, TrashIcon, PencilSquareIcon, PlusIcon, UserCircleIcon
 } from '@heroicons/react/24/outline';
 import ConfirmModal from '../ConfirmModal';
 
@@ -78,7 +78,7 @@ export default function CustomHeader({
               onClick={onEdit}
               className="text-dark-gray cursor-pointer hover:text-dark-green focus:outline-none"
             >
-              <PencilIcon className="h-6 w-6" />
+              <PencilSquareIcon className="h-6 w-6" />
             </button>
           )}
         </div>

@@ -6,7 +6,7 @@ import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import CustomHeader from "@/components/layout/CustomHeader";
 import PostModal from "@/components/posts/PostModal";
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
-import { CalendarIcon, UserGroupIcon, EyeIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { CalendarIcon, UserGroupIcon, EyeIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { formatDate } from "@/app/ultility";
 import { fetchPostDetail, updatePost, deletePost } from "@/app/features/posts/slice";
 import type { CreatePostFormModel, PostDetailUi } from "@/app/types/post";
@@ -187,7 +187,7 @@ export default function PostDetailPage() {
                   size="md"
                   onClick={handleEditOpen}
                 >
-                  <PencilIcon className="h-5 w-5" />
+                  <PencilSquareIcon className="h-5 w-5" />
                 </IconButton>
 
                 <IconButton
