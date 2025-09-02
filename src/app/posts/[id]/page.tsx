@@ -6,11 +6,17 @@ import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import CustomHeader from "@/components/layout/CustomHeader";
 import PostModal from "@/components/posts/PostModal";
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
-import { CalendarIcon, UserGroupIcon, EyeIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { CalendarIcon, UserGroupIcon, EyeIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { formatDate } from "@/app/ultility";
 import { fetchPostDetail, updatePost, deletePost } from "@/app/features/posts/slice";
 import type { CreatePostFormModel, PostDetailUi } from "@/app/types/post";
+import { toUpdateRequest } from "@/app/types/post";
 import { splitFiles } from "@/app/types/post";
+// import PostInfoBar from '@/components/posts/PostInfoBar';
+import { canEditPost } from "@/app/types/post";
+import { uploadAllFiles } from "@/app/ultility";
+import IconButton from "@/components/ui/IconButton";
+
 
 export default function PostDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +27,8 @@ export default function PostDetailPage() {
   const error = useAppSelector((s) => s.posts.error["fetchPostDetail"]);
   const postFromStore = useAppSelector((s) => s.posts.byId[postId] || null);
   const post: PostDetailUi | null = postFromStore;
+  const user = useAppSelector((s) => s.auth.user);
+  const canManage = !!(post && canEditPost(post, user));
 
   // 编辑弹窗
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
@@ -67,16 +75,21 @@ export default function PostDetailPage() {
   const handleEditSave = async (form: CreatePostFormModel) => {
     if (!post) return;
     try {
+      const uploadedIds = form.localFiles?.length
+        ? await uploadAllFiles(form.localFiles, dispatch)
+        : [];
+      const fileIds = [...(form.fileIds ?? []), ...uploadedIds];
+      const body = toUpdateRequest({
+        title: form.title?.trim() ?? "",
+        contentText: form.contentText ?? "",
+        description: form.description ?? "",
+        videos: form.videos ?? [],
+        fileIds,
+      });
       await dispatch(
         updatePost({
           postId: post.id,
-          body: {
-            title: form.title,
-            content: form.contentText, // 纯文本发到后端字段 content
-            description: form.description,
-            video_urls: form.videos,
-            file_ids: form.fileIds,
-          },
+          body
         })
       ).unwrap();
       setIsPostModalOpen(false);
@@ -249,7 +262,7 @@ export default function PostDetailPage() {
     return (
       <div className={`grid ${baseCols} sm:${baseCols} ${lgCols} gap-4`}>
         {urls.map((_, i) => (
-          <div key={i} className="relative aspect-video min-h-[200px] sm:min-h-[260px] lg:min-h-[320px] rounded overflow-hidden">
+          <div key={i} className="relative aspect-video  rounded overflow-hidden">
             {/* 由 YT.Player 注入 iframe */}
             <div id={containerIds[i]} className="absolute inset-0" />
           </div>
@@ -260,12 +273,12 @@ export default function PostDetailPage() {
 
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto px-4">
       <LoadingOverlay show={pageLoading} text="Loading post…" />
       {pageError && <div className="text-red-600 mt-20">Failed to load post: {String(pageError)}</div>}
-
       {!pageLoading && post && (
         <>
+
           {/* 顶部横幅：视频优先，否则背景图 */}
           <div className="mb-4 mt-16 md:mt-0">
             {post.videos && post.videos.length > 0 ? (
@@ -288,7 +301,36 @@ export default function PostDetailPage() {
             pageTitle={post.title}
           />
 
-          <h1 className="text-2xl mb-2">{post.title}</h1>
+          <div className="flex items-center justify-between gap-2">
+            <h1 className="text-2xl mb-2">{post.title}</h1>
+            {canManage && (
+              <div className="hidden md:flex items-center gap-2">
+                <IconButton
+                  className="text-white"
+                  title="Edit post"
+                  aria-label="Edit post"
+                  variant="ghost"
+                  tone="brand"
+                  size="md"
+                  onClick={handleEditOpen}
+                >
+                  <PencilIcon className="h-5 w-5" />
+                </IconButton>
+
+                <IconButton
+                  title="Delete post"
+                  aria-label="Delete post"
+                  variant="ghost"
+                  tone="danger"
+                  className="text-white"
+                  size="md"
+                  onClick={() => handleDelete(post.id)}
+                >
+                  <TrashIcon className="h-5 w-5" />
+                </IconButton>
+              </div>
+            )}
+          </div>
           <div className="flex gap-3">
             <div className="text-xs text-dark-green md:text-sm mb-1 flex items-center">
               <UserGroupIcon className="h-4 w-4 mr-1 text-dark-green" />
