@@ -243,12 +243,15 @@ export default function PostDetailPage() {
       };
     }, [urls, containerIds]);
 
+    const baseCols = urls.length === 1 ? "grid-cols-1" : "grid-cols-2";
+    const lgCols = urls.length >= 3 ? "lg:grid-cols-3" : "lg:grid-cols-2";
+
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className={`grid ${baseCols} sm:${baseCols} ${lgCols} gap-4`}>
         {urls.map((_, i) => (
-          <div key={i} className="aspect-w-16 aspect-h-9">
+          <div key={i} className="relative aspect-video min-h-[200px] sm:min-h-[260px] lg:min-h-[320px] rounded overflow-hidden">
             {/* 由 YT.Player 注入 iframe */}
-            <div id={containerIds[i]} className="w-full h-full rounded overflow-hidden" />
+            <div id={containerIds[i]} className="absolute inset-0" />
           </div>
         ))}
       </div>
@@ -264,7 +267,7 @@ export default function PostDetailPage() {
       {!pageLoading && post && (
         <>
           {/* 顶部横幅：视频优先，否则背景图 */}
-          <div className="mb-4 mt-16">
+          <div className="mb-4 mt-16 md:mt-0">
             {post.videos && post.videos.length > 0 ? (
               <VideosGrid urls={post.videos} />
             ) : (
@@ -299,7 +302,7 @@ export default function PostDetailPage() {
           {/* 正文（纯文本 + 保留换行） */}
           {/* 正文（纯文本 + 保留换行，点击文字本身可收起） */}
           <div
-            className="text-gray whitespace-pre-wrap cursor-pointer"
+            className="text-gray whitespace-pre-wrap cursor-pointer mb-5"
             onClick={() => {
               if (expanded) {
                 setExpanded(false); // 展开状态 -> 点击正文收起
@@ -326,7 +329,7 @@ export default function PostDetailPage() {
           {/* 顶部图片缩略图 */}
           {images.length > 0 && (
             <div className="mb-4">
-              <ul className="grid grid-cols-3 md:grid-cols-4 gap-2">
+              <ul className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-2">
                 {images.map((img, idx) => (
                   <li
                     key={`${img.id ?? img.url}-${idx}`}
@@ -348,7 +351,7 @@ export default function PostDetailPage() {
           {/* ✅ 底部文档区域（「課件」） */}
           {documents.length > 0 && (
             <div className="mt-4 shadow-md p-4">
-              <h3 className="text-lg font-semibold text-dark-gray mb-2">「課件」</h3>
+              <h3 className="text-lg font-semibold text-dark-gray mb-2">「资料」</h3>
               <ul className="space-y-2">
                 {documents.map((file, index) => (
                   <li key={`${file.id ?? file.url}-${index}`} className="flex items-center space-x-4">
