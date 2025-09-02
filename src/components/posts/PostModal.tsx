@@ -419,6 +419,10 @@ export default function PostModal({
               onChange={onPickImages}
               className="block w-full text-sm text-dark-gray file:mr-3 file:py-2 file:px-3 file:rounded-sm file:border-0 file:text-sm file:font-medium file:bg-gray-100 hover:file:bg-gray-200"
             />
+            <p id="image-size-hint" className="mt-1 text-xs text-dark-gray">
+              * Each img ≤ {formatMB(MAX_FILE_SIZE)}.
+            </p>
+
             {localImages.length > 0 && (
               <ul className="mt-2 grid grid-cols-4 md:grid-cols-8 gap-2">
                 {localImages.map((f, i) => (
@@ -486,6 +490,9 @@ export default function PostModal({
               onChange={onPickDocs}
               className="block w-full text-sm text-dark-gray file:mr-3 file:py-2 file:px-3 file:rounded-sm file:border-0 file:text-sm file:font-medium file:bg-gray-100 hover:file:bg-gray-200"
             />
+            <p id="doc-size-hint" className="mt-1 text-xs text-dark-gray">
+              * Each file ≤ {formatMB(MAX_FILE_SIZE)}.
+            </p>
             {localDocs.length > 0 && (
               <ul className="mt-2 divide-y divide-gray-200 border border-border rounded">
                 {localDocs.map((f, i) => (
