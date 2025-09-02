@@ -1,16 +1,13 @@
 "use client";
-import React from "react";
+import React, { forwardRef } from "react";
 import { cn } from "./cn";
 
 type Variant = "primary" | "secondary" | "warning" | "outline" | "ghost" | "danger";
 type Size = "sm" | "md";
 type Tone = "default" | "brand" | "danger";
 
-type ButtonProps = {
-  children: React.ReactNode;
-  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
-  type?: "button" | "submit" | "reset";
-  disabled?: boolean;
+// 继承原生 button 的所有 attributes，这样 aria-*、title 等都类型安全
+type ButtonOwnProps = {
   loading?: boolean;
   loadingText?: React.ReactNode;
   blockWhileLoading?: boolean;
@@ -20,13 +17,13 @@ type ButtonProps = {
   active?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
-  title?: string;
-  "aria-label"?: string;
   hoverOverlay?: boolean;
   /** 统一控制文字/边框色（只对 outline/ghost 真正生效） */
   tone?: Tone;
   fullWidth?: boolean;
 };
+
+type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & ButtonOwnProps;
 
 const base =
   "inline-flex items-center justify-center rounded-sm transition-colors font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-border disabled:opacity-50 disabled:cursor-not-allowed";
@@ -63,41 +60,38 @@ function Spinner({ size = "md" as Size }: { size?: Size }) {
   return (
     <span
       aria-hidden="true"
-      className={cn(
-        "inline-block rounded-full border-current border-t-transparent animate-spin",
-        dim
-      )}
+      className={cn("inline-block rounded-full border-current border-t-transparent animate-spin", dim)}
     />
   );
 }
 
-export default function Button({
-  children,
-  onClick,
-  type = "button",
-  disabled,
-  loading = false,
-  loadingText,
-  blockWhileLoading = true,
-  variant = "outline",
-  size = "md",
-  className,
-  active,
-  leftIcon,
-  rightIcon,
-  title,
-  hoverOverlay = true,
-  tone = "default",
-  fullWidth = false,
-  ...rest
-}: ButtonProps) {
+// ✅ 用 forwardRef 把 ref 透传到真正的 <button>
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  {
+    children,
+    onClick,
+    type = "button",
+    disabled,
+    loading = false,
+    loadingText,
+    blockWhileLoading = true,
+    variant = "outline",
+    size = "md",
+    className,
+    active,
+    leftIcon,
+    rightIcon,
+    title,
+    hoverOverlay = true,
+    tone = "default",
+    fullWidth = false,
+    ...rest
+  },
+  ref
+) {
   const isDisabled = disabled || loading;
 
-  const activeClass = active
-    ? variant === "outline"
-      ? "bg-white/5"
-      : ""
-    : "";
+  const activeClass = active ? (variant === "outline" ? "bg-white/5" : "") : "";
 
   const overlayClass = hoverOverlay
     ? [
@@ -128,6 +122,7 @@ export default function Button({
 
   return (
     <button
+      ref={ref}
       type={type}
       onClick={handleClick}
       disabled={isDisabled}
@@ -141,7 +136,6 @@ export default function Button({
         overlayClass,
         toneClasses(variant, tone),
         widthClass,
-        // loading 时略微减小透明覆盖的干扰
         loading ? "cursor-wait" : "",
         className
       )}
@@ -153,4 +147,6 @@ export default function Button({
       {rightIcon && !loading ? <span className="ml-1.5">{rightIcon}</span> : null}
     </button>
   );
-}
+});
+
+export default Button;
