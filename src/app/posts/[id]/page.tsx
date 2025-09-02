@@ -1,38 +1,47 @@
 "use client";
 
 import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import CustomHeader from "@/components/layout/CustomHeader";
 import PostModal from "@/components/posts/PostModal";
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
-import { CalendarIcon, UserGroupIcon, EyeIcon, ChevronLeftIcon, ChevronRightIcon, XMarkIcon, PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
+import {
+  CalendarIcon,
+  UserGroupIcon,
+  EyeIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  XMarkIcon,
+  PencilSquareIcon,
+  TrashIcon
+} from "@heroicons/react/24/outline";
 import { formatDate } from "@/app/ultility";
 import { fetchPostDetail, updatePost, deletePost } from "@/app/features/posts/slice";
 import type { CreatePostFormModel, PostDetailUi } from "@/app/types/post";
 import { toUpdateRequest } from "@/app/types/post";
 import { splitFiles } from "@/app/types/post";
-// import PostInfoBar from '@/components/posts/PostInfoBar';
 import { canEditPost } from "@/app/types/post";
 import { uploadAllFiles } from "@/app/ultility";
 import IconButton from "@/components/ui/IconButton";
 import YouTubeList from "@/components/ui/YouTubeList";
-
 
 export default function PostDetailPage() {
   const { id } = useParams<{ id: string }>();
   const postId = useMemo(() => Number(id), [id]);
 
   const dispatch = useAppDispatch();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
   const status = useAppSelector((s) => s.posts.status["fetchPostDetail"]);
   const error = useAppSelector((s) => s.posts.error["fetchPostDetail"]);
   const postFromStore = useAppSelector((s) => s.posts.byId[postId] || null);
   const post: PostDetailUi | null = postFromStore;
   const user = useAppSelector((s) => s.auth.user);
   const canManage = !!(post && canEditPost(post, user));
-
-  // 编辑弹窗
-  const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+  const isEdit = searchParams.get("edit") === "1";
 
   // —— 内容折叠
   const [expanded, setExpanded] = useState(false);
@@ -43,8 +52,6 @@ export default function PostDetailPage() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState(0);
   const touchStartX = useRef<number | null>(null);
-
-
 
   useEffect(() => {
     if (!Number.isFinite(postId)) return;
@@ -62,7 +69,7 @@ export default function PostDetailPage() {
   const pageLoading = status === "loading" || !post;
   const pageError = status === "failed" && error;
 
-  // —— 删除 & 编辑（最小实现）
+  // —— 删除
   const handleDelete = async (id: number) => {
     try {
       await dispatch(deletePost(id)).unwrap();
@@ -72,13 +79,23 @@ export default function PostDetailPage() {
     }
   };
 
-  const handleEditOpen = () => setIsPostModalOpen(true);
+  const handleEditOpen = () => {
+    const sp = new URLSearchParams(searchParams.toString());
+    sp.set("edit", "1");
+    router.replace(`${pathname}?${sp.toString()}`, { scroll: false });
+  };
+
+  const handleEditClose = () => {
+    const sp = new URLSearchParams(searchParams.toString());
+    sp.delete("edit");
+    const qs = sp.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
+
   const handleEditSave = async (form: CreatePostFormModel) => {
     if (!post) return;
     try {
-      const uploadedIds = form.localFiles?.length
-        ? await uploadAllFiles(form.localFiles, dispatch)
-        : [];
+      const uploadedIds = form.localFiles?.length ? await uploadAllFiles(form.localFiles, dispatch) : [];
       const fileIds = [...(form.fileIds ?? []), ...uploadedIds];
       const body = toUpdateRequest({
         title: form.title?.trim() ?? "",
@@ -87,13 +104,8 @@ export default function PostDetailPage() {
         videos: form.videos ?? [],
         fileIds,
       });
-      await dispatch(
-        updatePost({
-          postId: post.id,
-          body
-        })
-      ).unwrap();
-      setIsPostModalOpen(false);
+      await dispatch(updatePost({ postId: post.id, body })).unwrap();
+      handleEditClose();
     } catch (e: any) {
       alert(e?.message || "Update post failed");
     }
@@ -142,7 +154,6 @@ export default function PostDetailPage() {
     touchStartX.current = null;
   };
 
-
   return (
     <div className="container mx-auto px-4">
       <LoadingOverlay show={pageLoading} text="Loading post…" />
@@ -164,6 +175,7 @@ export default function PostDetailPage() {
               </div>
             )}
           </div>
+
           <CustomHeader
             item={{ id: post.id, author: post.author?.firstName }}
             showEdit={true}
@@ -203,6 +215,7 @@ export default function PostDetailPage() {
               </div>
             )}
           </div>
+
           <div className="flex flex-wrap gap-3 mb-3">
             <div className="text-xs text-dark-green md:text-sm flex items-center">
               <UserGroupIcon className="h-4 w-4 mr-1 text-dark-green" />
@@ -213,15 +226,11 @@ export default function PostDetailPage() {
             </div>
           </div>
 
-
-          {/* 正文（纯文本 + 保留换行） */}
           {/* 正文（纯文本 + 保留换行，点击文字本身可收起） */}
           <div
             className="text-gray whitespace-pre-wrap cursor-pointer mb-5"
             onClick={() => {
-              if (expanded) {
-                setExpanded(false); // 展开状态 -> 点击正文收起
-              }
+              if (expanded) setExpanded(false);
             }}
           >
             {shown}
@@ -231,7 +240,7 @@ export default function PostDetailPage() {
                 <button
                   className="text-dark-green underline text-sm"
                   onClick={(e) => {
-                    e.stopPropagation(); // 阻止冒泡，避免触发上面的收起逻辑
+                    e.stopPropagation();
                     setExpanded(true);
                   }}
                 >
@@ -241,7 +250,7 @@ export default function PostDetailPage() {
             )}
           </div>
 
-          {/* 顶部图片缩略图 */}
+          {/* 图片缩略图 */}
           {images.length > 0 && (
             <div className="mb-4">
               <ul className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
@@ -258,13 +267,12 @@ export default function PostDetailPage() {
                       className="w-full h-full object-cover rounded-sm border border-border"
                     />
                   </li>
-
                 ))}
               </ul>
             </div>
           )}
 
-          {/* ✅ 底部文档区域（「課件」） */}
+          {/* 底部文档 */}
           {documents.length > 0 && (
             <div className="mt-4 shadow-md p-4">
               <h3 className="text-lg font-semibold text-dark-gray mb-2">「资料」</h3>
@@ -287,8 +295,8 @@ export default function PostDetailPage() {
             </div>
           )}
 
-          {/* 编辑弹窗（把现有文件传进 PostModal） */}
-          {isPostModalOpen && (
+          {/* 编辑弹窗（existingFiles 传入以支持移除/保留） */}
+          {isEdit && post && (
             <PostModal
               item={{
                 title: post.title,
@@ -301,12 +309,12 @@ export default function PostDetailPage() {
               }}
               isNew={false}
               onSave={handleEditSave}
-              onClose={() => setIsPostModalOpen(false)}
+              onClose={handleEditClose}
               existingFiles={post.files}
             />
           )}
 
-          {/* ✅ 图片灯箱（左右切换 + 触摸滑动） */}
+          {/* 图片灯箱 */}
           {lightboxOpen && images.length > 0 && (
             <div
               className="fixed inset-0 z-40 bg-black/80 flex items-center justify-center"

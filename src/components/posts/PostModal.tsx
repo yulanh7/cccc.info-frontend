@@ -212,9 +212,13 @@ export default function PostModal({
   };
 
   const handleCancelClick = () => {
-    setAnchorEl(cancelButtonRef.current);
-    setPlacement("above");
-    setIsConfirmOpen(true);
+    if (hasChanges) {
+      setAnchorEl(cancelButtonRef.current);
+      setPlacement("above");
+      setIsConfirmOpen(true);
+    } else {
+      onClose();
+    }
   };
 
   const confirmSaveAndClose = async () => {
