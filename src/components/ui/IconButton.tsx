@@ -36,7 +36,7 @@ const variants: Record<Variant, string> = {
   warning: "bg-[#FBD402] text-[#1F2937] border border-transparent",
   primary: "bg-yellow text-dark-gray hover:bg-yellow/90 border border-transparent",
   outline: "border border-border text-foreground hover:bg-white/5 bg-transparent",
-  ghost: "bg-transparent text-foreground hover:bg-white/5 border border-transparent",
+  ghost: "bg-transparent  hover:bg-white/5 border border-transparent",
   danger: "border border-red/50 text-red hover:bg-red/10 bg-transparent",
 };
 
@@ -44,11 +44,11 @@ function toneClasses(variant: Variant, tone: Tone) {
   if (tone === "default") return "";
   if (variant === "outline") {
     if (tone === "brand") return "text-yellow border-yellow";
-    if (tone === "danger") return "text-red-600 border-red-600";
+    if (tone === "danger") return "text-red border-red";
   }
   if (variant === "ghost") {
-    if (tone === "brand") return "text-dark-yellow";
-    if (tone === "danger") return "text-red-600";
+    if (tone === "brand") return "text-yellow";
+    if (tone === "danger") return "text-red";
   }
   return "";
 }
