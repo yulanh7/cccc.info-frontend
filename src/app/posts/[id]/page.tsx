@@ -16,6 +16,7 @@ import { splitFiles } from "@/app/types/post";
 import { canEditPost } from "@/app/types/post";
 import { uploadAllFiles } from "@/app/ultility";
 import IconButton from "@/components/ui/IconButton";
+import YouTubeList from "@/components/ui/YouTubeList";
 
 
 export default function PostDetailPage() {
@@ -140,136 +141,6 @@ export default function PostDetailPage() {
     if (dx < -40) nextImg();
     touchStartX.current = null;
   };
-  // ===== 在 PostDetailPage 顶部的 import 附近加 =====
-
-  // 工具：从常见的 YouTube 链接里提取 videoId（尽量健壮）
-  function getYouTubeId(url: string): string | null {
-    try {
-      const u = new URL(url);
-      if (u.hostname.includes("youtu.be")) {
-        return u.pathname.slice(1) || null;
-      }
-      if (u.hostname.includes("youtube.com")) {
-        if (u.pathname === "/watch") return u.searchParams.get("v");
-        if (u.pathname.startsWith("/embed/")) return u.pathname.split("/embed/")[1];
-        if (u.pathname.startsWith("/shorts/")) return u.pathname.split("/shorts/")[1];
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  }
-
-  // 懒加载 IFrame API（只加载一次）
-  function loadYouTubeAPI(): Promise<void> {
-    return new Promise((resolve) => {
-      if (typeof window === "undefined") return resolve();
-      const w = window as any;
-      if (w.YT && w.YT.Player) {
-        resolve();
-        return;
-      }
-      // 已经在加载中：挂个回调
-      if (w._ytApiLoading) {
-        w._ytApiReadyCbs = w._ytApiReadyCbs || [];
-        w._ytApiReadyCbs.push(resolve);
-        return;
-      }
-      w._ytApiLoading = true;
-      w._ytApiReadyCbs = [resolve];
-
-      const tag = document.createElement("script");
-      tag.src = "https://www.youtube.com/iframe_api";
-      document.body.appendChild(tag);
-
-      w.onYouTubeIframeAPIReady = () => {
-        (w._ytApiReadyCbs || []).forEach((cb: () => void) => cb());
-        w._ytApiReadyCbs = [];
-      };
-    });
-  }
-
-  type VideosGridProps = { urls: string[] };
-
-  function VideosGrid({ urls }: VideosGridProps) {
-    const containerIds = useMemo(
-      () => urls.map((_, i) => `yt-player-${i}`),
-      [urls]
-    );
-
-    // 保存所有 player 实例
-    const playersRef = useRef<Record<number, YT.Player>>({});
-
-    // 只允许一个播放
-    const pauseOthers = (activeIndex: number) => {
-      Object.entries(playersRef.current).forEach(([k, p]) => {
-        const idx = Number(k);
-        if (idx !== activeIndex && p && p.pauseVideo) {
-          p.pauseVideo();
-        }
-      });
-    };
-
-    useEffect(() => {
-      let destroyed = false;
-
-      (async () => {
-        await loadYouTubeAPI();
-        if (destroyed) return;
-
-        // 初始化/更新所有播放器
-        urls.forEach((url, i) => {
-          const videoId = getYouTubeId(url);
-          const containerId = containerIds[i];
-          if (!videoId || !containerId) return;
-
-          // 已存在则跳过
-          if (playersRef.current[i]) return;
-
-          playersRef.current[i] = new (window as any).YT.Player(containerId, {
-            videoId,
-            playerVars: {
-              modestbranding: 1,
-              rel: 0,
-              playsinline: 1,
-            },
-            events: {
-              onStateChange: (e: YT.OnStateChangeEvent) => {
-                if (e.data === (window as any).YT.PlayerState.PLAYING) {
-                  pauseOthers(i);
-                }
-              },
-            },
-          });
-        });
-      })();
-
-      // 清理
-      return () => {
-        destroyed = true;
-        Object.values(playersRef.current).forEach((p) => {
-          try {
-            p.destroy();
-          } catch { }
-        });
-        playersRef.current = {};
-      };
-    }, [urls, containerIds]);
-
-    const baseCols = urls.length === 1 ? "grid-cols-1" : "grid-cols-2";
-    const lgCols = urls.length >= 3 ? "lg:grid-cols-3" : "lg:grid-cols-2";
-
-    return (
-      <div className={`grid ${baseCols} sm:${baseCols} ${lgCols} gap-4`}>
-        {urls.map((_, i) => (
-          <div key={i} className="relative aspect-video  rounded overflow-hidden">
-            {/* 由 YT.Player 注入 iframe */}
-            <div id={containerIds[i]} className="absolute inset-0" />
-          </div>
-        ))}
-      </div>
-    );
-  }
 
 
   return (
@@ -278,11 +149,13 @@ export default function PostDetailPage() {
       {pageError && <div className="text-red-600 mt-20">Failed to load post: {String(pageError)}</div>}
       {!pageLoading && post && (
         <>
-
           {/* 顶部横幅：视频优先，否则背景图 */}
           <div className="mb-4 mt-16 md:mt-0">
             {post.videos && post.videos.length > 0 ? (
-              <VideosGrid urls={post.videos} />
+              <YouTubeList
+                videos={post.videos}
+                iframeClassName="w-full h-[200px] md:h-[400px] rounded-sm"
+              />
             ) : (
               <div className="w-full min-h-30 md:min-h-60 bg-[url('/images/bg-for-homepage.png')] bg-cover bg-center rounded-t-xs md:rounded-t-sm flex items-center justify-center">
                 <h2 className="text-dark-gray text-xl md:text-5xl font-'Apple Color Emoji' font-semibold text-center px-4">
@@ -309,7 +182,7 @@ export default function PostDetailPage() {
                   className="text-white"
                   title="Edit post"
                   aria-label="Edit post"
-                  variant="ghost"
+                  variant="outline"
                   tone="brand"
                   size="md"
                   onClick={handleEditOpen}
@@ -320,9 +193,8 @@ export default function PostDetailPage() {
                 <IconButton
                   title="Delete post"
                   aria-label="Delete post"
-                  variant="ghost"
+                  variant="outline"
                   tone="danger"
-                  className="text-white"
                   size="md"
                   onClick={() => handleDelete(post.id)}
                 >
