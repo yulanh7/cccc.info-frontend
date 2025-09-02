@@ -1,5 +1,5 @@
 "use client";
-
+import React, { useMemo } from "react";
 import { PostListUi } from "@/app/types/post";
 import {
   CalendarIcon,
@@ -17,13 +17,24 @@ type Props = {
   showEnterArrow?: boolean;
 };
 
+const BG_URLS = [
+  "/images/bg-card-2.jpg",
+  // "/images/bg-card-3.jpg",
+  // "/images/bg-card-4.jpg",
+  // "/images/bg-card-5.jpg",
+  "/images/bg-for-homepage.png",
+];
+
 export default function PostCardSimple({
   post,
   formatDate,
   showEnterArrow = true,
 }: Props) {
   const { id, title, date, author, group, description, videos, like_count } = post;
-
+  const bgUrl = useMemo(
+    () => BG_URLS[Math.abs(post.id) % BG_URLS.length],
+    [post.id]
+  );
   const thumbnail = videos && videos[0] ? getYouTubeThumbnail(videos[0], 'hqdefault') : null;
 
   return (
@@ -43,7 +54,7 @@ export default function PostCardSimple({
             <img
               src={thumbnail}
               alt={title}
-              className="w-full h-30 md:h-40 object-cover rounded-t-xs md:rounded-t-sm"
+              className="w-full h-25 md:h-30 object-cover rounded-t-xs md:rounded-t-sm"
             />
             <div className="absolute top-2 right-2 pointer-events-none">
               <div className="rounded-full bg-[rgba(0,0,0,0.35)] p-2">
@@ -54,7 +65,13 @@ export default function PostCardSimple({
 
         ) : (
           <div
-            className="w-full pt-7 pb-4 px-3 min-h-18 bg-[url('/images/bg-for-homepage.png')] bg-cover bg-center rounded-t-xs md:rounded-t-sm flex items-center justify-center"
+            className="
+              w-full pt-7 pb-4 px-3 min-h-20 
+               bg-cover bg-center rounded-t-xs md:rounded-t-sm 
+              items-center justify-center
+            "
+            style={{ backgroundImage: `url(${bgUrl})` }}
+
           >
             <h2 className="text-dark-gray  font-'Apple Color Emoji' font-semibold text-center px-4">
               {title}
