@@ -31,7 +31,6 @@ function getPageItems(current: number, total: number, siblingCount = 1): PageIte
 export default function Pagination({
   currentPage,
   totalPages,
-  buildHref,
   onPageChange,
   siblingCount = 1,
   className = "",
@@ -41,11 +40,37 @@ export default function Pagination({
     [currentPage, totalPages, siblingCount]
   );
 
+  const buildHref = (p: number) => {
+    const sp = new URLSearchParams(window.location.search);
+    sp.set("page", String(p));
+    return `${window.location.pathname}?${sp.toString()}`;
+  };
   if (totalPages <= 1) return null;
 
   return (
     <nav aria-label="Pagination" className={className}>
+
       <ul className="flex items-center gap-2">
+        <li>
+          {buildHref ? (
+            currentPage > 1 ? (
+              <Link href={buildHref(currentPage - 1)} className="w-9 h-9 inline-flex items-center justify-center rounded-sm border border-border text-sm bg-white hover:bg-gray-50 text-dark-gray">
+                ‹
+              </Link>
+            ) : (
+              <span className="w-9 h-9 inline-flex items-center justify-center rounded-sm border border-border text-sm bg-light-gray text-dark-gray cursor-default">‹</span>
+            )
+          ) : (
+            <button
+              type="button"
+              disabled={currentPage === 1}
+              onClick={() => onPageChange?.(currentPage - 1)}
+              className={`w-9 h-9 inline-flex items-center justify-center rounded-sm border border-border text-sm ${currentPage === 1 ? "bg-light-gray text-dark-gray cursor-default" : "bg-white hover:bg-gray-50 text-dark-gray"}`}
+            >
+              ‹
+            </button>
+          )}
+        </li>
         {items.map((item, idx) => {
           if (item === "ellipsis") {
             return (
@@ -89,6 +114,27 @@ export default function Pagination({
             </li>
           );
         })}
+        <li>
+          {buildHref ? (
+            currentPage < totalPages ? (
+              <Link href={buildHref(currentPage + 1)} className="w-9 h-9 inline-flex items-center justify-center rounded-sm border border-border text-sm bg-white hover:bg-gray-50 text-dark-gray">
+                ›
+              </Link>
+            ) : (
+              <span className="w-9 h-9 inline-flex items-center justify-center rounded-sm border border-border text-sm bg-light-gray text-dark-gray cursor-default">›</span>
+            )
+          ) : (
+            <button
+              type="button"
+              disabled={currentPage === totalPages}
+              onClick={() => onPageChange?.(currentPage + 1)}
+              className={`w-9 h-9 inline-flex items-center justify-center rounded-sm border border-border text-sm ${currentPage === totalPages ? "bg-light-gray text-dark-gray cursor-default" : "bg-white hover:bg-gray-50 text-dark-gray"}`}
+            >
+              ›
+            </button>
+          )}
+        </li>
+
       </ul>
     </nav>
   );

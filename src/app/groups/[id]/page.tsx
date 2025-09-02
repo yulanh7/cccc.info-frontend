@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import CustomHeader from "@/components/layout/CustomHeader";
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
@@ -10,7 +10,7 @@ import GroupModal from "@/components/groups/GroupModal";
 import SubscribersModal from "@/components/groups/SubscribersModal";
 import ConfirmModal from "@/components/ConfirmModal";
 import GroupInfoBar from "@/components/groups/GroupInfoBar";
-import PostsListWithSelect from "@/components/posts/PostsListWithSelect";
+import PostsListWithPagination from "@/components/posts/PostsListWithPagination";
 import type { GroupProps } from "@/app/types";
 import { canEditPost } from "@/app/types/post";
 import { formatDate, mapApiErrorToFields } from "@/app/ultility";
@@ -38,10 +38,15 @@ import { useConfirm } from "@/hooks/useConfirm";
 const POST_PER_PAGE = 9;
 const MEMBERS_PER_PAGE = 9;
 
-
 export default function GroupPage() {
   const { id } = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
   const groupId = useMemo(() => Number(id), [id]);
+  const currentPage = useMemo(() => {
+    const p = Number(searchParams.get("page"));
+    return Number.isFinite(p) && p > 0 ? p : 1;
+  }, [searchParams]);
+
   const dispatch = useAppDispatch();
   const router = useRouter();
   const user = useAppSelector((s) => s.auth.user);
@@ -54,7 +59,6 @@ export default function GroupPage() {
   const [showSubsModal, setShowSubsModal] = useState(false);
   const [modalSaving, setModalSaving] = useState(false);
   const [modalErrors, setModalErrors] = useState<{ title?: string; description?: string } | null>(null);
-
 
   // 选择模式 & 批量删除
   const [selectMode, setSelectMode] = useState(false);
@@ -76,13 +80,13 @@ export default function GroupPage() {
     if (postsFetchStarted && status.posts !== "loading") setPostsEverLoaded(true);
   }, [postsFetchStarted, status.posts]);
 
-  // —— 拉取数据
+  // —— 拉取数据（详情 + 当前页帖子）
   useEffect(() => {
     if (!Number.isFinite(groupId)) return;
     dispatch(fetchGroupDetail(groupId));
-    dispatch(fetchGroupPosts({ groupId, page: 1, per_page: POST_PER_PAGE, append: false }));
+    dispatch(fetchGroupPosts({ groupId, page: currentPage, per_page: POST_PER_PAGE, append: false }));
     setPostsFetchStarted(true);
-  }, [dispatch, groupId]);
+  }, [dispatch, groupId, currentPage]);
 
   // —— 防止“旧群数据闪现”：仅在 id 匹配时认为有效
   const groupMatchesRoute = group?.id === groupId;
@@ -97,33 +101,27 @@ export default function GroupPage() {
   const toMsg = (err: unknown) =>
     typeof err === 'string' ? err : (err as any)?.message || '';
 
-
   // 保存 PostModal 返回的数据时，先统一标准化，再调用 create/update
   const handlePostModalSave = (form: CreatePostFormModel) => {
-    // onSave 的签名是 void，这里用 IIFE 跑异步，避免类型冲突
     (async () => {
       setIsPostModalOpen(false);
       if (!safeGroup) return;
 
       try {
-        // 1) 先上传本地文件（如果有）
         const newIds = form.localFiles?.length
-          ? await uploadAllFiles(form.localFiles, dispatch /*, (idx, p) => console.log(idx, p)*/)
+          ? await uploadAllFiles(form.localFiles, dispatch)
           : [];
 
-        // 2) 合并已有 fileIds（编辑态可能带进来）
         const fileIds = [...(form.fileIds ?? []), ...newIds];
 
-        // 3) 组装创建请求体（注意映射成 video_urls / file_ids）
         const body = toCreateRequest({
           title: form.title?.trim() ?? "",
           contentText: form.contentText ?? "",
           description: form.description ?? "",
           videos: form.videos ?? [],
-          fileIds, // ✅ 这里用合并后的
+          fileIds,
         });
 
-        // 4) 建帖
         await dispatch(
           createPost({
             groupId: safeGroup.id,
@@ -132,11 +130,11 @@ export default function GroupPage() {
           })
         ).unwrap();
 
-        // 5) 刷新列表
+        // 刷新当前页（保持页码）
         dispatch(
           fetchGroupPosts({
             groupId: safeGroup.id,
-            page: 1,
+            page: currentPage,
             per_page: POST_PER_PAGE,
             append: false,
           })
@@ -146,6 +144,18 @@ export default function GroupPage() {
       }
     })();
   };
+
+  const handleDeleteGroup = async () => {
+    if (!safeGroup) return;
+    try {
+      await dispatch(deleteGroup(safeGroup.id)).unwrap();
+      router.push("/groups");
+    } catch (e: any) {
+      const msg = typeof e === "string" ? e : e?.message;
+      alert(msg || "Delete group failed");
+    }
+  };
+
 
   // ====== 新建 / 编辑 / 删除（单个） / 批量删除 ======
   const onCreatePost = async (item: CreatePostFormModel) => {
@@ -158,19 +168,17 @@ export default function GroupPage() {
           authorNameHint: safeGroup.creator?.firstName || "",
         })
       ).unwrap();
-      dispatch(fetchGroupPosts({ groupId: safeGroup.id, page: 1, per_page: POST_PER_PAGE, append: false }));
+      dispatch(fetchGroupPosts({ groupId: safeGroup.id, page: currentPage, per_page: POST_PER_PAGE, append: false }));
     } catch (e: any) {
       alert(toMsg(e) || "Create post failed");
     }
   };
 
-
-
   const onDeleteSingle = async (postId: number) => {
     try {
       await dispatch(deletePostThunk(postId)).unwrap();
       if (safeGroup) {
-        dispatch(fetchGroupPosts({ groupId: safeGroup.id, page: 1, per_page: POST_PER_PAGE, append: false }));
+        dispatch(fetchGroupPosts({ groupId: safeGroup.id, page: currentPage, per_page: POST_PER_PAGE, append: false }));
       }
     } catch (e: any) {
       alert(toMsg(e) || "Delete post failed");
@@ -182,10 +190,8 @@ export default function GroupPage() {
     await Promise.allSettled(ids.map((id) => dispatch(deletePostThunk(id)).unwrap()));
     setSelectMode(false);
     setSelectedIds(new Set());
-    dispatch(fetchGroupPosts({ groupId: safeGroup.id, page: 1, per_page: POST_PER_PAGE, append: false }));
+    dispatch(fetchGroupPosts({ groupId: safeGroup.id, page: currentPage, per_page: POST_PER_PAGE, append: false }));
   };
-
-
 
   const handleEditGroup = () => setShowEditModal(true);
 
@@ -218,25 +224,6 @@ export default function GroupPage() {
     }
   };
 
-
-  const handleDeleteGroup = async () => {
-    if (!safeGroup) return;
-    try {
-      await dispatch(deleteGroup(safeGroup.id)).unwrap();
-      router.push("/groups");
-    } catch (e: any) {
-      alert(toMsg(e) || "Delete group failed");
-    }
-  };
-
-  const loadMore = () => {
-    if (!safePagination || !safeGroup) return;
-    const next = safePagination.current_page + 1;
-    if (next <= safePagination.total_pages) {
-      dispatch(fetchGroupPosts({ groupId: safeGroup.id, page: next, per_page: POST_PER_PAGE, append: true }));
-    }
-  };
-
   // 选择模式
   const toggleSelectMode = () => {
     if (selectMode) setSelectedIds(new Set());
@@ -254,7 +241,6 @@ export default function GroupPage() {
   // 打开成员弹窗
   const onShowMembers = () => {
     if (!safeGroup) return;
-    // 初次打开拉第一页
     dispatch(fetchGroupMembers({ groupId: safeGroup.id, page: 1, per_page: MEMBERS_PER_PAGE }));
     setShowSubsModal(true);
   };
@@ -264,7 +250,7 @@ export default function GroupPage() {
     dispatch(fetchGroupMembers({ groupId: safeGroup.id, page, per_page: MEMBERS_PER_PAGE }));
   };
 
-  // 仅群主/管理员可管理（你项目里已有 safeGroup.editable 判定）
+  // 管理权限
   const canManageMembers = !!safeGroup?.editable || !!user?.admin;
 
   const membersPagination = useAppSelector((s) => s.groupDetail.membersPagination);
@@ -277,11 +263,9 @@ export default function GroupPage() {
 
     const payload: { groupId: number; user_id?: number; email?: string } = { groupId: safeGroup.id };
     const maybeId = Number(trimmed);
-    if (Number.isFinite(maybeId) && String(maybeId) === trimmed) {
-      payload.user_id = maybeId;
-    } else {
-      payload.email = trimmed;
-    }
+    if (Number.isFinite(maybeId) && String(maybeId) === trimmed) payload.user_id = maybeId;
+    else payload.email = trimmed;
+
     try {
       await dispatch(addGroupMember(payload)).unwrap();
       dispatch(fetchGroupMembers({ groupId: safeGroup.id, page: 1, per_page: MEMBERS_PER_PAGE }));
@@ -294,7 +278,6 @@ export default function GroupPage() {
     if (!safeGroup) return;
     try {
       await dispatch(kickGroupMember({ groupId: safeGroup.id, userId })).unwrap();
-      // 刷新当前页保持数据一致
       const p = membersPagination?.page ?? 1;
       dispatch(fetchGroupMembers({ groupId: safeGroup.id, page: p, per_page: MEMBERS_PER_PAGE }));
     } catch (e: any) {
@@ -302,12 +285,15 @@ export default function GroupPage() {
     }
   };
 
-
   const headerItem = safeGroup
     ? { id: safeGroup.id, author: safeGroup.creator?.firstName }
     : undefined;
 
   const initialPostsLoading = postsLoading && !postsEverLoaded && postsFetchStarted;
+
+  const totalPages = safePagination?.total_pages ?? 1;
+
+  const buildHref = (p: number) => `/groups/${groupId}?page=${p}`;
 
   return (
     <>
@@ -343,10 +329,8 @@ export default function GroupPage() {
           formatDate={formatDate}
         />
       ) : null}
-      <div className="container mx-auto md:p-6 p-2">
-        {/* 群信息条 + 右上角动作（含 Select） */}
 
-        {/* 帖子列表（仅局部刷新） */}
+      <div className="container mx-auto md:p-6 p-2">
         <section className="relative mt-4">
           {initialPostsLoading && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -365,7 +349,7 @@ export default function GroupPage() {
 
           {!initialPostsLoading && (
             <>
-              {/* 二次加载/翻页时的小提示 */}
+              {/* 翻页/再次拉取时的小提示 */}
               {postsLoading && postsEverLoaded && (
                 <div className="sticky top-[72px] z-10 mb-2 flex items-center gap-2 text-xs text-dark-gray">
                   <span className="inline-block h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
@@ -373,7 +357,7 @@ export default function GroupPage() {
                 </div>
               )}
 
-              <PostsListWithSelect
+              <PostsListWithPagination
                 rows={safePosts}
                 listLoading={status.posts === "loading" && safePosts.length === 0}
                 selectMode={selectMode}
@@ -383,13 +367,11 @@ export default function GroupPage() {
                 onDeleteSingle={(postId) => confirmSingleDelete.ask(postId)}
                 onEditSingle={(id) => router.push(`/posts/${id}?edit=1`)}
                 deleting={status.posts === "loading" && safePosts.length > 0}
-                hasMore={Boolean(
-                  safePagination &&
-                  safePagination.current_page < safePagination.total_pages
-                )}
-                loadMore={loadMore}
-                loadingMore={status.posts === "loading" && safePosts.length > 0}
                 formatDate={formatDate}
+                // 分页
+                currentPage={currentPage}
+                totalPages={totalPages}
+                buildHref={buildHref}
               />
             </>
           )}
@@ -411,7 +393,6 @@ export default function GroupPage() {
         onKick={canManageMembers ? onKickMember : undefined}
         title="Subscribers"
       />
-
 
       {showEditModal && (
         <GroupModal
@@ -465,7 +446,6 @@ export default function GroupPage() {
         />
       )}
 
-
       {/* 移动端新增按钮 */}
       {!pageLoading && safeGroup?.editable && (
         <button
@@ -474,7 +454,6 @@ export default function GroupPage() {
         >
           <PlusIcon className="h-7 w-7 text-white" />
         </button>
-
       )}
     </>
   );
