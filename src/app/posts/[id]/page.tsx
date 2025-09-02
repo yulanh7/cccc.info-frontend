@@ -150,7 +150,7 @@ export default function PostDetailPage() {
       {!pageLoading && post && (
         <>
           {/* 顶部横幅：视频优先，否则背景图 */}
-          <div className="mb-4 mt-16 md:mt-0">
+          <div>
             {post.videos && post.videos.length > 0 ? (
               <YouTubeList
                 videos={post.videos}
@@ -203,8 +203,8 @@ export default function PostDetailPage() {
               </div>
             )}
           </div>
-          <div className="flex gap-3">
-            <div className="text-xs text-dark-green md:text-sm mb-1 flex items-center">
+          <div className="flex flex-wrap gap-3 mb-3">
+            <div className="text-xs text-dark-green md:text-sm flex items-center">
               <UserGroupIcon className="h-4 w-4 mr-1 text-dark-green" />
               {post.group}
             </div>
@@ -212,6 +212,7 @@ export default function PostDetailPage() {
               <CalendarIcon className="h-4 w-4 mr-1 text-dark-green" /> {formatDate(post.date)}
             </div>
           </div>
+
 
           {/* 正文（纯文本 + 保留换行） */}
           {/* 正文（纯文本 + 保留换行，点击文字本身可收起） */}
@@ -243,20 +244,21 @@ export default function PostDetailPage() {
           {/* 顶部图片缩略图 */}
           {images.length > 0 && (
             <div className="mb-4">
-              <ul className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-8 gap-2">
+              <ul className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
                 {images.map((img, idx) => (
                   <li
                     key={`${img.id ?? img.url}-${idx}`}
-                    className="relative cursor-zoom-in"
+                    className="relative cursor-zoom-in aspect-square"
                     onClick={() => openLightbox(idx)}
                     title="Click to preview"
                   >
                     <img
                       src={img.url}
                       alt={img.name}
-                      className="w-full h-28 md:h-36 object-cover rounded-sm border border-border"
+                      className="w-full h-full object-cover rounded-sm border border-border"
                     />
                   </li>
+
                 ))}
               </ul>
             </div>
