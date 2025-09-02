@@ -37,7 +37,7 @@ const variants: Record<Variant, string> = {
   primary: "bg-yellow text-dark-gray hover:bg-yellow/90 border border-transparent",
   outline: "border border-border text-foreground hover:bg-white/5 bg-transparent",
   ghost: "bg-transparent  hover:bg-white/5 border border-transparent",
-  danger: "border border-red/50 text-red hover:bg-red/10 bg-transparent",
+  danger: "bg-red text-white hover:bg-red/90 border border-transparent",
 };
 
 function toneClasses(variant: Variant, tone: Tone) {
