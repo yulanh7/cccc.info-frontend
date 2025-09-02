@@ -112,27 +112,52 @@ export default function PostModal({
     setFileIds((prev) => prev.filter((x) => x !== id));
   };
 
+  const MAX_FILE_SIZE = 40 * 1024 * 1024;
+
+  const formatMB = (bytes: number) => (bytes / (1024 * 1024)).toFixed(1) + " MB";
+
+
   const onPickImages: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     const files = e.target.files;
     if (!files || !files.length) return;
+
     const picked = Array.from(files);
+    const tooBig = picked.filter(f => f.size > MAX_FILE_SIZE);
+    const ok = picked.filter(f => f.size <= MAX_FILE_SIZE);
+
+    if (tooBig.length) {
+      alert(`These images exceed 40MB and were skipped:\n` +
+        tooBig.map(f => `• ${f.name} (${formatMB(f.size)})`).join("\n"));
+    }
+
     const existing = new Map(localImages.map((f) => [`${f.name}-${f.size}`, true]));
-    const deduped = picked.filter((f) => !existing.has(`${f.name}-${f.size}`));
+    const deduped = ok.filter((f) => !existing.has(`${f.name}-${f.size}`));
     setLocalImages((prev) => [...prev, ...deduped]);
     e.currentTarget.value = "";
   };
-  const removeLocalImage = (idx: number) =>
-    setLocalImages((prev) => prev.filter((_, i) => i !== idx));
 
   const onPickDocs: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     const files = e.target.files;
     if (!files || !files.length) return;
+
     const picked = Array.from(files);
+    const tooBig = picked.filter(f => f.size > MAX_FILE_SIZE);
+    const ok = picked.filter(f => f.size <= MAX_FILE_SIZE);
+
+    if (tooBig.length) {
+      alert(`These documents exceed 40MB and were skipped:\n` +
+        tooBig.map(f => `• ${f.name} (${formatMB(f.size)})`).join("\n"));
+    }
+
     const existing = new Map(localDocs.map((f) => [`${f.name}-${f.size}`, true]));
-    const deduped = picked.filter((f) => !existing.has(`${f.name}-${f.size}`));
+    const deduped = ok.filter((f) => !existing.has(`${f.name}-${f.size}`));
     setLocalDocs((prev) => [...prev, ...deduped]);
     e.currentTarget.value = "";
   };
+
+  const removeLocalImage = (idx: number) =>
+    setLocalImages((prev) => prev.filter((_, i) => i !== idx));
+
   const removeLocalDoc = (idx: number) => setLocalDocs((prev) => prev.filter((_, i) => i !== idx));
 
   /* ------------------------------
