@@ -77,7 +77,7 @@ export interface CreatePostRequest {
   title: string;
   content: string;
   description: string;
-  videos: string[];
+  video_urls: string[];
   file_ids: number[];
 }
 export interface PostDetailFileApi {
@@ -239,7 +239,7 @@ export const toCreateRequest = (m: CreatePostFormModel): CreatePostRequest => ({
   title: m.title,
   content: m.contentText,
   description: m.description,
-  videos: m.videos,
+  video_urls: m.videos,
   file_ids: m.fileIds,
 });
 export const toUpdateRequest = (m: UpdatePostFormModel): UpdatePostRequest =>

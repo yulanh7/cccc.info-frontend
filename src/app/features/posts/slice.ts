@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { apiRequest } from "../request";
-import type { PostDetailUi, LoadStatus, PostDetailApi } from "@/app/types";
+import type { PostDetailUi, LoadStatus, PostDetailApi, CreatePostRequest, UpdatePostRequest } from "@/app/types";
 import { mapPostDetailApiToUiWithAuthor } from '@/app/types/post'
 
 
@@ -22,14 +22,7 @@ export const createPost = createAsyncThunk<
   PostDetailUi,
   {
     groupId: number;
-    body: {
-      title: string;
-      content: string; // HTML
-      description?: string;
-      videos?: string[];
-      file_ids?: number[];
-    };
-    /** 可选：用于在 UI 映射 author 名称时回填 */
+    body: CreatePostRequest;   // ✅ 用统一的 DTO
     authorNameHint?: string;
   }
 >("posts/createPost", async ({ groupId, body, authorNameHint }, { rejectWithValue }) => {
@@ -65,13 +58,7 @@ export const updatePost = createAsyncThunk<
   PostDetailUi,
   {
     postId: number;
-    body: {
-      title: string;
-      content: string; // HTML
-      description?: string;
-      videos?: string[];
-      file_ids?: number[];
-    };
+    body: UpdatePostRequest;
     authorNameHint?: string;
   }
 >("posts/updatePost", async ({ postId, body, authorNameHint }, { rejectWithValue }) => {

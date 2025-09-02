@@ -74,7 +74,7 @@ export default function PostDetailPage() {
             title: form.title,
             content: form.contentText, // 纯文本发到后端字段 content
             description: form.description,
-            videos: form.videos,
+            video_urls: form.videos,
             file_ids: form.fileIds,
           },
         })
