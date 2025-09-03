@@ -1,60 +1,38 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDispatch } from 'react-redux';
 import { loginThunk } from '@/app/features/auth/slice';
 import { LoginCredentials } from '@/app/types/auth';
 import { AppDispatch } from '@/app/features/store';
+import { getRecaptchaToken } from '@/app/ultility/recaptcha';
+import Button from '@/components/ui/Button'; // ← 按你的路径修改
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
 
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://www.google.com/recaptcha/api.js?render=6LeVQAIrAAAAAG_UnrI3up7fDN2muaqOtmfIhYv0';
-    script.async = true;
-    document.body.appendChild(script);
-
-    script.onload = () => {
-      window.grecaptcha.ready(() => {
-        window.grecaptcha
-          .execute('6LeVQAIrAAAAAG_UnrI3up7fDN2muaqOtmfIhYv0', { action: 'login' })
-          .then((token: string) => setRecaptchaToken(token))
-          .catch((err: any) => {
-            console.error('reCAPTCHA error:', err);
-            setError('无法加载 reCAPTCHA，请稍后重试');
-          });
-      });
-    };
-
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!recaptchaToken) {
-      setError('reCAPTCHA 未加载，请稍后重试');
-      return;
-    }
+    if (isLoading) return;
 
     setIsLoading(true);
     setError(null);
 
     try {
+      const recaptchaToken = await getRecaptchaToken('login').catch(() => null);
+
       const credentials: LoginCredentials = {
         email,
         password,
-        // recaptchaToken, // Remove if not required by backend
+        ...(recaptchaToken ? { recaptchaToken } : {}),
       };
+
       await dispatch(loginThunk(credentials)).unwrap();
       router.push('/');
     } catch (err: any) {
@@ -85,13 +63,18 @@ export default function LoginForm() {
         required
         disabled={isLoading}
       />
-      <button
+      <Button
         type="submit"
-        className="w-full p-2 bg-dark-green text-white rounded-sm hover:bg-green disabled:bg-gray-400"
-        disabled={isLoading}
+        variant="primary"
+        size="md"
+        fullWidth
+        loading={isLoading}
+        loadingText="登录中..."
+        blockWhileLoading
+        aria-label="登录"
       >
-        {isLoading ? '登录中...' : '登录'}
-      </button>
+        登录
+      </Button>
     </form>
   );
 }
