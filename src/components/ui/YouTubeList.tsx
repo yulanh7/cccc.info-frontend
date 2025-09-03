@@ -88,7 +88,7 @@ export default function YouTubeList({
         const src = `https://www.youtube.com/embed/${id}?enablejsapi=1&origin=${origin}&rel=0&modestbranding=1&playsinline=1`;
 
         return (
-          <div key={id} className="relative">
+          <div key={i} className="relative">
             {/* 透明覆盖层：捕获点击，触发“互斥播放” */}
             <button
               type="button"
