@@ -35,7 +35,7 @@ import { toCreateRequest, type CreatePostFormModel } from "@/app/types/post";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { useConfirm } from "@/hooks/useConfirm";
 
-const POST_PER_PAGE = 9;
+const POST_PER_PAGE = 10;
 const MEMBERS_PER_PAGE = 9;
 
 export default function GroupPage() {
