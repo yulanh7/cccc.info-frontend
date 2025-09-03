@@ -288,7 +288,7 @@ export default function PostModal({
 
 
   return (
-    <div className="fixed inset-0 z-30 bg-black/40 flex items-center justify-center">
+    <div className="fixed inset-0 z-30 bg-gray bg-opacity-50 flex items-center justify-center">
       {/* 点击遮罩也触发关闭确认 */}
       <div
         className="absolute inset-0"
@@ -296,24 +296,29 @@ export default function PostModal({
         aria-hidden
       />
       <div
-        className="bg-white w-full md:max-w-3xl  rounded-md shadow-lg p-4 md:p-6 relative"
-        // 阻止内部点击冒泡到遮罩
+        className="bg-white w-full md:max-w-3xl rounded-md shadow-lg relative
+             flex flex-col max-h-[min(90vh,800px)]"   // 关键：限制整体高度
         onClick={(e) => e.stopPropagation()}
       >
+        <header className="px-4 md:px-6 pt-4 pb-2 mb-4 border-b border-border/70 sticky top-0 bg-white z-10">
 
-        <button
-          onClick={handleCloseClick}
-          ref={closeButtonRef}
-          className="absolute right-4 top-4 text-dark-gray hover:text-dark-green"
-          aria-label="Close"
-        >
-          <XMarkIcon className="h-6 w-6" />
-        </button>
+          <button
+            onClick={handleCloseClick}
+            ref={closeButtonRef}
+            className="absolute right-4 top-4 text-dark-gray hover:text-dark-green"
+            aria-label="Close"
+          >
+            <XMarkIcon className="h-6 w-6" />
+          </button>
 
-        <h2 className="text-xl font-medium mb-4">{isNew ? "Create Post" : "Edit Post"}</h2>
+          <h2 className="text-xl font-medium text-center">
+            {isNew ? "Create Post" : "Edit Post"}
+            <div className="mt-1 h-0.5 w-12 bg-green mx-auto rounded" />
+          </h2>
+        </header>
 
-        <div className="overflow-y-auto max-h-[80vh] ">
 
+        <section className="px-4 md:px-6 py-4 overflow-y-auto flex-1">
 
           {/* ===== 标题 ===== */}
           <label htmlFor="post-title" className="block text-sm font-medium mb-1 text-gray-900">
@@ -439,7 +444,7 @@ export default function PostModal({
                         onClick={() => removeLocalImage(i)}
                         title="Remove file"
                       >
-                        <TrashIcon className="h-4 w-4" />
+                        Remove
                       </button>
                     </li>
                   ))}
@@ -510,7 +515,7 @@ export default function PostModal({
                         onClick={() => removeLocalDoc(i)}
                         title="Remove file"
                       >
-                        <TrashIcon className="h-4 w-4" />
+                        Remove
                       </button>
                     </li>
                   ))}
@@ -518,10 +523,10 @@ export default function PostModal({
               )}
             </div>
           </div>
-        </div>
+        </section>
 
         {/* ===== Actions ===== */}
-        <div className="mt-6 flex justify-end gap-3">
+        <footer className="flex justify-end gap-5 px-4 md:px-6 py-3 border-t border-border/70 sticky bottom-0 bg-white z-10">
           <Button
             type="button"
             variant="outline"
@@ -532,10 +537,10 @@ export default function PostModal({
           >
             Cancel
           </Button>
-          <Button variant="primary" size="sm" onClick={handleSave} disabled={saving}>
+          <Button variant="primary" size="md" onClick={handleSave} disabled={saving}>
             {saving ? "Saving…" : isNew ? "Create" : "Save"}
           </Button>
-        </div>
+        </footer>
       </div>
 
       {/* 确认弹窗 */}
@@ -549,6 +554,6 @@ export default function PostModal({
         align="end"
         offset={8}
       />
-    </div>
+    </div >
   );
 }
