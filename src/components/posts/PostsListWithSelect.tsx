@@ -5,18 +5,18 @@ import Link from "next/link";
 import { CheckIcon, TrashIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
 import CardSkeleton from "@/components/feedback/CardSkeleton";
 import Spinner from "@/components/feedback/Spinner";
-import type { PostListUi } from "@/app/types/post";
+import type { PostListItemApi } from "@/app/types";
 import PostCardSimple from "./PostCardSimple";
 import Button from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
 
 type Props = {
-  rows: PostListUi[];
+  rows: PostListItemApi[];
   listLoading: boolean;
   selectMode: boolean;
   selectedIds: Set<number>;
   onToggleSelect: (id: number) => void;
-  canEdit?: (p: PostListUi) => boolean;
+  canEdit?: (p: PostListItemApi) => boolean;
   onDeleteSingle?: (id: number) => void;
   onEditSingle?: (id: number) => void;
   deleting?: boolean;

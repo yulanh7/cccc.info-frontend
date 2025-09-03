@@ -3,24 +3,47 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { XMarkIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Button from "@/components/ui/Button";
-import type { CreatePostFormModel, UiFile } from "@/app/types/post";
-import { splitFiles } from "@/app/types/post";
 import SaveConfirmModal from "../SaveConfirmModal";
+import type { PostFileApi } from "@/app/types";
 
 const IMAGE_ACCEPT = ".png,.jpg,.jpeg,.gif,.bmp,.webp";
 const DOC_ACCEPT = ".doc,.docx,.pdf";
 
+type FormModel = {
+  title: string;
+  description: string;
+  content: string;       // ← 对齐 API：使用 content
+  videos: string[];      // ← string[]
+  fileIds: number[];     // ← 现有关联文件的 id 列表
+  localFiles?: File[];   // ← 新增待上传
+};
+
 type PostModalProps = {
-  item?: Partial<CreatePostFormModel>;
+  item?: Partial<FormModel>;
   isNew: boolean;
-  onSave: (form: CreatePostFormModel & { localFiles?: File[] }) => void | Promise<void>;
+  onSave: (form: FormModel) => void | Promise<void>;
   onClose: () => void;
   saving?: boolean;
-  existingFiles?: UiFile[];
+  existingFiles?: PostFileApi[]; // ← 直接使用 API 的文件类型
 };
 
 const MAX_TITLE = 70;
 const MAX_DESC = 300;
+
+// —— 简单的 MIME 判断（与文件 API 对齐）
+const isImageMime = (mime?: string) => !!mime && /^image\//i.test(mime);
+const isDocMime = (mime?: string) =>
+  !!mime &&
+  /^(application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/i.test(
+    mime
+  );
+
+function splitFiles(files: PostFileApi[]) {
+  const images = files.filter((f) => isImageMime(f.file_type));
+  const documents = files.filter((f) => isDocMime(f.file_type));
+  const others = files.filter((f) => !isImageMime(f.file_type) && !isDocMime(f.file_type));
+  return { images, documents, others };
+}
 
 export default function PostModal({
   item,
@@ -32,7 +55,7 @@ export default function PostModal({
 }: PostModalProps) {
   const [title, setTitle] = useState(item?.title ?? "");
   const [description, setDescription] = useState(item?.description ?? "");
-  const [contentText, setContentText] = useState(item?.contentText ?? "");
+  const [content, setContent] = useState(item?.content ?? ""); // ← content
   const [videos, setVideos] = useState<string[]>(item?.videos ?? []);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -49,7 +72,7 @@ export default function PostModal({
   const [localDocs, setLocalDocs] = useState<File[]>([]);
   const [videoInput, setVideoInput] = useState("");
 
-  const [errors, setErrors] = useState<{ title?: string; contentText?: string }>({});
+  const [errors, setErrors] = useState<{ title?: string; content?: string }>({});
   const titleRef = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLTextAreaElement>(null);
 
@@ -60,7 +83,7 @@ export default function PostModal({
     if (!item) return;
     setTitle(item.title ?? "");
     setDescription(item.description ?? "");
-    setContentText(item.contentText ?? "");
+    setContent(item.content ?? "");
     setVideos(item.videos ?? []);
     setFileIds(
       item.fileIds ??
@@ -76,6 +99,7 @@ export default function PostModal({
   );
 
   const linkedIdSet = useMemo(() => new Set<number>(fileIds), [fileIds]);
+
   const existingImages = useMemo(
     () => existingImagesAll.filter((f) => !f.id || linkedIdSet.has(f.id)),
     [existingImagesAll, linkedIdSet]
@@ -86,12 +110,12 @@ export default function PostModal({
   );
 
   const validate = (): boolean => {
-    const next: { title?: string; contentText?: string } = {};
+    const next: { title?: string; content?: string } = {};
     if (!title.trim()) next.title = "Title is required";
     if (titleLen > MAX_TITLE) next.title = `Title cannot exceed ${MAX_TITLE} characters.`;
     setErrors(next);
     if (next.title && titleRef.current) titleRef.current.focus();
-    else if (next.contentText && contentRef.current) contentRef.current.focus();
+    else if (next.content && contentRef.current) contentRef.current.focus();
     return Object.keys(next).length === 0;
   };
 
@@ -113,21 +137,21 @@ export default function PostModal({
   };
 
   const MAX_FILE_SIZE = 40 * 1024 * 1024;
-
   const formatMB = (bytes: number) => (bytes / (1024 * 1024)).toFixed(1) + " MB";
-
 
   const onPickImages: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     const files = e.target.files;
     if (!files || !files.length) return;
 
     const picked = Array.from(files);
-    const tooBig = picked.filter(f => f.size > MAX_FILE_SIZE);
-    const ok = picked.filter(f => f.size <= MAX_FILE_SIZE);
+    const tooBig = picked.filter((f) => f.size > MAX_FILE_SIZE);
+    const ok = picked.filter((f) => f.size <= MAX_FILE_SIZE);
 
     if (tooBig.length) {
-      alert(`These images exceed 40MB and were skipped:\n` +
-        tooBig.map(f => `• ${f.name} (${formatMB(f.size)})`).join("\n"));
+      alert(
+        `These images exceed 40MB and were skipped:\n` +
+        tooBig.map((f) => `• ${f.name} (${formatMB(f.size)})`).join("\n")
+      );
     }
 
     const existing = new Map(localImages.map((f) => [`${f.name}-${f.size}`, true]));
@@ -141,12 +165,14 @@ export default function PostModal({
     if (!files || !files.length) return;
 
     const picked = Array.from(files);
-    const tooBig = picked.filter(f => f.size > MAX_FILE_SIZE);
-    const ok = picked.filter(f => f.size <= MAX_FILE_SIZE);
+    const tooBig = picked.filter((f) => f.size > MAX_FILE_SIZE);
+    const ok = picked.filter((f) => f.size <= MAX_FILE_SIZE);
 
     if (tooBig.length) {
-      alert(`These documents exceed 40MB and were skipped:\n` +
-        tooBig.map(f => `• ${f.name} (${formatMB(f.size)})`).join("\n"));
+      alert(
+        `These documents exceed 40MB and were skipped:\n` +
+        tooBig.map((f) => `• ${f.name} (${formatMB(f.size)})`).join("\n")
+      );
     }
 
     const existing = new Map(localDocs.map((f) => [`${f.name}-${f.size}`, true]));
@@ -155,42 +181,31 @@ export default function PostModal({
     e.currentTarget.value = "";
   };
 
-  const removeLocalImage = (idx: number) =>
-    setLocalImages((prev) => prev.filter((_, i) => i !== idx));
-
+  const removeLocalImage = (idx: number) => setLocalImages((prev) => prev.filter((_, i) => i !== idx));
   const removeLocalDoc = (idx: number) => setLocalDocs((prev) => prev.filter((_, i) => i !== idx));
 
-  /* ------------------------------
-   * 变化检测核心：serialize + 初始快照
-   * ------------------------------ */
+  // ------------------------------
+  // 变化检测：serialize + 初始快照
+  // ------------------------------
+  const projectFiles = (files: File[]) => files.map((f) => `${f.name}::${f.size}::${f.lastModified}`).sort();
 
-  // 把文件列表投影成稳定签名，避免引用变化
-  const projectFiles = (files: File[]) =>
-    files.map((f) => `${f.name}::${f.size}::${f.lastModified}`).sort();
-
-  // 把表单状态稳定序列化
   const serializeState = () =>
     JSON.stringify({
       title: title.trim(),
       description: description.replace(/\s+$/, ""),
-      contentText, // 保留换行即可
+      content, // ← content
       videos: [...videos].map((v) => v.trim()).sort(),
-      // 排序，避免顺序导致误报
       fileIds: [...fileIds].sort((a, b) => a - b),
-      // 本地新文件：用签名比较
       localImages: projectFiles(localImages),
       localDocs: projectFiles(localDocs),
     });
 
-  // 保存初始快照
   const initialStateRef = useRef<string>("");
   useEffect(() => {
-    // 当 modal 打开/数据刷新时重置初始状态
     initialStateRef.current = serializeState();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item, existingFiles]);
 
-  // 实时是否有变化
   const hasChanges = useMemo(() => {
     try {
       return serializeState() !== initialStateRef.current;
@@ -198,31 +213,25 @@ export default function PostModal({
       return true;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, description, contentText, videos, fileIds, localImages, localDocs]);
+  }, [title, description, content, videos, fileIds, localImages, localDocs]);
 
-  // 离开页面提醒（可选）
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
       if (!hasChanges) return;
       e.preventDefault();
-      e.returnValue = ""; // 某些浏览器需要
+      e.returnValue = "";
       return "";
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [hasChanges]);
 
-  // 修正确认弹窗的位置：靠近右上角关闭按钮
   const getConfirmPosition = () => {
     const el = anchorEl ?? closeButtonRef.current;
     if (el) {
       const rect = el.getBoundingClientRect();
-      return {
-        top: rect.bottom + 8,
-        right: Math.max(8, window.innerWidth - rect.right),
-      };
+      return { top: rect.bottom + 8, right: Math.max(8, window.innerWidth - rect.right) };
     }
-    // 兜底：居右上
     return { top: 16, right: 16 };
   };
 
@@ -247,18 +256,17 @@ export default function PostModal({
   };
 
   const confirmSaveAndClose = async () => {
-    // 保存成功后，把当前状态设为“基线”，避免跳回又提示
     if (!validate()) return;
-    const cleaned: CreatePostFormModel & { localFiles?: File[] } = {
+    const cleaned: FormModel = {
       title: title.trim(),
       description: description.replace(/\s+$/, ""),
-      contentText,
+      content,  // ← content
       videos,
       fileIds,
       localFiles: [...localImages, ...localDocs],
     };
     await onSave(cleaned);
-    initialStateRef.current = serializeState(); // 更新基线
+    initialStateRef.current = serializeState();
     setIsConfirmOpen(false);
     onClose();
   };
@@ -272,35 +280,26 @@ export default function PostModal({
 
   const handleSave = async () => {
     if (!validate()) return;
-    const cleaned: CreatePostFormModel & { localFiles?: File[] } = {
+    const cleaned: FormModel = {
       title: title.trim(),
       description: description.replace(/\s+$/, ""),
-      contentText,
+      content,  // ← content
       videos,
       fileIds,
       localFiles: [...localImages, ...localDocs],
     };
     await onSave(cleaned);
-    // 如果不关闭，也把当前状态设为基线，防止再次点 X 误报
     initialStateRef.current = serializeState();
   };
-
-
 
   return (
     <div className="fixed inset-0 z-30 bg-black/40 flex items-center justify-center">
       {/* 点击遮罩也触发关闭确认 */}
-      <div
-        className="absolute inset-0"
-        onClick={handleCloseClick}
-        aria-hidden
-      />
+      <div className="absolute inset-0" onClick={handleCloseClick} aria-hidden />
       <div
         className="bg-white w-full md:max-w-3xl  rounded-md shadow-lg p-4 md:p-6 relative"
-        // 阻止内部点击冒泡到遮罩
         onClick={(e) => e.stopPropagation()}
       >
-
         <button
           onClick={handleCloseClick}
           ref={closeButtonRef}
@@ -313,8 +312,6 @@ export default function PostModal({
         <h2 className="text-xl font-medium mb-4">{isNew ? "Create Post" : "Edit Post"}</h2>
 
         <div className="overflow-y-auto max-h-[80vh] ">
-
-
           {/* ===== 标题 ===== */}
           <label htmlFor="post-title" className="block text-sm font-medium mb-1 text-gray-900">
             Title <span className="text-red-500">*</span>
@@ -342,13 +339,13 @@ export default function PostModal({
           <textarea
             id="post-content"
             ref={contentRef}
-            value={contentText}
-            onChange={(e) => setContentText(e.target.value)}
-            className={`w-full p-2 mb-1 border text-gray-600 rounded-sm ${errors.contentText ? "border-red-500" : "border-border"}`}
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className={`w-full p-2 mb-1 border text-gray-600 rounded-sm ${errors.content ? "border-red-500" : "border-border"}`}
             rows={10}
             placeholder="Write your content here. Line breaks will be preserved."
           />
-          {errors.contentText && <p className="text-red-600 text-sm mb-3">{errors.contentText}</p>}
+          {errors.content && <p className="text-red-600 text-sm mb-3">{errors.content}</p>}
 
           {/* ===== 视频 URL ===== */}
           <div className="mt-4">
@@ -385,20 +382,22 @@ export default function PostModal({
           </div>
 
           <div className="border border-border p-2 mt-2">
-
             {/* ===== 已有图片（编辑态） ===== */}
             {existingImages.length > 0 && (
               <div>
                 <div className="text-sm font-medium mb-1 text-gray-900">Existing Images</div>
-
                 <ul className="mt-2 grid grid-cols-4 md:grid-cols-8 gap-2">
                   {existingImages.map((f) => (
                     <li key={`${f.id}-${f.url}`} className="border border-border rounded p-1">
-                      <img src={f.url} alt={f.name} className="w-full object-cover rounded mb-2 aspect-square" />
-                      <div className="text-[10px] truncate">{f.name}</div>
-                      {/* {typeof f.size === "number" && (
-                    <div className="text-[11px] text-dark-gray">{(f.size / 1024 / 1024).toFixed(2)} MB</div>
-                  )} */}
+                      <img
+                        src={f.url}
+                        alt={f.filename}
+                        className="w-full object-cover rounded mb-2 aspect-square"
+                      />
+                      <div className="text-[10px] truncate">{f.filename}</div>
+                      {typeof f.file_size === "number" && (
+                        <div className="text-[11px] text-dark-gray">{(f.file_size / 1024 / 1024).toFixed(2)} MB</div>
+                      )}
                       {f.id != null && (
                         <button
                           className="mt-1 p-1 text-red-600 hover:bg-red-50 rounded text-xs"
@@ -413,6 +412,7 @@ export default function PostModal({
                 </ul>
               </div>
             )}
+
             {/* ===== 新增上传：图片 ===== */}
             <div className="mt-6">
               <label className="block text-sm font-medium mb-1 text-gray-900">Add Images</label>
@@ -424,14 +424,18 @@ export default function PostModal({
                 className="block w-full text-sm text-dark-gray file:mr-3 file:py-2 file:px-3 file:rounded-sm file:border-0 file:text-sm file:font-medium file:bg-gray-100 hover:file:bg-gray-200"
               />
               <p id="image-size-hint" className="mt-1 text-xs text-dark-gray">
-                * Each img ≤ {formatMB(MAX_FILE_SIZE)}.
+                * Each img ≤ {(40).toFixed(0)} MB.
               </p>
 
               {localImages.length > 0 && (
                 <ul className="mt-2 grid grid-cols-4 md:grid-cols-8 gap-2">
                   {localImages.map((f, i) => (
                     <li key={`${f.name}-${f.size}-${i}`} className="border border-border rounded p-1">
-                      <img src={URL.createObjectURL(f)} alt={f.name} className="w-full object-cover rounded mb-2 aspect-square" />
+                      <img
+                        src={URL.createObjectURL(f)}
+                        alt={f.name}
+                        className="w-full object-cover rounded mb-2 aspect-square"
+                      />
                       <div className="text-xs truncate">{f.name}</div>
                       <div className="text-[11px] text-dark-gray">{(f.size / 1024 / 1024).toFixed(2)} MB</div>
                       <button
@@ -449,7 +453,6 @@ export default function PostModal({
           </div>
 
           <div className="border border-border p-2 mt-2">
-
             {/* ===== 已有文档（编辑态） ===== */}
             {existingDocs.length > 0 && (
               <div>
@@ -459,12 +462,18 @@ export default function PostModal({
                 <ul className="mt-2 divide-y divide-gray-200 border border-border rounded">
                   {existingDocs.map((f) => (
                     <li key={`${f.id}-${f.url}`} className="flex items-center justify-between px-2 py-1 text-sm">
-                      <a href={f.url} target="_blank" rel="noreferrer" className="truncate hover:underline" title={f.name}>
-                        {f.name}
+                      <a
+                        href={f.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="truncate hover:underline"
+                        title={f.filename}
+                      >
+                        {f.filename}
                       </a>
                       <div className="flex items-center gap-2">
-                        {typeof f.size === "number" && (
-                          <span className="text-xs text-dark-gray">{(f.size / 1024 / 1024).toFixed(2)} MB</span>
+                        {typeof f.file_size === "number" && (
+                          <span className="text-xs text-dark-gray">{(f.file_size / 1024 / 1024).toFixed(2)} MB</span>
                         )}
                         {f.id != null && (
                           <button
@@ -482,8 +491,6 @@ export default function PostModal({
               </div>
             )}
 
-
-
             {/* ===== 新增上传：文档 ===== */}
             <div className="mt-6">
               <label className="block text-sm font-medium mb-1 text-gray-900">Add Documents</label>
@@ -495,7 +502,7 @@ export default function PostModal({
                 className="block w-full text-sm text-dark-gray file:mr-3 file:py-2 file:px-3 file:rounded-sm file:border-0 file:text-sm file:font-medium file:bg-gray-100 hover:file:bg-gray-200"
               />
               <p id="doc-size-hint" className="mt-1 text-xs text-dark-gray">
-                * Each file ≤ {formatMB(MAX_FILE_SIZE)}.
+                * Each file ≤ {(40).toFixed(0)} MB.
               </p>
               {localDocs.length > 0 && (
                 <ul className="mt-2 divide-y divide-gray-200 border border-border rounded">

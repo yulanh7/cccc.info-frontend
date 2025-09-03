@@ -1,6 +1,6 @@
 "use client";
 import React, { useMemo } from "react";
-import { PostListUi } from "@/app/types/post";
+import type { PostListItemApi } from "@/app/types";
 import {
   CalendarIcon,
   UserGroupIcon,
@@ -8,11 +8,10 @@ import {
 } from "@heroicons/react/24/outline";
 import { PlayIcon } from '@heroicons/react/24/solid';
 import { ellipsize } from '@/app/ultility';
-import Link from "next/link";
 import { getYouTubeThumbnail } from '@/app/ultility';
 
 type Props = {
-  post: PostListUi;
+  post: PostListItemApi;
   formatDate: (timestamp: string, showTime?: boolean) => string;
   showEnterArrow?: boolean;
 };
@@ -30,7 +29,7 @@ export default function PostCardSimple({
   formatDate,
   showEnterArrow = true,
 }: Props) {
-  const { id, title, date, author, group, description, videos, like_count } = post;
+  const { id, title, created_at, author, group, summary, videos, like_count } = post;
   const bgUrl = useMemo(
     () => BG_URLS[Math.abs(post.id) % BG_URLS.length],
     [post.id]
@@ -87,9 +86,9 @@ export default function PostCardSimple({
           <UserGroupIcon className="h-4 w-4 mr-1 text-dark-gray" />
           <span className="truncate">{group}</span>
         </div> */}
-        {description && (
+        {summary && (
           <p className="text-gray text-sm line-clamp-3 leading-[1.1] md:leading-[1.2] whitespace-pre-line">
-            {ellipsize(description, 160, { byWords: true })}
+            {ellipsize(summary, 160, { byWords: true })}
           </p>
         )}
         <div className="mt-2 space-y-1 text-xs text-gray">

@@ -4,10 +4,10 @@
 import React from "react";
 import { PencilSquareIcon, TrashIcon, CalendarIcon, UserGroupIcon } from "@heroicons/react/24/outline";
 import IconButton from "@/components/ui/IconButton";
-import type { PostDetailUi } from "@/app/types/post";
+import type { PostDetailData } from "@/app/types";
 
 type Props = {
-  post: PostDetailUi;
+  post: PostDetailData;
   canManage: boolean;
   onEditPost: () => void;
   onDeletePost: () => void;
@@ -78,20 +78,20 @@ export default function PostInfoBar({
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-white">
             <span className="inline-flex items-center gap-2">
               <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-yellow/40 text-white text-xs font-semibold">
-                {(post.author?.firstName?.[0] || "?").toUpperCase()}
+                {(post.author?.first_name?.[0] || "?").toUpperCase()}
               </span>
-              <span>{post.author?.firstName}</span>
+              <span>{post.author?.first_name}</span>
             </span>
 
 
             <span className="inline-flex items-center gap-1.5">
               <UserGroupIcon className="h-5 w-5" />
-              {post.group}
+              {post.group?.name}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <CalendarIcon className="h-5 w-5" />
-              <time dateTime={post.date} className="font-medium">
-                {post.date ? formatDate(post.date) : "—"}
+              <time dateTime={post.created_at} className="font-medium">
+                {post.created_at ? formatDate(post.created_at) : "—"}
               </time>
             </span>
           </div>

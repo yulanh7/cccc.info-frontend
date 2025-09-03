@@ -12,9 +12,8 @@ import ConfirmModal from "@/components/ConfirmModal";
 import GroupInfoBar from "@/components/groups/GroupInfoBar";
 import PostListSection from "@/components/posts/PostListSection";
 import { usePostListController } from "@/components/posts/usePostListController";
-
 import type { GroupProps } from "@/app/types";
-import { canEditPost } from "@/app/types/post";
+import { canEditPostList } from "@/app/types";
 import { formatDate, mapApiErrorToFields } from "@/app/ultility";
 import {
   fetchGroupDetail,
@@ -32,7 +31,7 @@ import { updateGroup, deleteGroup } from "@/app/features/groups/slice";
 import { uploadAllFiles } from "@/app/ultility";
 
 import type { CreateOrUpdateGroupBody } from "@/app/types/group";
-import { toCreateRequest, type CreatePostFormModel } from "@/app/types/post";
+import { } from "@/app/types/post";
 
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { useConfirm } from "@/hooks/useConfirm";
@@ -130,7 +129,7 @@ export default function GroupPage() {
     deletePost: deletePostThunk,
 
     // 权限判断：沿用你的 canEditPost
-    canEdit: (p) => canEditPost(p, user),
+    canEdit: (p) => canEditPostList(p, user),
 
     // 给“首次加载骨架/更新中提示”判断
     postsStatus: status.posts as any,

@@ -1,286 +1,145 @@
-// posts.ts
-import type { ApiResponseProps } from "./api";
-import type { UserProps } from "./user";
+import { ApiResponseProps, UserProps } from '@/app/types'
 
-/* ===================== Shared UI fragments ===================== */
-export type AuthorLite = { id: number; firstName: string };
-
-export type UiFileKind = "image" | "document" | "other";
-
-export type UiFile = {
-  id?: number;
-  url: string;
-  name: string;
-  size?: number;
-  type?: string;
-  uploadedAt?: string;
-  kind?: UiFileKind;
+export type postsPagination = {
+  current_page: number;
+  total_pages: number;
+  total_posts: number;
 };
 
-const IMAGE_EXT = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"];
-const DOC_EXT = [".doc", ".docx", ".pdf"];
-
-const isImageMime = (mime?: string) =>
-  !!mime && /^image\//i.test(mime);
-
-const isDocMime = (mime?: string) =>
-  !!mime && /^(application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/i.test(mime);
-
-const endsWithOneOf = (filename = "", exts: string[]) => {
-  const lower = filename.toLowerCase();
-  return exts.some((ext) => lower.endsWith(ext));
-};
-
-export const classifyFileKind = (f: { type?: string; name?: string; url?: string }): UiFileKind => {
-  if (isImageMime(f.type)) return "image";
-  if (isDocMime(f.type)) return "document";
-  const fname = f.name || f.url || "";
-  if (endsWithOneOf(fname, IMAGE_EXT)) return "image";
-  if (endsWithOneOf(fname, DOC_EXT)) return "document";
-
-  return "other";
-};
-
-/* ===================== UI Base & Variants ===================== */
-/** 最小公共 UI 基类：列表/详情都具备 */
-export interface PostBaseUi {
-  id: number;
-  title: string;
-  date: string;
-  author: AuthorLite;
-  like_count: number;
-}
-
-/** 列表形态（轻信息） */
-export interface PostListUi extends PostBaseUi {
-  group: string;
-  description: string;
-  hasFiles: boolean;
-  videos: string[];
-}
-
-/** 详情形态（重信息） */
-export interface PostDetailUi extends PostBaseUi {
-  group: string;
-  description: string;
-  contentText?: string;
-  videos: string[];
-  files: UiFile[];
-}
-
-/** 如需兼容原来的 PostProps：把详情形态当作 PostProps */
-export type PostProps = PostDetailUi;
-
-/* ===================== API Models（忠实后端 3.1–3.9） ===================== */
-// 3.1 Create
-export interface CreatePostRequest {
-  title: string;
-  content: string;
-  description: string;
-  video_urls: string[];
-  file_ids: number[];
-}
-export interface PostDetailFileApi {
+export type PostFileApi = {
   id: number;
   filename: string;
   url: string;
   file_size: number;
   file_type: string;
   upload_time: string;
-}
-export interface PostDetailVideoApi { id: number; url: string; }
-export interface PostDetailApi {
+};
+
+
+
+export type PostGroupApi = {
   id: number;
+  name: string;
+  isPrivate: boolean;
+};
+
+
+export type PostVideoApi = {
+  id: number;
+  url: string;
+};
+
+/** 1) 创建帖子 - POST /api/groups/{group_id}/posts */
+export type CreatePostRequest = {
   title: string;
   content: string;
   description: string;
-  videos: PostDetailVideoApi[];
-  files: PostDetailFileApi[];
-  group_id: number;
-  user_id: number;
-  created_at: string;
-  like_count: number;
-}
-export type CreatePostResponseApi = ApiResponseProps<{ post: PostDetailApi }>;
+  video_urls?: string[];
+  file_ids?: number[];
+};
 
-// 3.2 Group list
-export interface GroupPostApi {
+export type CreatedPostData = {
+  post: {
+    id: number;
+    title: string;
+    description: string;
+    videos: PostVideoApi[];
+    files: PostFileApi[]; // 直接使用文件元数据类型
+    group_id: number;
+    user_id: number;
+    created_at: string;
+  };
+};
+export type CreatePostResponse = ApiResponseProps<CreatedPostData>;
+
+/** 2) 获取群组帖子列表 - GET /api/groups/{group_id}/posts */
+export type PostListItemApi = {
   id: number;
   title: string;
-  author: { id: number; firstName: string };
+  author: {
+    id: number;
+    firstName: string;
+  };
   created_at: string;
   summary: string;
   like_count: number;
   has_files: boolean;
   has_videos: boolean;
   videos: string[];
-}
-export interface GroupPostsDataApi {
-  posts: GroupPostApi[];
-  total_pages: number;
-  current_page: number;
-  total_posts: number;
-}
-export type GroupPostsResponseApi = ApiResponseProps<GroupPostsDataApi>;
-export type GroupPostsPaginationApi = {
-  total_pages: number;
-  current_page: number;
-  total_posts: number;
+  files: string[];
+  clicked_like: boolean;
+  group: PostGroupApi;
 };
 
-// 3.3 Detail
-export type PostDetailResponseApi = ApiResponseProps<PostDetailApi>;
+export type PostListData = {
+  posts: PostListItemApi[];
+} & postsPagination;
 
-// 3.4 Update
-export interface UpdatePostRequest extends CreatePostRequest { }
-export type UpdatePostResponseApi = ApiResponseProps<{ post: PostDetailApi }>;
+export type PostListResponse = ApiResponseProps<PostListData>;
 
+/** 3) 获取帖子详情 - GET /api/posts/{post_id} */
+export type PostDetailData = {
+  id: number;
+  title: string;
+  content: string;
+  description: string;
+  videos: PostVideoApi[];
+  files: PostFileApi[];
+  group_id: number;
+  author: {
+    id: number;
+    first_name: string;
+  };
+  created_at: string;
+  like_count: number;
+  clicked_like: boolean;
+  group: PostGroupApi;
+};
 
+export type PostDetailResponse = ApiResponseProps<PostDetailData>;
 
-// 3.6 / 3.7 Like / Unlike
-export type LikeCountResponseApi = ApiResponseProps<{ like_count: number }>;
+/** 4) 更新/删除 */
+export type UpdatePostRequest = CreatePostRequest;
 
-// 3.8 Likes list
-export interface PostLikeItemApi {
+export type UpdatePostData = {
+  post: PostDetailData;
+};
+export type UpdatePostResponse = ApiResponseProps<UpdatePostData>;
+
+export type DeletePostData = {};
+export type DeletePostResponse = ApiResponseProps<DeletePostData>;
+
+/** 5) 点赞 / 取消点赞 */
+export type LikePostData = { like_count: number };
+export type LikePostResponse = ApiResponseProps<LikePostData>;
+
+export type UnlikePostData = { like_count?: number };
+export type UnlikePostResponse = ApiResponseProps<UnlikePostData>;
+
+/** 6) 点赞列表 - GET /api/posts/{post_id}/likes */
+export type PostLikeItemApi = {
   id: number;
   user: { id: number; firstName: string };
   created_at: string;
-}
-export interface PostLikesDataApi {
+};
+
+export type PostLikesData = {
   likes: PostLikeItemApi[];
-  pagination: { total_pages: number; current_page: number; total_likes: number };
-}
-export type PostLikesResponseApi = ApiResponseProps<PostLikesDataApi>;
-
-// 3.9 Files IDs
-export type PostFileIdsResponseApi = ApiResponseProps<{ file_ids: number[] }>;
-
-/* ===================== Narrow helpers（保留你原 ApiResponseProps） ===================== */
-export function unwrapData<T>(res: ApiResponseProps<T>): T {
-  if (!res.success || res.data == null) {
-    throw new Error(res.message || `Request failed (${res.code})`);
-  }
-  return res.data;
-}
-export function isOk<T>(res: ApiResponseProps<T>): res is {
-  success: true; code: number; message: string; data: T;
-} {
-  return !!res.success && res.data != null;
-}
-
-/* ===================== API → UI Mappers ===================== */
-// 列表 → PostListUi
-export const mapGroupPostApiToListUi = (
-  p: GroupPostApi,
-  groupId: number | string
-): PostListUi => ({
-  id: p.id,
-  title: p.title ?? "",
-  date: p.created_at ?? "",
-  author: { id: p.author?.id ?? 0, firstName: p.author?.firstName ?? "" },
-  like_count: p.like_count ?? 0,
-  group: String(groupId ?? ""),
-  description: p.summary ?? "",
-  hasFiles: !!p.has_files,
-  videos: Array.isArray(p.videos) ? p.videos.filter(Boolean) : [],
-});
-
-
-// 详情 → PostDetailUi
-export const mapPostDetailApiToUi = (p: PostDetailApi): PostDetailUi => {
-  const videos = (p.videos ?? []).map(v => v.url).filter(Boolean);
-  const files: UiFile[] = (p.files ?? []).map(f => {
-    const file: UiFile = {
-      id: f.id,
-      url: f.url,
-      name: f.filename,
-      size: f.file_size,
-      type: f.file_type,
-      uploadedAt: f.upload_time,
-    };
-    file.kind = classifyFileKind({ type: file.type, name: file.name, url: file.url });
-    return file;
-  });
-
-  return {
-    id: p.id,
-    title: p.title ?? "",
-    date: p.created_at ?? "",
-    author: { id: p.user_id ?? 0, firstName: "" },
-    like_count: p.like_count ?? 0,
-    group: String(p.group_id ?? ""),
-    description: p.description ?? "",
-    contentText: p.content ?? "",
-    videos,
-    files,
-  };
+  pagination: postsPagination;
 };
+export type PostLikesResponse = ApiResponseProps<PostLikesData>;
 
-// Create/Update 响应统一入口 → PostDetailUi
-export const mapCreateOrUpdateResponseToPostProps = (
-  res: CreatePostResponseApi | UpdatePostResponseApi
-): PostDetailUi => {
-  const { post } = unwrapData(res);
-  return mapPostDetailApiToUi(post);
-};
+/** 7) 附件 ID 列表 - GET /api/posts/{post_id}/files */
+export type PostFileIdsData = { file_ids: number[] };
+export type PostFileIdsResponse = ApiResponseProps<PostFileIdsData>;
 
-/* ===================== UI → API DTO (表单到请求体) ===================== */
-export interface CreatePostFormModel {
-  title: string;
-  contentText: string;
-  description: string;
-  videos: string[];
-  fileIds: number[];
-  localFiles?: File[];
+/* ======================================================
+ *                  通用权限判断（列表/详情）
+ * ====================================================== */
+
+export const canEditPostList = (post: PostListItemApi, user?: UserProps | null) =>
+  !!user && Number(post.author.id) === Number(user.id);
+
+export const canEditPostDetail = (post: PostDetailData, user?: UserProps | null) => {
+  return !!user && Number(post.author.id) === Number(user.id);
 }
-export type UpdatePostFormModel = CreatePostFormModel;
-
-export const toCreateRequest = (m: CreatePostFormModel): CreatePostRequest => ({
-  title: m.title,
-  content: m.contentText,
-  description: m.description,
-  video_urls: m.videos,
-  file_ids: m.fileIds,
-});
-export const toUpdateRequest = (m: UpdatePostFormModel): UpdatePostRequest =>
-  toCreateRequest(m);
-
-/* ===================== Permissions & small helpers ===================== */
-export const canEditPost = (post: PostBaseUi, user?: UserProps | null) =>
-  !!user && Number(post.author?.id) === Number(user.id);
-
-export const hasVideos = (post: PostDetailUi | PostListUi) =>
-  post.videos.length > 0;
-
-/** ✅ UI 直接调用的分类便捷函数 */
-export const isImageFile = (f: UiFile) => f.kind === "image";
-export const isDocumentFile = (f: UiFile) => f.kind === "document";
-
-export const splitFiles = (files: UiFile[]) => ({
-  images: files.filter(isImageFile),
-  documents: files.filter(isDocumentFile),
-  others: files.filter((f) => f.kind === "other" || !f.kind),
-});
-
-/* ============ 列表 + 详情“补水合并”到完整 UI（用于卡片点开后） ============ */
-export const mergeListWithDetailToUi = (
-  list: GroupPostApi,
-  detail: PostDetailApi,
-  groupId: number | string
-): PostDetailUi =>
-  mapPostDetailApiToUi({
-    ...detail,
-    title: detail.title ?? list.title,
-    description: detail.description ?? list.summary ?? "",
-    created_at: detail.created_at ?? list.created_at,
-    group_id: Number(groupId ?? detail.group_id),
-  });
-
-export const mapPostDetailApiToUiWithAuthor = (
-  p: PostDetailApi,
-  fallbackAuthor?: string
-): PostDetailUi => {
-  const ui = mapPostDetailApiToUi(p);
-  if (fallbackAuthor) ui.author.firstName = fallbackAuthor;
-  return ui;
-};

@@ -4,14 +4,14 @@ import React, { useMemo } from "react";
 import Link from "next/link";
 import { CheckIcon, TrashIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
 import CardSkeleton from "@/components/feedback/CardSkeleton";
-import type { PostListUi } from "@/app/types/post";
+import type { PostListItemApi } from "@/app/types";
 import PostCardSimple from "./PostCardSimple";
 import IconButton from "@/components/ui/IconButton";
 import Pagination from "@/components/Pagination";
 
 type Props = {
   // 数据 & 加载
-  rows: PostListUi[];
+  rows: PostListItemApi[];
   listLoading: boolean;
 
   // 选择模式（通用：某些页面会用）
@@ -20,7 +20,7 @@ type Props = {
   onToggleSelect: (id: number) => void;
 
   // 权限/操作（可选）
-  canEdit?: (p: PostListUi) => boolean;
+  canEdit?: (p: PostListItemApi) => boolean;
   onDeleteSingle?: (id: number) => void;
   onEditSingle?: (id: number) => void;
   deleting?: boolean;

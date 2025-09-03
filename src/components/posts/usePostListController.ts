@@ -1,16 +1,30 @@
-// components/posts/usePostListController.ts
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { uploadAllFiles } from "@/app/ultility";
-import { toCreateRequest, type CreatePostFormModel, type PostListUi } from "@/app/types/post";
+
+// ✅ 使用“最新的帖子 API 类型”
+import type {
+  CreatePostRequest,
+  PostListItemApi,
+} from "@/app/types";
 
 type Status = "idle" | "loading" | "succeeded" | "failed";
 
+/** 与 PostModal 对齐的表单类型（本 Hook 内部用） */
+export type CreatePostForm = {
+  title: string;
+  description: string;
+  content: string;
+  videos: string[];
+  fileIds: number[];
+  localFiles?: File[];
+};
+
 /**
  * FArgs: fetchPosts 的参数类型（例如：{ groupId: number; page?: number; per_page?: number; append?: boolean }）
- * CArgs: createPost 的参数类型（例如：{ groupId: number; body: any; authorNameHint?: string }）
+ * CArgs: createPost 的参数类型（例如：{ groupId: number; body: CreatePostRequest }）
  * DArg : deletePost 的参数类型（通常就是 number）
  */
 export type UsePostListControllerOptions<
@@ -27,11 +41,11 @@ export type UsePostListControllerOptions<
   fetchPosts: (args: FArgs) => any;       // 例如 fetchGroupPosts
   buildFetchArgs: (page: number) => FArgs;// 例如 ({ groupId, page, per_page, append: false })
   createPost?: (args: CArgs) => any;      // 例如 createPost
-  buildCreateArgs?: (body: any) => CArgs; // 例如 ({ groupId, body, authorNameHint })
+  buildCreateArgs?: (body: CreatePostRequest) => CArgs;
   deletePost?: (postId: DArg) => any;     // 例如 deletePostThunk
 
   // —— 权限 & UI 注入
-  canEdit: (p: PostListUi) => boolean;
+  canEdit: (p: PostListItemApi) => boolean;
 
   // —— 外部状态（用于“首次加载骨架”和“更新中提示”的判定）
   postsStatus: Status;
@@ -91,12 +105,11 @@ export function usePostListController<
 
   // 仅当 key 变化时才发起请求；避免因为函数 identity 改变而重复请求
   useEffect(() => {
-    if (lastKeyRef.current === key) return; // 参数未变，不重复拉
+    if (lastKeyRef.current === key) return;
     lastKeyRef.current = key;
 
     dispatch(fetchPosts(args));
     setFetchStarted(true);
-    // 依赖只看 key/dispatch；不放函数身份，避免无限循环
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, dispatch]);
 
@@ -110,12 +123,11 @@ export function usePostListController<
   // —— 刷新当前页：立即用当前参数强制拉取（即便 key 未变化）
   const refreshCurrentPage = useCallback(() => {
     dispatch(fetchPosts(args));
-    // 这里依赖 args 即可；不依赖函数身份
   }, [dispatch, args, fetchPosts]);
 
   // —— 新建（可选）
   const onCreatePost = useCallback(
-    async (form: CreatePostFormModel) => {
+    async (form: CreatePostForm) => {
       if (!createPost || !buildCreateArgs) return;
 
       const newIds = form.localFiles?.length
@@ -124,13 +136,14 @@ export function usePostListController<
 
       const fileIds = [...(form.fileIds ?? []), ...newIds];
 
-      const body = toCreateRequest({
+      // ✅ 直接拼装最新 API 的 CreatePostRequest
+      const body: CreatePostRequest = {
         title: form.title?.trim() ?? "",
-        contentText: form.contentText ?? "",
+        content: form.content ?? "",
         description: form.description ?? "",
-        videos: form.videos ?? [],
-        fileIds,
-      });
+        video_urls: form.videos ?? [],
+        file_ids: fileIds,
+      };
 
       await dispatch(createPost(buildCreateArgs(body))).unwrap();
       refreshCurrentPage();

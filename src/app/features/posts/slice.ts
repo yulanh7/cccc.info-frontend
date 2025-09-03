@@ -1,8 +1,22 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { apiRequest } from "../request";
-import type { PostDetailUi, LoadStatus, PostDetailApi, CreatePostRequest, UpdatePostRequest } from "@/app/types";
-import { mapPostDetailApiToUiWithAuthor } from '@/app/types/post'
+import type {
+  CreatePostRequest,
+  CreatedPostData,
+  PostDetailData,
+  UpdatePostRequest,
+  UpdatePostData,
+  LikePostData,
+  UnlikePostData,
+  PostLikesData,
+  PostFileIdsData,
+  postsPagination
+} from "@/app/types";
+import { unwrapData } from "@/app/types/api";
+import type { LoadStatus } from "@/app/types";
 
+// 兼容：创建返回的 post（缺少 content/author 等） 与 详情返回的完整体
+type PostEntity = PostDetailData | CreatedPostData["post"];
 
 /** ===== Endpoints ===== */
 const POSTS_ENDPOINTS = {
@@ -17,59 +31,55 @@ const POSTS_ENDPOINTS = {
 
 /** ===== Thunks ===== */
 
-// 3.1 创建帖子
+// 3.1 创建帖子 —— 返回 CreatedPostData.data.post（注意：非完整字段集）
 export const createPost = createAsyncThunk<
-  PostDetailUi,
+  CreatedPostData["post"], // 返回值：创建成功后的 post 对象
   {
     groupId: number;
-    body: CreatePostRequest;   // ✅ 用统一的 DTO
-    authorNameHint?: string;
+    body: CreatePostRequest;
   }
->("posts/createPost", async ({ groupId, body, authorNameHint }, { rejectWithValue }) => {
+>("posts/createPost", async ({ groupId, body }, { rejectWithValue }) => {
   try {
-    const res = await apiRequest<{ post: PostDetailApi }>(
+    const res = await apiRequest<CreatedPostData>(
       "POST",
       POSTS_ENDPOINTS.CREATE(groupId),
       body
     );
-    if (!res.success || !res.data?.post) throw new Error(res.message || "Create post failed");
-    return mapPostDetailApiToUiWithAuthor(res.data.post, authorNameHint);
+    const data = unwrapData(res);
+    return data.post;
+
   } catch (e: any) {
     return rejectWithValue(e.message || "Create post failed") as any;
   }
 });
 
-// 3.3 获取帖子详情
+
+// 3.3 获取帖子详情 —— 返回完整体 PostDetailData
 export const fetchPostDetail = createAsyncThunk<
-  PostDetailUi,
-  { postId: number; authorNameHint?: string }
->("posts/fetchPostDetail", async ({ postId, authorNameHint }, { rejectWithValue }) => {
+  PostDetailData,
+  { postId: number }
+>("posts/fetchPostDetail", async ({ postId }, { rejectWithValue }) => {
   try {
-    const res = await apiRequest<PostDetailApi>("GET", POSTS_ENDPOINTS.GET(postId));
+    const res = await apiRequest<PostDetailData>("GET", POSTS_ENDPOINTS.GET(postId));
     if (!res.success || !res.data) throw new Error(res.message || "Fetch post failed");
-    return mapPostDetailApiToUiWithAuthor(res.data, authorNameHint);
+    return res.data; // PostDetailData（完整体）
   } catch (e: any) {
     return rejectWithValue(e.message || "Fetch post failed") as any;
   }
 });
 
-// 3.4 更新帖子
+// 3.4 更新帖子 —— 一般返回完整体
 export const updatePost = createAsyncThunk<
-  PostDetailUi,
+  PostDetailData,
   {
     postId: number;
     body: UpdatePostRequest;
-    authorNameHint?: string;
   }
->("posts/updatePost", async ({ postId, body, authorNameHint }, { rejectWithValue }) => {
+>("posts/updatePost", async ({ postId, body }, { rejectWithValue }) => {
   try {
-    const res = await apiRequest<{ post: PostDetailApi }>(
-      "PUT",
-      POSTS_ENDPOINTS.UPDATE(postId),
-      body
-    );
+    const res = await apiRequest<UpdatePostData>("PUT", POSTS_ENDPOINTS.UPDATE(postId), body);
     if (!res.success || !res.data?.post) throw new Error(res.message || "Update post failed");
-    return mapPostDetailApiToUiWithAuthor(res.data.post, authorNameHint);
+    return res.data.post; // PostDetailData
   } catch (e: any) {
     return rejectWithValue(e.message || "Update post failed") as any;
   }
@@ -94,7 +104,7 @@ export const likePost = createAsyncThunk<{ postId: number; like_count: number },
   "posts/likePost",
   async (postId, { rejectWithValue }) => {
     try {
-      const res = await apiRequest<{ like_count: number }>("POST", POSTS_ENDPOINTS.LIKE(postId));
+      const res = await apiRequest<LikePostData>("POST", POSTS_ENDPOINTS.LIKE(postId));
       if (!res.success || typeof res.data?.like_count !== "number")
         throw new Error(res.message || "Like post failed");
       return { postId, like_count: res.data.like_count };
@@ -109,10 +119,7 @@ export const unlikePost = createAsyncThunk<{ postId: number; like_count: number 
   "posts/unlikePost",
   async (postId, { rejectWithValue }) => {
     try {
-      const res = await apiRequest<{ like_count: number }>(
-        "DELETE",
-        POSTS_ENDPOINTS.LIKE(postId)
-      );
+      const res = await apiRequest<UnlikePostData>("DELETE", POSTS_ENDPOINTS.LIKE(postId));
       if (!res.success || typeof res.data?.like_count !== "number")
         throw new Error(res.message || "Unlike post failed");
       return { postId, like_count: res.data.like_count };
@@ -126,8 +133,8 @@ export const unlikePost = createAsyncThunk<{ postId: number; like_count: number 
 export const fetchPostLikes = createAsyncThunk<
   {
     postId: number;
-    likes: Array<{ id: number; user: { id: number; firstName: string }; created_at: string }>;
-    pagination: { total_pages: number; current_page: number; total_likes: number };
+    likes: PostLikesData["likes"];
+    pagination: PostLikesData["pagination"];
   },
   { postId: number; page?: number; per_page?: number }
 >("posts/fetchPostLikes", async ({ postId, page = 1, per_page = 20 }, { rejectWithValue }) => {
@@ -136,10 +143,7 @@ export const fetchPostLikes = createAsyncThunk<
     if (page) qs.set("page", String(page));
     if (per_page) qs.set("per_page", String(per_page));
     const url = `${POSTS_ENDPOINTS.LIKES(postId)}${qs.toString() ? `?${qs}` : ""}`;
-    const res = await apiRequest<{
-      likes: Array<{ id: number; user: { id: number; firstName: string }; created_at: string }>;
-      pagination: { total_pages: number; current_page: number; total_likes: number };
-    }>("GET", url);
+    const res = await apiRequest<PostLikesData>("GET", url);
     if (!res.success || !res.data) throw new Error(res.message || "Fetch likes failed");
     return { postId, likes: res.data.likes, pagination: res.data.pagination };
   } catch (e: any) {
@@ -152,7 +156,7 @@ export const fetchPostFileIds = createAsyncThunk<{ postId: number; file_ids: num
   "posts/fetchPostFileIds",
   async (postId, { rejectWithValue }) => {
     try {
-      const res = await apiRequest<{ file_ids: number[] }>("GET", POSTS_ENDPOINTS.FILE_IDS(postId));
+      const res = await apiRequest<PostFileIdsData>("GET", POSTS_ENDPOINTS.FILE_IDS(postId));
       if (!res.success || !res.data) throw new Error(res.message || "Fetch file ids failed");
       return { postId, file_ids: res.data.file_ids || [] };
     } catch (e: any) {
@@ -161,16 +165,17 @@ export const fetchPostFileIds = createAsyncThunk<{ postId: number; file_ids: num
   }
 );
 
-/** ===== Slice ===== */
+/** ===== Slice（只换类型，不改流程） ===== */
 
 interface PostsState {
-  byId: Record<number, PostDetailUi>;
-  current: PostDetailUi | null;
+  byId: Record<number, PostEntity>; // 可能是创建体或详情体，后续 fetchDetail 会覆盖成完整体
+  current: PostEntity | null;
+
   likes: Record<
     number,
     {
       list: Array<{ id: number; user: { id: number; firstName: string }; created_at: string }>;
-      pagination: { total_pages: number; current_page: number; total_likes: number } | null;
+      pagination: postsPagination | null;
     }
   >;
   fileIds: Record<number, number[]>;
@@ -210,7 +215,7 @@ const postsSlice = createSlice({
       })
       .addCase(createPost.fulfilled, (s, a) => {
         setStatus(s, "createPost", "succeeded");
-        const p = a.payload;
+        const p = a.payload; // PostEntity（创建体）
         s.byId[p.id] = p;
         s.current = p;
       })
@@ -227,8 +232,8 @@ const postsSlice = createSlice({
       })
       .addCase(fetchPostDetail.fulfilled, (s, a) => {
         setStatus(s, "fetchPostDetail", "succeeded");
-        const p = a.payload;
-        s.byId[p.id] = p;
+        const p = a.payload; // PostDetailData（完整体）
+        s.byId[p.id] = p;    // 覆盖成完整体
         s.current = p;
       })
       .addCase(fetchPostDetail.rejected, (s, a) => {
@@ -244,7 +249,7 @@ const postsSlice = createSlice({
       })
       .addCase(updatePost.fulfilled, (s, a) => {
         setStatus(s, "updatePost", "succeeded");
-        const p = a.payload;
+        const p = a.payload; // PostDetailData
         s.byId[p.id] = p;
         s.current = p;
       })
@@ -270,7 +275,7 @@ const postsSlice = createSlice({
         setError(s, "deletePost", (a.payload as string) || "Delete post failed");
       });
 
-    // like / unlike （这里仅记录 likes 数，如需展示可扩展 PostDetailUi）
+    // like / unlike（这里只记录计数，若要同步进 byId，可在此处读取并覆盖）
     builder
       .addCase(likePost.pending, (s) => setStatus(s, "likePost", "loading"))
       .addCase(likePost.fulfilled, (s) => setStatus(s, "likePost", "succeeded"))

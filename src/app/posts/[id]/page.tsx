@@ -18,13 +18,42 @@ import {
 } from "@heroicons/react/24/outline";
 import { formatDate } from "@/app/ultility";
 import { fetchPostDetail, updatePost, deletePost } from "@/app/features/posts/slice";
-import type { CreatePostFormModel, PostDetailUi } from "@/app/types/post";
-import { toUpdateRequest } from "@/app/types/post";
-import { splitFiles } from "@/app/types/post";
-import { canEditPost } from "@/app/types/post";
-import { uploadAllFiles } from "@/app/ultility";
 import IconButton from "@/components/ui/IconButton";
 import YouTubeList from "@/components/ui/YouTubeList";
+import { uploadAllFiles } from "@/app/ultility";
+
+import type { UserProps } from "@/app/types";
+import type {
+  PostDetailData,
+  UpdatePostRequest,
+  PostFileApi,
+} from "@/app/types";
+import { canEditPostDetail } from "@/app/types/post";
+
+// —— 本页内部使用：编辑表单的最小类型（与 PostModal 对接）
+type EditForm = {
+  title: string;
+  content: string;
+  description: string;
+  videos: string[];
+  fileIds: number[];
+  localFiles?: File[];
+};
+
+// —— 把 PostFileApi 按用途拆分（图片/文档/其他）
+const isImageMime = (mime?: string) => !!mime && /^image\//i.test(mime);
+const isPdfOrDoc = (mime?: string) =>
+  !!mime &&
+  /^(application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/i.test(
+    mime
+  );
+
+function splitFiles(files: PostFileApi[]) {
+  const images = files.filter((f) => isImageMime(f.file_type));
+  const documents = files.filter((f) => isPdfOrDoc(f.file_type));
+  const others = files.filter((f) => !isImageMime(f.file_type) && !isPdfOrDoc(f.file_type));
+  return { images, documents, others };
+}
 
 export default function PostDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -37,10 +66,13 @@ export default function PostDetailPage() {
 
   const status = useAppSelector((s) => s.posts.status["fetchPostDetail"]);
   const error = useAppSelector((s) => s.posts.error["fetchPostDetail"]);
-  const postFromStore = useAppSelector((s) => s.posts.byId[postId] || null);
-  const post: PostDetailUi | null = postFromStore;
-  const user = useAppSelector((s) => s.auth.user);
-  const canManage = !!(post && canEditPost(post, user));
+
+  // store 里是 PostEntity（创建体或详情体）；在详情页我们期望它是 PostDetailData
+  const postFromStore = useAppSelector((s) => s.posts.byId[postId] || null) as PostDetailData | null;
+  const post: PostDetailData | null = postFromStore;
+
+  const user = useAppSelector((s) => s.auth.user as UserProps | null);
+  const canManage = !!(post && canEditPostDetail(post, user));
   const isEdit = searchParams.get("edit") === "1";
 
   // —— 内容折叠
@@ -48,7 +80,10 @@ export default function PostDetailPage() {
   const [maxChars, setMaxChars] = useState(300);
 
   // —— 图片灯箱
-  const { images, documents } = useMemo(() => splitFiles(post?.files || []), [post?.files]);
+  const { images, documents } = useMemo(
+    () => splitFiles(post?.files || []),
+    [post?.files]
+  );
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState(0);
   const touchStartX = useRef<number | null>(null);
@@ -92,18 +127,21 @@ export default function PostDetailPage() {
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   };
 
-  const handleEditSave = async (form: CreatePostFormModel) => {
+  const handleEditSave = async (form: EditForm) => {
     if (!post) return;
     try {
       const uploadedIds = form.localFiles?.length ? await uploadAllFiles(form.localFiles, dispatch) : [];
       const fileIds = [...(form.fileIds ?? []), ...uploadedIds];
-      const body = toUpdateRequest({
+
+      // 直接构造严格 API 的 UpdatePostRequest
+      const body: UpdatePostRequest = {
         title: form.title?.trim() ?? "",
-        contentText: form.contentText ?? "",
+        content: form.content ?? "",
         description: form.description ?? "",
-        videos: form.videos ?? [],
-        fileIds,
-      });
+        video_urls: form.videos ?? [],
+        file_ids: fileIds,
+      };
+
       await dispatch(updatePost({ postId: post.id, body })).unwrap();
       handleEditClose();
     } catch (e: any) {
@@ -111,8 +149,8 @@ export default function PostDetailPage() {
     }
   };
 
-  // —— contentText 折叠/展开
-  const content = post?.contentText ?? "";
+  // —— content 折叠/展开
+  const content = post?.content ?? "";
   const isLong = content.length > maxChars;
   const shown = expanded || !isLong ? content : content.slice(0, maxChars);
 
@@ -154,6 +192,12 @@ export default function PostDetailPage() {
     touchStartX.current = null;
   };
 
+  // YouTube 需要 string[] 的视频链接
+  const videoUrls = useMemo(
+    () => (post?.videos ?? []).map((v) => v.url).filter(Boolean),
+    [post?.videos]
+  );
+
   return (
     <div className="container mx-auto px-4">
       <LoadingOverlay show={pageLoading} text="Loading post…" />
@@ -162,9 +206,9 @@ export default function PostDetailPage() {
         <>
           {/* 顶部横幅：视频优先，否则背景图 */}
           <div>
-            {post.videos && post.videos.length > 0 ? (
+            {videoUrls.length > 0 ? (
               <YouTubeList
-                videos={post.videos}
+                videos={videoUrls}
                 iframeClassName="w-full h-[200px] md:h-[400px] rounded-sm"
               />
             ) : (
@@ -177,9 +221,9 @@ export default function PostDetailPage() {
           </div>
 
           <CustomHeader
-            item={{ id: post.id, author: post.author?.firstName }}
-            showEdit={true}
-            showDelete={true}
+            item={{ id: post.id, author: post.author?.first_name }}
+            showEdit={canManage}
+            showDelete={canManage}
             onDelete={() => handleDelete(post.id)}
             onEdit={handleEditOpen}
             showAdd={false}
@@ -219,10 +263,10 @@ export default function PostDetailPage() {
           <div className="flex flex-wrap gap-3 mb-3">
             <div className="text-xs text-dark-green md:text-sm flex items-center">
               <UserGroupIcon className="h-4 w-4 mr-1 text-dark-green" />
-              {post.group}
+              {post.group_id}
             </div>
             <div className="text-xs text-dark-green md:text-sm flex items-center">
-              <CalendarIcon className="h-4 w-4 mr-1 text-dark-green" /> {formatDate(post.date)}
+              <CalendarIcon className="h-4 w-4 mr-1 text-dark-green" /> {formatDate(post.created_at)}
             </div>
           </div>
 
@@ -263,7 +307,7 @@ export default function PostDetailPage() {
                   >
                     <img
                       src={img.url}
-                      alt={img.name}
+                      alt={img.filename}
                       className="w-full h-full object-cover rounded-sm border border-border"
                     />
                   </li>
@@ -284,10 +328,10 @@ export default function PostDetailPage() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex text-sm items-center text-dark-green hover:text-green underline"
-                      title={file.name}
+                      title={file.filename}
                     >
                       <EyeIcon className="h-5 w-5 mr-2" />
-                      {file.name}
+                      {file.filename}
                     </a>
                   </li>
                 ))}
@@ -295,22 +339,22 @@ export default function PostDetailPage() {
             </div>
           )}
 
-          {/* 编辑弹窗（existingFiles 传入以支持移除/保留） */}
+          {/* 编辑弹窗（传入与 API 对齐的数据） */}
           {isEdit && post && (
             <PostModal
               item={{
                 title: post.title,
                 description: post.description,
-                contentText: post.contentText ?? "",
-                videos: post.videos,
+                content: post.content,          // ← 用 content
+                videos: videoUrls,              // ← string[]
                 fileIds: (post.files || [])
                   .map((f) => f.id)
                   .filter((id): id is number => typeof id === "number"),
               }}
               isNew={false}
-              onSave={handleEditSave}
+              onSave={handleEditSave as any}    // 你的 PostModal 若有专门类型，可调整此处
               onClose={handleEditClose}
-              existingFiles={post.files}
+              existingFiles={post.files as any} // 若 PostModal 期望字段名为 name，可在内部适配
             />
           )}
 
@@ -342,7 +386,7 @@ export default function PostDetailPage() {
 
               <img
                 src={images[lightboxIdx].url}
-                alt={images[lightboxIdx].name}
+                alt={images[lightboxIdx].filename}
                 className="max-h-[85vh] max-w-[90vw] object-contain rounded"
                 onClick={(e) => e.stopPropagation()}
               />

@@ -1,11 +1,7 @@
-// app/features/groupDetail/slice.ts
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { apiRequest } from '../request';
-import { unwrapData } from "@/app/types/group";
-import type {
-  LoadStatus,
-} from '@/app/types'; // 如果没有 barrel，就删掉这行，换成你放 LoadStatus 的地方
-
+import { unwrapData } from "@/app/types";
+import type { LoadStatus } from '@/app/types';
 import type {
   GroupProps,
   GroupDetailData,
@@ -17,21 +13,18 @@ import type {
   KickMemberResponseApi
 } from '@/app/types/group';
 import type {
-  GroupPostApi,
-  PostListUi,
-  GroupPostsPaginationApi,
-} from '@/app/types/post';
-
-import { mapGroupApiToProps, mapMembersListApiToUi } from '@/app/types/group';
-import { mapGroupPostApiToListUi } from '@/app/types/post';
+  PostListItemApi,
+  PostListData,
+} from '@/app/types';
+import { mapGroupApiToProps } from '@/app/types/group';
 
 interface GroupDetailState {
   currentGroupId: number | null;
   group: GroupProps | null;
   subscriberCount: number | null;
   subscribers: GroupSubscriberUi[];
-  posts: PostListUi[];
-  postsPagination: GroupPostsPaginationApi | null;
+  posts: PostListItemApi[];
+  postsPagination: { current_page: number; total_pages: number; total_posts: number } | null;
   membersPagination: GroupListPaginationApi | null;
   status: {
     group: LoadStatus;
@@ -103,7 +96,7 @@ export const fetchGroupDetail = createAsyncThunk<
 // 获取群帖子：/groups/:id/posts?page=&per_page=
 export const fetchGroupPosts = createAsyncThunk<
   {
-    posts: PostListUi[];
+    posts: PostListItemApi[];
     current_page: number;
     total_pages: number;
     total_posts: number;
@@ -117,26 +110,15 @@ export const fetchGroupPosts = createAsyncThunk<
     if (per_page) qs.set('per_page', String(per_page));
 
     const url = `/groups/${groupId}/posts${qs.toString() ? `?${qs.toString()}` : ''}`;
-    const res = await apiRequest<{
-      posts: GroupPostApi[];
-      total_pages: number;
-      current_page: number;
-      total_posts: number;
-    }>('GET', url);
 
+    // ⬇️ 直接用严格 API 类型
+    const res = await apiRequest<PostListData>('GET', url);
     if (!res.success || !res.data) throw new Error(res.message || 'Fetch posts failed');
 
-    const posts: PostListUi[] = (res.data.posts || []).map((p) =>
-      mapGroupPostApiToListUi(p, groupId)
-    );
+    // ⬇️ 不再做 UI 映射，直接使用后端返回
+    const { posts, current_page, total_pages, total_posts } = res.data;
 
-    return {
-      posts,
-      current_page: res.data.current_page,
-      total_pages: res.data.total_pages,
-      total_posts: res.data.total_posts,
-      append,
-    };
+    return { posts, current_page, total_pages, total_posts, append };
   } catch (e: any) {
     return rejectWithValue(e.message || 'Fetch posts failed') as any;
   }

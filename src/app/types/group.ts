@@ -1,6 +1,7 @@
 // groups.ts
 import type { ApiResponseProps } from "./api";
 import type { UserProps } from "./user";
+import { unwrapData } from '@/app/types'
 
 /** ===================== UI Models ===================== */
 export interface GroupProps {
@@ -102,18 +103,7 @@ export type KickMemberResponseApi = ApiResponseProps<{}>;
 export type MembersListResponseApi = ApiResponseProps<MembersListData>;
 export type GroupStatsResponseApi = ApiResponseProps<GroupStats>;
 
-/** ===================== Narrowing Helpers ===================== */
-export function unwrapData<T>(res: ApiResponseProps<T>): T {
-  if (!res.success || res.data == null) {
-    throw new Error(res.message || `Request failed (${res.code})`);
-  }
-  return res.data;
-}
-export function isOk<T>(res: ApiResponseProps<T>): res is {
-  success: true; code: number; message: string; data: T;
-} {
-  return !!res.success && res.data != null;
-}
+
 
 /** ===================== Small Utils ===================== */
 const toNumber = (v: number | string | undefined | null): number =>

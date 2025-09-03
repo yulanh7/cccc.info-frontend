@@ -2,13 +2,13 @@
 "use client";
 
 import React from "react";
-import type { PostListUi } from "@/app/types/post";
+import type { PostListItemApi } from "@/app/types";
 import PostsListWithPagination from "./PostsListWithPagination";
 import CardSkeleton from "@/components/feedback/CardSkeleton";
 
 type Props = {
   // 数据
-  rows: PostListUi[];
+  rows: PostListItemApi[];
   totalPages: number;
   currentPage: number;
   formatDate: (ts: string, showTime?: boolean) => string;
@@ -23,7 +23,7 @@ type Props = {
   selectMode: boolean;
   selectedIds: Set<number>;
   onToggleSelect: (id: number) => void;
-  canEdit: (p: PostListUi) => boolean;
+  canEdit: (p: PostListItemApi) => boolean;
   onDeleteSingle?: (id: number) => void;
   onEditSingle?: (id: number) => void;
 

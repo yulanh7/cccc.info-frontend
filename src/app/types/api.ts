@@ -11,3 +11,15 @@ export type ApiResponseRaw<T = any> = Partial<{
 
 
 export type LoadStatus = 'idle' | 'loading' | 'succeeded' | 'failed';
+
+export function unwrapData<T>(res: ApiResponseProps<T>): T {
+  if (!res.success || res.data == null) {
+    throw new Error(res.message || `Request failed (${res.code})`);
+  }
+  return res.data;
+}
+export function isOk<T>(res: ApiResponseProps<T>): res is {
+  success: true; code: number; message: string; data: T;
+} {
+  return !!res.success && res.data != null;
+}
