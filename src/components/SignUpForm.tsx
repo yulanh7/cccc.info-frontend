@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/app/features/hooks';
 import { signupThunk } from '@/app/features/auth/slice';
+import { getRecaptchaToken } from '@/app/ultility/recaptcha';
+import Button from '@/components/ui/Button'; // ← 按你的路径修改
 
 export default function SignUpForm() {
   const [email, setEmail] = useState('');
@@ -13,15 +15,28 @@ export default function SignUpForm() {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { status, error } = useAppSelector((state) => state.auth);
+  const isLoading = status === 'loading';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
+
     if (password !== confirmPassword) {
       alert('密码不匹配');
       return;
     }
 
-    const result = await dispatch(signupThunk({ email, firstName, password }));
+    const recaptchaToken = await getRecaptchaToken('signup').catch(() => null);
+
+    const result = await dispatch(
+      signupThunk({
+        email,
+        firstName,
+        password,
+        ...(recaptchaToken ? { recaptchaToken } : {}),
+      })
+    );
+
     if (signupThunk.fulfilled.match(result)) {
       alert(`${firstName} 注册成功`);
       router.push('/groups');
@@ -37,6 +52,7 @@ export default function SignUpForm() {
         placeholder="Email"
         className="w-full p-2 border border-border rounded-sm"
         required
+        disabled={isLoading}
       />
       <input
         type="text"
@@ -45,6 +61,7 @@ export default function SignUpForm() {
         placeholder="First Name"
         className="w-full p-2 border border-border rounded-sm"
         required
+        disabled={isLoading}
       />
       <input
         type="password"
@@ -53,6 +70,7 @@ export default function SignUpForm() {
         placeholder="Password"
         className="w-full p-2 border border-border rounded-sm"
         required
+        disabled={isLoading}
       />
       <input
         type="password"
@@ -61,14 +79,22 @@ export default function SignUpForm() {
         placeholder="Confirm Password"
         className="w-full p-2 border border-border rounded-sm"
         required
+        disabled={isLoading}
       />
-      <button
+
+      <Button
         type="submit"
-        className="w-full p-2 bg-dark-green text-white rounded-sm hover:bg-green"
-        disabled={status === 'loading'}
+        variant="primary"
+        size="md"
+        fullWidth
+        loading={isLoading}
+        loadingText="Signing up..."
+        blockWhileLoading
+        aria-label="Sign up"
       >
-        {status === 'loading' ? 'Signing up...' : 'Sign Up'}
-      </button>
+        Sign Up
+      </Button>
+
       {error && <p className="text-red-500 mt-2">{error}</p>}
     </form>
   );
