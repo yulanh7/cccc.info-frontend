@@ -66,9 +66,9 @@ export default function PostCardSimple({
         ) : (
           <div
             className="
-              w-full pt-7 pb-4 px-3 min-h-20 
+              w-full p-3 min-h-25 
                bg-cover bg-center rounded-t-xs md:rounded-t-sm 
-              items-center justify-center
+             flex items-center justify-center
             "
             style={{ backgroundImage: `url(${bgUrl})` }}
 
