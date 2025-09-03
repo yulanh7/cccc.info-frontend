@@ -15,8 +15,7 @@ import {
 } from './auth/token';
 
 // ====== Base configuration ======
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const BASE_URL = '/api';
 
 const api: AxiosInstance = axios.create({
   baseURL: BASE_URL,
