@@ -1,0 +1,191 @@
+// components/posts/usePostListController.ts
+"use client";
+
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { uploadAllFiles } from "@/app/ultility";
+import { toCreateRequest, type CreatePostFormModel, type PostListUi } from "@/app/types/post";
+
+type Status = "idle" | "loading" | "succeeded" | "failed";
+
+/**
+ * FArgs: fetchPosts 的参数类型（例如：{ groupId: number; page?: number; per_page?: number; append?: boolean }）
+ * CArgs: createPost 的参数类型（例如：{ groupId: number; body: any; authorNameHint?: string }）
+ * DArg : deletePost 的参数类型（通常就是 number）
+ */
+export type UsePostListControllerOptions<
+  FArgs = any,
+  CArgs = any,
+  DArg = number
+> = {
+  // 基础
+  dispatch: any;
+  perPage: number;
+  currentPage: number;
+
+  // —— 数据源策略（注入各页面不同的 thunk/参数）
+  fetchPosts: (args: FArgs) => any;       // 例如 fetchGroupPosts
+  buildFetchArgs: (page: number) => FArgs;// 例如 ({ groupId, page, per_page, append: false })
+  createPost?: (args: CArgs) => any;      // 例如 createPost
+  buildCreateArgs?: (body: any) => CArgs; // 例如 ({ groupId, body, authorNameHint })
+  deletePost?: (postId: DArg) => any;     // 例如 deletePostThunk
+
+  // —— 权限 & UI 注入
+  canEdit: (p: PostListUi) => boolean;
+
+  // —— 外部状态（用于“首次加载骨架”和“更新中提示”的判定）
+  postsStatus: Status;
+};
+
+export function usePostListController<
+  FArgs = any,
+  CArgs = any,
+  DArg = number
+>(opts: UsePostListControllerOptions<FArgs, CArgs, DArg>) {
+  const {
+    dispatch,
+    perPage,
+    currentPage,
+    fetchPosts,
+    buildFetchArgs,
+    createPost,
+    buildCreateArgs,
+    deletePost,
+    canEdit,
+    postsStatus,
+  } = opts;
+
+  const router = useRouter();
+
+  // —— 选择模式
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const toggleSelectMode = useCallback(() => {
+    setSelectedIds(new Set());
+    setSelectMode((v) => !v);
+  }, []);
+  const toggleSelect = useCallback((postId: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(postId) ? next.delete(postId) : next.add(postId);
+      return next;
+    });
+  }, []);
+
+  // —— 计算当前请求参数 & key（函数身份变也不影响，只认参数内容）
+  const args: FArgs = useMemo(() => buildFetchArgs(currentPage), [buildFetchArgs, currentPage]);
+  const key = useMemo(() => JSON.stringify(args), [args]);
+
+  // —— 首次加载骨架 / 更新提示
+  const [fetchStarted, setFetchStarted] = useState(false);
+  const [everLoaded, setEverLoaded] = useState(false);
+  const lastKeyRef = useRef<string | null>(null);
+
+  // 当 key 变化时（参数真的变了），重置“首次加载”判定
+  useEffect(() => {
+    if (lastKeyRef.current !== key) {
+      setFetchStarted(false);
+      setEverLoaded(false);
+    }
+  }, [key]);
+
+  // 仅当 key 变化时才发起请求；避免因为函数 identity 改变而重复请求
+  useEffect(() => {
+    if (lastKeyRef.current === key) return; // 参数未变，不重复拉
+    lastKeyRef.current = key;
+
+    dispatch(fetchPosts(args));
+    setFetchStarted(true);
+    // 依赖只看 key/dispatch；不放函数身份，避免无限循环
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, dispatch]);
+
+  useEffect(() => {
+    if (fetchStarted && postsStatus !== "loading") setEverLoaded(true);
+  }, [fetchStarted, postsStatus]);
+
+  const initialPostsLoading = postsStatus === "loading" && !everLoaded && fetchStarted;
+  const showUpdatingTip = postsStatus === "loading" && everLoaded;
+
+  // —— 刷新当前页：立即用当前参数强制拉取（即便 key 未变化）
+  const refreshCurrentPage = useCallback(() => {
+    dispatch(fetchPosts(args));
+    // 这里依赖 args 即可；不依赖函数身份
+  }, [dispatch, args, fetchPosts]);
+
+  // —— 新建（可选）
+  const onCreatePost = useCallback(
+    async (form: CreatePostFormModel) => {
+      if (!createPost || !buildCreateArgs) return;
+
+      const newIds = form.localFiles?.length
+        ? await uploadAllFiles(form.localFiles, dispatch)
+        : [];
+
+      const fileIds = [...(form.fileIds ?? []), ...newIds];
+
+      const body = toCreateRequest({
+        title: form.title?.trim() ?? "",
+        contentText: form.contentText ?? "",
+        description: form.description ?? "",
+        videos: form.videos ?? [],
+        fileIds,
+      });
+
+      await dispatch(createPost(buildCreateArgs(body))).unwrap();
+      refreshCurrentPage();
+    },
+    [createPost, buildCreateArgs, dispatch, refreshCurrentPage]
+  );
+
+  // —— 单删（可选）
+  const onDeleteSingle = useCallback(
+    async (postId: number extends DArg ? number : DArg) => {
+      if (!deletePost) return;
+      await dispatch(deletePost(postId)).unwrap();
+      refreshCurrentPage();
+    },
+    [deletePost, dispatch, refreshCurrentPage]
+  );
+
+  // —— 批量删除
+  const onBulkDelete = useCallback(
+    async (ids: number[]) => {
+      if (!deletePost || ids.length === 0) return;
+      await Promise.allSettled(
+        // @ts-expect-error 由调用方保证 DArg 与 number 兼容（通常是 number）
+        ids.map((id) => dispatch(deletePost(id)).unwrap())
+      );
+      setSelectMode(false);
+      setSelectedIds(new Set());
+      refreshCurrentPage();
+    },
+    [deletePost, dispatch, refreshCurrentPage]
+  );
+
+  const goEdit = useCallback((id: number) => {
+    router.push(`/posts/${id}?edit=1`);
+  }, [router]);
+
+  return {
+    // 选择模式
+    selectMode,
+    selectedIds,
+    toggleSelectMode,
+    toggleSelect,
+
+    // 加载提示
+    initialPostsLoading,
+    showUpdatingTip,
+
+    // 动作
+    onCreatePost,
+    onDeleteSingle,
+    onBulkDelete,
+    canEdit,
+    goEdit,
+
+    // 手动刷新
+    refreshCurrentPage,
+  };
+}
