@@ -34,16 +34,19 @@ export default function Menu({
     router.push('/auth');
   };
 
+  // 兼容子路由激活态：/posts/mine/123 也算 /posts/mine 激活
+  const isActiveHref = (href: string) =>
+    pathname === href || pathname.startsWith(href + '/');
+
   return (
     <nav className="flex items-center space-x-4">
       {navItems.map((item) => {
-        const isActive = pathname === item.href;
+        const isActive = isActiveHref(item.href);
         return (
           <div className="flex space-x-4 text-xl" key={item.label}>
             <Link
               href={item.href}
-              className={`text-dark-gray ${isActive ? 'text-dark-green' : 'text-dark-gray'
-                } hover:text-dark-green`}
+              className={`text-dark-gray ${isActive ? 'text-dark-green' : 'text-dark-gray'} hover:text-dark-green`}
             >
               {item.label}
             </Link>
@@ -51,7 +54,7 @@ export default function Menu({
         );
       })}
 
-      <div className="border-l border-gray-300 h-6 mx-4"></div>
+      <div className="border-l border-gray-300 h-6 mx-4" />
 
       <div className="flex items-center space-x-4">
         {isLoggedIn && (
@@ -61,13 +64,33 @@ export default function Menu({
             </span>
 
             {/* 下拉菜单 */}
-            <div className="absolute right-0 z-10 mt-0 w-40 bg-white border border-gray-200 rounded shadow-lg hidden group-hover:block">
-              {/* <Link
+            <div className="absolute right-0 z-10 mt-0 w-44 bg-white border border-gray-200 rounded shadow-lg hidden group-hover:block">
+              <Link
                 href="/profile"
-                className="block px-4 py-2 text-sm text-dark-gray hover:bg-gray-100 hover:text-dark-green"
+                className={`block px-4 py-2 text-sm hover:bg-gray-100 ${isActiveHref('/profile') ? 'text-dark-green' : 'text-dark-gray'
+                  }`}
               >
                 Profile
-              </Link> */}
+              </Link>
+
+              {/* 我发布的 Post */}
+              <Link
+                href="/posts/mine"
+                className={`block px-4 py-2 text-sm hover:bg-gray-100 ${isActiveHref('/posts/mine') ? 'text-dark-green' : 'text-dark-gray'
+                  }`}
+              >
+                My Posts
+              </Link>
+
+              {/* 我创建的小组（若你的路由不同，改成 /groups/mine 或 /groups/created 自己项目里的路径） */}
+              <Link
+                href="/groups/created"
+                className={`block px-4 py-2 text-sm hover:bg-gray-100 ${isActiveHref('/groups/created') ? 'text-dark-green' : 'text-dark-gray'
+                  }`}
+              >
+                Created Groups
+              </Link>
+
               <button
                 onClick={handleLogout}
                 className="w-full text-left block px-4 py-2 text-sm text-dark-gray hover:bg-gray-100 hover:text-dark-green"
@@ -77,17 +100,16 @@ export default function Menu({
             </div>
           </div>
         )}
-
       </div>
 
-      <Link href="/messages" className="text-dark-gray hover:text-dark-green relative">
+      {/* <Link href="/messages" className="text-dark-gray hover:text-dark-green relative">
         <ChatBubbleLeftRightIcon className="h-6 w-6" />
         {unreadCount && unreadCount > 0 && (
           <span className="absolute -top-2 -right-2 bg-red text-white text-xs rounded-full px-1.5 py-0.5">
             {unreadCount}
           </span>
         )}
-      </Link>
+      </Link> */}
     </nav>
   );
 }
