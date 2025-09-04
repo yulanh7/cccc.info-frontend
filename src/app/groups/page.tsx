@@ -10,7 +10,7 @@ import ConfirmModal from "@/components/ConfirmModal";
 import GroupListView from "@/components/groups/GroupListView";
 import { formatDate } from "@/app/ultility";
 import { useConfirm } from "@/hooks/useConfirm";
-import { useGroupListController } from "@/app/hooks/useGroupListController";
+import { useGroupListController } from "@/hooks/useGroupListController";
 
 const PER_PAGE = 9;
 
