@@ -11,17 +11,14 @@ import { formatDate } from "@/app/ultility";
 import { useConfirm } from "@/hooks/useConfirm";
 import ConfirmModal from "@/components/ConfirmModal";
 import PageTitle from '@/components/layout/PageTitle';
-
-import { fetchSubscribedPosts, deletePost as deletePostThunk } from "@/app/features/posts/slice";
+import { fetchMyPosts, deletePost as deletePostThunk } from "@/app/features/posts/slice";
 import type { PostListItemApi } from "@/app/types";
 import { canEditPostList } from "@/app/types";
 
 const POST_PER_PAGE = 11;
 
-/** 兼容不同的 posts slice 结构，尽量容错 */
 function useSourceListState(sourceKey: string) {
   const containers = useAppSelector((s: any) => ({
-    // 你项目里实际的命名可能是其中之一
     v1: s.posts?.lists?.[sourceKey],
     v2: s.posts?.sources?.[sourceKey],
     v3: s.posts?.[sourceKey],
@@ -39,7 +36,7 @@ function useSourceListState(sourceKey: string) {
   return { rows, pagination, postsStatus };
 }
 
-export default function HomePage() {
+export default function MyPostsPage() {
   const searchParams = useSearchParams();
   const currentPage = useMemo(() => {
     const p = Number(searchParams.get("page"));
@@ -49,18 +46,19 @@ export default function HomePage() {
   const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.auth.user);
 
-  const SRC = "subscribed";
+  const SRC = "mine";
   const { rows, pagination, postsStatus } = useSourceListState(SRC);
 
   const confirmSingleDelete = useConfirm<number>("Delete this post?");
+  const confirmBulkDelete = useConfirm<number[]>("Delete selected posts?");
   const totalPages = pagination?.total_pages ?? pagination?.pages ?? 1;
-  const buildHref = (p: number) => `/?page=${p}`;
+  const buildHref = (p: number) => `/posts/mine?page=${p}`;
 
   const ctrl = usePostListController({
     dispatch,
     perPage: POST_PER_PAGE,
     currentPage,
-    fetchPosts: fetchSubscribedPosts,
+    fetchPosts: fetchMyPosts,
     buildFetchArgs: (page) => ({
       page,
       per_page: POST_PER_PAGE,
@@ -76,8 +74,35 @@ export default function HomePage() {
   return (
     <>
       <PageTitle title="Home" showPageTitle={true} />
-
       <div className="container mx-auto md:p-6 p-2 mt-0 md:mt-16">
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-sm text-dark-gray">
+            {ctrl.selectMode ? `${ctrl.selectedIds.size} selected` : " "}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              className="text-xs px-3 py-1 rounded border border-border"
+              onClick={ctrl.toggleSelectMode}
+            >
+              {ctrl.selectMode ? "Exit Select" : "Select"}
+            </button>
+            {ctrl.selectMode && ctrl.selectedIds.size > 0 && (
+              <button
+                className="text-xs px-3 py-1 rounded bg-red-600 text-white"
+                onClick={() => {
+                  const ids = Array.from(ctrl.selectedIds);
+                  confirmBulkDelete.ask(
+                    ids,
+                    `Delete ${ids.length} selected post${ids.length > 1 ? "s" : ""}?`
+                  );
+                }}
+              >
+                Delete Selected
+              </button>
+            )}
+          </div>
+        </div>
+
         <PostListSection
           rows={rows}
           totalPages={totalPages}
@@ -99,8 +124,18 @@ export default function HomePage() {
 
       <LoadingOverlay show={pageLoading} text="Loading posts…" />
 
-      {/* 单个删帖确认 */}
-      {/* @ts-ignore: ConfirmModal 的 props 由你的实现决定 */}
+      {/* 批量删帖确认 */}
+      {/* @ts-ignore */}
+      <ConfirmModal
+        isOpen={confirmBulkDelete.open}
+        message={confirmBulkDelete.message}
+        onCancel={confirmBulkDelete.cancel}
+        onConfirm={confirmBulkDelete.confirm(async (ids) => {
+          if (!ids || ids.length === 0) return;
+          await ctrl.onBulkDelete?.(ids);
+        })}
+      />
+
       <ConfirmModal
         isOpen={confirmSingleDelete.open}
         message={confirmSingleDelete.message}
