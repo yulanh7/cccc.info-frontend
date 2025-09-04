@@ -7,8 +7,10 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import Button from "@/components/ui/Button";
 import SaveConfirmModal from "../SaveConfirmModal";
 
+const MIN_NAME = 2;
 const MAX_NAME = 50;
 const MAX_DESC = 500;
+
 type GroupEditModalProps = {
   group?: GroupApi | any;
   isNew?: boolean;
@@ -55,9 +57,12 @@ export default function GroupEditModal({
   const nameRef = useRef<HTMLInputElement>(null);
   const descRef = useRef<HTMLTextAreaElement>(null);
 
-  const nameLen = editedItem.name?.length ?? 0;
-  const descLen = editedItem.description?.length ?? 0;
-  const overName = Math.max(0, nameLen - MAX_NAME);
+  const nameTrimmed = (editedItem.name ?? "").trim();
+  const nameLen = nameTrimmed.length;
+  const descLen = (editedItem.description ?? "").length;
+
+  const overNameMax = Math.max(0, nameLen - MAX_NAME);
+  const underNameMin = Math.max(0, MIN_NAME - nameLen);
   const overDesc = Math.max(0, descLen - MAX_DESC);
 
   const displayErrors = useMemo(
@@ -77,10 +82,20 @@ export default function GroupEditModal({
   // ---- 校验
   const validate = () => {
     const next: { name?: string; description?: string } = {};
-    if (!editedItem.name.trim()) next.name = "Name is required";
-    if (!editedItem.description.trim()) next.description = "Description is required";
-    if (nameLen > MAX_NAME) next.name = `Group name cannot exceed ${MAX_NAME} characters.`;
-    if (descLen > MAX_DESC) next.description = `Group description cannot exceed ${MAX_DESC} characters.`;
+
+    if (!nameTrimmed) {
+      next.name = "Name is required";
+    } else if (nameLen < MIN_NAME) {
+      next.name = `Group name must be at least ${MIN_NAME} characters`;
+    } else if (nameLen > MAX_NAME) {
+      next.name = `Group name cannot exceed ${MAX_NAME} characters.`;
+    }
+
+    if (!editedItem.description?.trim()) {
+      next.description = "Description is required";
+    } else if (descLen > MAX_DESC) {
+      next.description = `Group description cannot exceed ${MAX_DESC} characters.`;
+    }
 
     setErrors(next);
     if (next.name && nameRef.current) nameRef.current.focus();
@@ -93,7 +108,7 @@ export default function GroupEditModal({
     if (!validate()) return;
     const cleaned: GroupApi = {
       ...editedItem,
-      name: editedItem.name.trim(),
+      name: nameTrimmed.replace(/\s+/g, " "),
       description: (editedItem.description ?? "").replace(/\r\n/g, "\n"),
     };
     await onSave(cleaned);
@@ -143,7 +158,6 @@ export default function GroupEditModal({
   };
 
   const handleCancelClick = () => {
-    // 不管是否有改动，都弹确认（如果你也想只在有改动时弹，改成 if (hasChanges) ... else onClose();）
     setAnchorEl(cancelButtonRef.current);
     setPlacement("above");
     setIsConfirmOpen(true);
@@ -153,7 +167,7 @@ export default function GroupEditModal({
     if (!validate()) return;
     const cleaned: GroupApi = {
       ...editedItem,
-      name: editedItem.name.trim(),
+      name: nameTrimmed.replace(/\s+/g, " "),
       description: (editedItem.description ?? "").replace(/\r\n/g, "\n"),
     };
     await onSave(cleaned);
@@ -169,7 +183,6 @@ export default function GroupEditModal({
 
   const confirmCancel = () => setIsConfirmOpen(false);
 
-  // ---- ESC 关闭也走确认
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") handleCloseClick();
@@ -181,12 +194,17 @@ export default function GroupEditModal({
   const nameId = "group-name";
   const descId = "group-description";
 
+  const isNameInvalid = Boolean(
+    displayErrors.name ||
+    nameLen < MIN_NAME ||
+    nameLen > MAX_NAME
+  );
+
   return (
     <div className="fixed inset-0 min-h-screen bg-gray bg-opacity-50 flex items-center justify-center z-20 overflow-y-auto">
-      {/* 点击遮罩：有改动才弹确认 */}
       <div className="absolute inset-0" onClick={handleCloseClick} aria-hidden />
       <div
-        className="bg-white p-6 rounded-sm shadow-lg w-full  relative"
+        className="bg-white p-6 rounded-sm shadow-lg w-full relative"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -201,8 +219,6 @@ export default function GroupEditModal({
         <h2 className="text-xl mb-4">{isNew ? "Add New Group" : "Edit Group"}</h2>
 
         <div className="md:max-w-[80vw] max-h-[90vh] overflow-y-auto">
-
-
           {/* Name */}
           <label htmlFor={nameId} className="block text-sm font-medium mb-1">
             Name
@@ -213,10 +229,12 @@ export default function GroupEditModal({
             type="text"
             value={editedItem.name}
             onChange={(e) => handleChange("name", e.target.value)}
-            className={`w-full p-2 mb-1 border rounded-sm ${displayErrors.name ? "border-red-500" : "border-border"}`}
+            aria-invalid={isNameInvalid}
+            aria-describedby={`${nameId}-help`}
+            className={`w-full p-2 mb-1 border rounded-sm ${isNameInvalid ? "border-red-500" : "border-border"}`}
           />
-          <div className={`text-xs mb-1 ${overName ? "text-red-600" : "text-dark-gray"}`}>
-            {nameLen}/{MAX_NAME}
+          <div id={`${nameId}-help`} className={`text-xs mb-1 ${isNameInvalid ? "text-red-600" : "text-dark-gray"}`}>
+            {nameLen}/{MAX_NAME} {`(min ${MIN_NAME})`}
           </div>
           {displayErrors.name && <p className="text-red-600 text-sm mb-3">{displayErrors.name}</p>}
 
@@ -250,6 +268,7 @@ export default function GroupEditModal({
             </label>
           </div>
         </div>
+
         {/* Actions */}
         <div className="mt-5 flex justify-end gap-3">
           <Button
@@ -267,7 +286,14 @@ export default function GroupEditModal({
             variant="primary"
             size="sm"
             onClick={handleSave}
-            disabled={saving}
+            disabled={
+              saving ||
+              nameLen < MIN_NAME ||
+              nameLen > MAX_NAME ||
+              !nameTrimmed ||
+              !editedItem.description?.trim() ||
+              descLen > MAX_DESC
+            }
           >
             {saving ? "Saving…" : "Save"}
           </Button>
