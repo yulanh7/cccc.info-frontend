@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { PencilSquareIcon, TrashIcon, ArrowRightCircleIcon } from '@heroicons/react/24/outline';
-import Pagination from "@/components/Pagination";
+import Pagination from "@/components/ui/Pagination";
 import TableSkeleton from "@/components/feedback/TableSkeleton";
 import type { GroupApi } from "@/app/types";
 import { ellipsize } from '@/app/ultility';

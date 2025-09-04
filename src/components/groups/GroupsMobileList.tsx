@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { PencilSquareIcon, TrashIcon, CalendarIcon, LockClosedIcon } from "@heroicons/react/24/outline";
 import CardSkeleton from "@/components/feedback/CardSkeleton";
 import type { GroupApi } from "@/app/types";
-import Pagination from "@/components/Pagination";
+import Pagination from "@/components/ui/Pagination";
 import { ellipsize } from "@/app/ultility";
 import IconButton from "@/components/ui/IconButton";
 import SubscribeToggleButton from "@/components/ui/SubscribeToggleButton";

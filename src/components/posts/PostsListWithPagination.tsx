@@ -7,7 +7,7 @@ import CardSkeleton from "@/components/feedback/CardSkeleton";
 import type { PostListItemApi } from "@/app/types";
 import PostCardSimple from "./PostCardSimple";
 import IconButton from "@/components/ui/IconButton";
-import Pagination from "@/components/Pagination";
+import Pagination from "@/components/ui/Pagination";
 
 type Props = {
   // 数据 & 加载

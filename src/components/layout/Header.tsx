@@ -1,7 +1,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Logo from '@/components/Logo';
-import Menu from '@/components/Menu';
+import Menu from '@/components/layout/Menu';
 // import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { usePathname } from 'next/navigation';
 
