@@ -14,6 +14,7 @@ import PageTitle from '@/components/layout/PageTitle';
 import { fetchMyPosts, deletePost as deletePostThunk } from "@/app/features/posts/slice";
 import type { PostListItemApi } from "@/app/types";
 import { canEditPostList } from "@/app/types";
+import Button from "@/components/ui/Button";
 
 const POST_PER_PAGE = 11;
 
@@ -74,33 +75,38 @@ export default function MyPostsPage() {
   return (
     <>
       <PageTitle title="Home" showPageTitle={true} />
-      <div className="container mx-auto md:p-6 p-2 mt-0 md:mt-16">
-        <div className="flex items-center justify-between mb-2">
+      <div className="container mx-auto md:p-6 p-2 mt-5 md:mt-16">
+        <div className="flex items-center justify-end gap-2 mb-2 ">
           <div className="text-sm text-dark-gray">
             {ctrl.selectMode ? `${ctrl.selectedIds.size} selected` : " "}
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              className="text-xs px-3 py-1 rounded border border-border"
-              onClick={ctrl.toggleSelectMode}
+          <Button
+            variant="primary"
+            onClick={ctrl.toggleSelectMode}
+            active={ctrl.selectMode}
+            aria-pressed={ctrl.selectMode}
+            title={ctrl.selectMode ? "Exit select mode" : "Enter select mode"}
+          >
+            {ctrl.selectMode ? "Exit Select" : "Select Posts"}
+          </Button>
+          {ctrl.selectMode && ctrl.selectedIds.size > 0 && (
+            <Button
+              variant="danger"
+              // variant="outline" tone="danger"
+              onClick={() => {
+                const ids = Array.from(ctrl.selectedIds);
+                confirmBulkDelete.ask(
+                  ids,
+                  `Delete ${ids.length} selected post${ids.length > 1 ? "s" : ""}?`
+                );
+              }}
+              disabled={ctrl.selectedIds.size === 0}
+              title={ctrl.selectedIds.size === 0 ? "Select posts to enable" : "Delete selected posts"}
             >
-              {ctrl.selectMode ? "Exit Select" : "Select"}
-            </button>
-            {ctrl.selectMode && ctrl.selectedIds.size > 0 && (
-              <button
-                className="text-xs px-3 py-1 rounded bg-red-600 text-white"
-                onClick={() => {
-                  const ids = Array.from(ctrl.selectedIds);
-                  confirmBulkDelete.ask(
-                    ids,
-                    `Delete ${ids.length} selected post${ids.length > 1 ? "s" : ""}?`
-                  );
-                }}
-              >
-                Delete Selected
-              </button>
-            )}
-          </div>
+              Delete Selected
+            </Button>
+
+          )}
         </div>
 
         <PostListSection
