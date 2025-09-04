@@ -3,10 +3,9 @@ import { apiRequest } from '../request';
 import { unwrapData } from "@/app/types";
 import type { LoadStatus } from '@/app/types';
 import type {
-  GroupProps,
+  GroupApi,
   GroupDetailData,
   GroupListPaginationApi,
-  GroupSubscriberUi,
   MembersListData,
   AddMemberRequest,
   AddMemberResponseApi,
@@ -16,11 +15,13 @@ import type {
   PostListItemApi,
   PostListData,
 } from '@/app/types';
-import { mapGroupApiToProps } from '@/app/types/group';
+
+// 简单的订阅者 UI 形状（与后端 subscribers 项一致）
+type GroupSubscriberUi = { id: number; firstName: string; email: string };
 
 interface GroupDetailState {
   currentGroupId: number | null;
-  group: GroupProps | null;
+  group: GroupApi | null;
   subscriberCount: number | null;
   subscribers: GroupSubscriberUi[];
   posts: PostListItemApi[];
@@ -42,21 +43,6 @@ interface GroupDetailState {
   };
 }
 
-// 如果这个 state 不是本 slice 使用，建议挪到对应的 groups 列表 slice；保留也无妨
-interface GroupsState {
-  currentGroup: GroupProps | null;
-  availableGroups: GroupProps[];
-  availableGroupsPagination: GroupListPaginationApi | null;
-  userGroups: GroupProps[];
-  userGroupsPagination: GroupListPaginationApi | null;
-  userMembership: Record<number, true>;
-  searchQuery: string;
-  searchResults: GroupProps[];
-  searchPagination: GroupListPaginationApi | null;
-  status: Record<string, LoadStatus>;
-  error: Record<string, string | null>;
-}
-
 const initialState: GroupDetailState = {
   currentGroupId: null,
   group: null,
@@ -71,23 +57,22 @@ const initialState: GroupDetailState = {
 
 // 获取单个群详情：/groups/:id
 export const fetchGroupDetail = createAsyncThunk<
-  { group: GroupProps; subscriberCount: number; subscribers: GroupSubscriberUi[] },
+  { group: GroupApi; subscriberCount: number; subscribers: GroupSubscriberUi[] },
   number
 >('groupDetail/fetchGroupDetail', async (groupId, { rejectWithValue }) => {
   try {
     const res = await apiRequest<GroupDetailData>('GET', `/groups/${groupId}`);
     if (!res.success || !res.data) throw new Error(res.message || 'Fetch group detail failed');
 
-    const uiGroup = mapGroupApiToProps(res.data);
-    const subscriberCount = (res.data as any).subscriber_count ?? 0;
-    // 这里保持与 GroupSubscriberUi 一致的形状（字段名相同，无需额外映射）
+    const group = res.data; // 直接用 API 类型
+    const subscriberCount = res.data.subscriber_count ?? 0;
     const subscribers: GroupSubscriberUi[] = (res.data.subscribers ?? []).map(s => ({
       id: s.id,
       firstName: s.firstName ?? '',
       email: s.email ?? '',
     }));
 
-    return { group: uiGroup, subscriberCount, subscribers };
+    return { group, subscriberCount, subscribers };
   } catch (e: any) {
     return rejectWithValue(e.message || 'Fetch group detail failed') as any;
   }
@@ -111,20 +96,17 @@ export const fetchGroupPosts = createAsyncThunk<
 
     const url = `/groups/${groupId}/posts${qs.toString() ? `?${qs.toString()}` : ''}`;
 
-    // ⬇️ 直接用严格 API 类型
     const res = await apiRequest<PostListData>('GET', url);
     if (!res.success || !res.data) throw new Error(res.message || 'Fetch posts failed');
 
-    // ⬇️ 不再做 UI 映射，直接使用后端返回
     const { posts, current_page, total_pages, total_posts } = res.data;
-
     return { posts, current_page, total_pages, total_posts, append };
   } catch (e: any) {
     return rejectWithValue(e.message || 'Fetch posts failed') as any;
   }
 });
 
-// ===== 订阅成员：获取列表 /api/groups/{group_id}/members?page=&per_page=
+// ===== 成员列表：GET /api/groups/{group_id}/members
 export const fetchGroupMembers = createAsyncThunk<
   { members: GroupSubscriberUi[]; pagination: GroupListPaginationApi },
   { groupId: number; page?: number; per_page?: number }
@@ -152,7 +134,7 @@ export const fetchGroupMembers = createAsyncThunk<
   }
 );
 
-// ===== 订阅成员：添加成员 /api/groups/{group_id}/members (POST)
+// ===== 添加成员：POST /api/groups/{group_id}/members
 export const addGroupMember = createAsyncThunk<
   { member: GroupSubscriberUi; message?: string },
   { groupId: number } & AddMemberRequest
@@ -166,7 +148,6 @@ export const addGroupMember = createAsyncThunk<
         id: m.id,
         firstName: m.firstName ?? '',
         email: m.email ?? '',
-        is_creator: !!m.is_creator,
       },
       message: res.message,
     };
@@ -175,7 +156,7 @@ export const addGroupMember = createAsyncThunk<
   }
 });
 
-// ===== 订阅成员：踢成员 /api/groups/{group_id}/members/{user_id}/kick (POST)
+// ===== 踢成员：POST /api/groups/{group_id}/members/{user_id}/kick
 export const kickGroupMember = createAsyncThunk<
   { userId: number; message?: string },
   { groupId: number; userId: number }
@@ -188,7 +169,6 @@ export const kickGroupMember = createAsyncThunk<
     return rejectWithValue(e.message || 'Kick member failed') as any;
   }
 });
-
 
 const groupDetailSlice = createSlice({
   name: 'groupDetail',
@@ -281,7 +261,6 @@ const groupDetailSlice = createSlice({
       })
       .addCase(addGroupMember.fulfilled, (s, a) => {
         s.status.addMember = 'succeeded';
-        // 乐观插入到当前列表顶部
         s.subscribers = [a.payload.member, ...s.subscribers];
         if (typeof s.subscriberCount === 'number') s.subscriberCount += 1;
       })
@@ -308,7 +287,6 @@ const groupDetailSlice = createSlice({
         s.status.kickMember = 'failed';
         s.error.kickMember = (a.payload as string) || 'Kick member failed';
       });
-
   },
 });
 

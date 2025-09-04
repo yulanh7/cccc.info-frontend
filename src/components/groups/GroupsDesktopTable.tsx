@@ -3,17 +3,17 @@ import Link from "next/link";
 import { PencilSquareIcon, TrashIcon, ArrowRightCircleIcon } from '@heroicons/react/24/outline';
 import Pagination from "@/components/Pagination";
 import TableSkeleton from "@/components/feedback/TableSkeleton";
-import type { GroupProps } from "@/app/types";
+import type { GroupApi } from "@/app/types";
 import { ellipsize } from '@/app/ultility';
 
 type Props = {
-  rows: GroupProps[];
+  rows: GroupApi[];
   listLoading: boolean;
-  canEdit: (g: GroupProps) => boolean;
-  isUserSubscribed: (g: GroupProps) => boolean;
-  onEdit: (g: GroupProps) => void;
+  canEdit: (g: GroupApi) => boolean;
+  isUserSubscribed: (g: GroupApi) => boolean;
+  onEdit: (g: GroupApi) => void;
   onDelete: (id: number) => void;
-  onToggleSubscription: (g: GroupProps) => void;
+  onToggleSubscription: (g: GroupApi) => void;
   currentPage: number;
   totalPages: number;
   buildHref: (page: number) => string;
@@ -63,15 +63,15 @@ export default function GroupsDesktopTable({
               const subbed = isUserSubscribed(group);
               return (
                 <tr key={group.id} className={`${index % 2 === 0 ? '' : 'bg-gray-50'}`}>
-                  <td className="py-2 px-4 text-gray">{group.title}</td>
+                  <td className="py-2 px-4 text-gray">{group.name}</td>
                   <td
                     className="py-2 px-4 text-gray"
                     title={group.description}
                   >
                     {ellipsize(group.description, 80, { byWords: true })}
                   </td>
-                  <td className="py-2 px-4 text-gray">{formatDate(group.createdDate)}</td>
-                  <td className="py-2 px-4 text-gray">{group.creator.firstName}</td>
+                  <td className="py-2 px-4 text-gray">{formatDate(group.time)}</td>
+                  <td className="py-2 px-4 text-gray">{group.creator_name}</td>
                   <td className="py-2 px-4">
                     <button
                       className={`w-28 py-1 rounded-md text-white ${subbed ? 'bg-yellow hover:bg-dark-yellow' : 'bg-green hover:bg-dark-green'}`}

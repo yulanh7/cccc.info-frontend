@@ -1,17 +1,13 @@
-// app/features/groups/slice.ts
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { apiRequest } from '../request';
 import type {
-  GroupProps,
   GroupApi,
   CreateOrUpdateGroupBody,
   GroupsListData,
   GroupListPaginationApi,
   GroupDetailData,
-  LoadStatus
-} from '@/app/types';
-import { mapGroupApiToProps } from '@/app/types/group';
-
+} from '@/app/types/group';
+import type { LoadStatus } from '@/app/types';
 
 const GROUP_ENDPOINTS = {
   CREATE_GROUP: '/groups',
@@ -26,14 +22,15 @@ const GROUP_ENDPOINTS = {
 } as const;
 
 interface GroupsState {
-  currentGroup: GroupProps | null;
-  availableGroups: GroupProps[];
+  // 用 GroupApi 直接表示 group
+  currentGroup: GroupApi | null;
+  availableGroups: GroupApi[];
   availableGroupsPagination: GroupListPaginationApi | null;
-  userGroups: GroupProps[];
+  userGroups: GroupApi[];
   userGroupsPagination: GroupListPaginationApi | null;
   userMembership: Record<number, true>;
   searchQuery: string;
-  searchResults: GroupProps[];
+  searchResults: GroupApi[];
   searchPagination: GroupListPaginationApi | null;
   status: Record<string, LoadStatus>;
   error: Record<string, string | null>;
@@ -59,19 +56,19 @@ const setStatus = (state: GroupsState, key: string, value: LoadStatus) => {
 const setError = (state: GroupsState, key: string, value: string | null) => {
   state.error[key] = value;
 };
-const replaceInList = (list: GroupProps[], updated: GroupProps) => {
+const replaceInList = (list: GroupApi[], updated: GroupApi) => {
   const i = list.findIndex((g) => g.id === updated.id);
   if (i >= 0) list[i] = updated;
 };
 
 /** 2.5 Create group */
-export const createGroup = createAsyncThunk<GroupProps, CreateOrUpdateGroupBody>(
+export const createGroup = createAsyncThunk<GroupApi, CreateOrUpdateGroupBody>(
   'groups/createGroup',
   async (body, { rejectWithValue }) => {
     try {
       const res = await apiRequest<{ group: GroupApi }>('POST', GROUP_ENDPOINTS.CREATE_GROUP, body);
       if (!res.success || !res.data?.group) throw new Error(res.message || 'Create group failed');
-      return mapGroupApiToProps(res.data.group);
+      return res.data.group; // 直接返回 GroupApi
     } catch (e: any) {
       return rejectWithValue(e.message || 'Create group failed') as any;
     }
@@ -80,7 +77,7 @@ export const createGroup = createAsyncThunk<GroupProps, CreateOrUpdateGroupBody>
 
 /** 2.2 Get available groups */
 export const fetchAvailableGroups = createAsyncThunk<
-  { groups: GroupProps[]; pagination: GroupListPaginationApi },
+  { groups: GroupApi[]; pagination: GroupListPaginationApi },
   { page?: number; per_page?: number } | undefined
 >('groups/fetchAvailableGroups', async (params, { rejectWithValue }) => {
   try {
@@ -90,7 +87,7 @@ export const fetchAvailableGroups = createAsyncThunk<
     const url = GROUP_ENDPOINTS.AVAILABLE_GROUPS + (qs.toString() ? `?${qs.toString()}` : '');
     const res = await apiRequest<GroupsListData>('GET', url);
     if (!res.success || !res.data) throw new Error(res.message || 'Fetch available groups failed');
-    return { groups: res.data.groups.map(mapGroupApiToProps), pagination: res.data.pagination };
+    return { groups: res.data.groups, pagination: res.data.pagination };
   } catch (e: any) {
     return rejectWithValue(e.message || 'Fetch available groups failed') as any;
   }
@@ -98,7 +95,7 @@ export const fetchAvailableGroups = createAsyncThunk<
 
 /** 2.1 Get user subscribed groups */
 export const fetchUserGroups = createAsyncThunk<
-  { groups: GroupProps[]; pagination: GroupListPaginationApi; membership: Record<number, true> },
+  { groups: GroupApi[]; pagination: GroupListPaginationApi; membership: Record<number, true> },
   { page?: number; per_page?: number } | undefined
 >('groups/fetchUserGroups', async (params, { rejectWithValue }) => {
   try {
@@ -109,7 +106,7 @@ export const fetchUserGroups = createAsyncThunk<
     const res = await apiRequest<GroupsListData>('GET', url);
     if (!res.success || !res.data) throw new Error(res.message || 'Fetch user groups failed');
 
-    const groups = res.data.groups.map(mapGroupApiToProps);
+    const groups = res.data.groups;
     const membership: Record<number, true> = {};
     for (const g of groups) membership[g.id] = true;
 
@@ -121,34 +118,34 @@ export const fetchUserGroups = createAsyncThunk<
 
 /** 2.6 Update group */
 export const updateGroup = createAsyncThunk<
-  GroupProps,
+  GroupApi,
   { groupId: number; body: CreateOrUpdateGroupBody }
 >('groups/updateGroup', async ({ groupId, body }, { rejectWithValue }) => {
   try {
     const res = await apiRequest<{ group: GroupApi }>('PUT', GROUP_ENDPOINTS.UPDATE_GROUP(groupId), body);
     if (!res.success || !res.data?.group) throw new Error(res.message || 'Update group failed');
-    return mapGroupApiToProps(res.data.group);
+    return res.data.group;
   } catch (e: any) {
     return rejectWithValue(e.message || 'Update group failed') as any;
   }
 });
 
-export const deleteGroup = createAsyncThunk<
-  { id: number },
-  number
->('groups/deleteGroup', async (groupId, { rejectWithValue }) => {
-  try {
-    const res = await apiRequest<{}>('DELETE', GROUP_ENDPOINTS.DELETE_GROUP(groupId));
-    if (!res.success) throw new Error(res.message || 'Delete group failed');
-    return { id: groupId };
-  } catch (e: any) {
-    return rejectWithValue(e.message || 'Delete group failed') as any;
+export const deleteGroup = createAsyncThunk<{ id: number }, number>(
+  'groups/deleteGroup',
+  async (groupId, { rejectWithValue }) => {
+    try {
+      const res = await apiRequest<{}>('DELETE', GROUP_ENDPOINTS.DELETE_GROUP(groupId));
+      if (!res.success) throw new Error(res.message || 'Delete group failed');
+      return { id: groupId };
+    } catch (e: any) {
+      return rejectWithValue(e.message || 'Delete group failed') as any;
+    }
   }
-});
+);
 
 // Search group
 export const searchGroups = createAsyncThunk<
-  { q: string; groups: GroupProps[]; pagination: GroupListPaginationApi },
+  { q: string; groups: GroupApi[]; pagination: GroupListPaginationApi },
   { q: string; page?: number; per_page?: number }
 >('groups/searchGroups', async ({ q, page, per_page }, { rejectWithValue }) => {
   try {
@@ -163,7 +160,7 @@ export const searchGroups = createAsyncThunk<
 
     return {
       q,
-      groups: res.data.groups.map(mapGroupApiToProps),
+      groups: res.data.groups,
       pagination: res.data.pagination,
     };
   } catch (e: any) {
@@ -198,23 +195,22 @@ export const leaveGroup = createAsyncThunk<{ id: number }, number>(
 );
 
 /** 2.4 Get single group detail (must be a member) */
-export const fetchGroupDetail = createAsyncThunk<GroupProps, number>(
+export const fetchGroupDetail = createAsyncThunk<GroupApi, number>(
   'groups/fetchGroupDetail',
   async (groupId, { rejectWithValue }) => {
     try {
       const res = await apiRequest<GroupDetailData>('GET', GROUP_ENDPOINTS.GROUP_DETAIL(groupId));
       if (!res.success || !res.data) throw new Error(res.message || 'Fetch group detail failed');
-
-      return mapGroupApiToProps(res.data);
+      return res.data; // 直接使用后端返回
     } catch (e: any) {
       return rejectWithValue(e.message || 'Fetch group detail failed') as any;
     }
   }
 );
 
-const setSubOnList = (arr: GroupProps[], id: number, val: boolean) => {
+const setMemberFlagOnList = (arr: GroupApi[], id: number, val: boolean) => {
   const i = arr.findIndex(g => g.id === id);
-  if (i >= 0) arr[i] = { ...arr[i], subscribed: val };
+  if (i >= 0) arr[i] = { ...arr[i], is_member: val };
 };
 
 const groupsSlice = createSlice({
@@ -222,7 +218,7 @@ const groupsSlice = createSlice({
   initialState,
   reducers: {
     resetGroupsState: () => initialState,
-    setCurrentGroup: (state, action: PayloadAction<GroupProps | null>) => {
+    setCurrentGroup: (state, action: PayloadAction<GroupApi | null>) => {
       state.currentGroup = action.payload;
     },
     setSearchQuery: (state, action: PayloadAction<string>) => {
@@ -328,9 +324,9 @@ const groupsSlice = createSlice({
       .addCase(joinGroup.fulfilled, (s, a) => {
         setStatus(s, 'joinGroup', 'succeeded');
         const id = a.payload.id;
-        if (s.currentGroup?.id === id) s.currentGroup = { ...s.currentGroup, subscribed: true };
-        setSubOnList(s.availableGroups, id, true);
-        setSubOnList(s.userGroups, id, true);
+        if (s.currentGroup?.id === id) s.currentGroup = { ...s.currentGroup, is_member: true };
+        setMemberFlagOnList(s.availableGroups, id, true);
+        setMemberFlagOnList(s.userGroups, id, true);
         s.userMembership[id] = true;
       })
       .addCase(joinGroup.rejected, (s, a) => {
@@ -344,8 +340,8 @@ const groupsSlice = createSlice({
       .addCase(leaveGroup.fulfilled, (s, a) => {
         setStatus(s, 'leaveGroup', 'succeeded');
         const id = a.payload.id;
-        if (s.currentGroup?.id === id) s.currentGroup = { ...s.currentGroup, subscribed: false };
-        setSubOnList(s.availableGroups, id, false);
+        if (s.currentGroup?.id === id) s.currentGroup = { ...s.currentGroup, is_member: false };
+        setMemberFlagOnList(s.availableGroups, id, false);
         s.userGroups = s.userGroups.filter(g => g.id !== id);
         if (s.userMembership[id]) {
           const { [id]: _, ...rest } = s.userMembership;
@@ -357,7 +353,7 @@ const groupsSlice = createSlice({
         setError(s, 'leaveGroup', (a.payload as string) || 'Leave group failed');
       });
 
-    //group detail
+    // group detail
     builder
       .addCase(fetchGroupDetail.pending, (s) => {
         setStatus(s, 'fetchGroupDetail', 'loading');

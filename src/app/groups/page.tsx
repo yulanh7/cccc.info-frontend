@@ -22,7 +22,7 @@ import {
   joinGroup,
   leaveGroup,
 } from "@/app/features/groups/slice";
-import type { GroupProps } from "@/app/types";
+import type { GroupApi } from "@/app/types";
 import type { CreateOrUpdateGroupBody } from "@/app/types/group";
 import { formatDate, mapApiErrorToFields } from "@/app/ultility";
 import { useConfirm } from "@/hooks/useConfirm";
@@ -49,7 +49,7 @@ export default function GroupsPage() {
   // UI state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isNew, setIsNew] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<GroupProps | undefined>(undefined);
+  const [selectedGroup, setSelectedGroup] = useState<GroupApi | undefined>(undefined);
   const [qInput, setQInput] = useState("");
   const [modalSaving, setModalSaving] = useState(false);
   const [modalErrors, setModalErrors] = useState<{ title?: string; description?: string } | null>(null);
@@ -89,7 +89,7 @@ export default function GroupsPage() {
   useEffect(() => setQInput(searchQuery), [searchQuery]);
 
   // 派生要渲染的数据
-  const rows = searchQuery ? searchResults : availableGroups;
+  const rows: GroupApi[] = searchQuery ? searchResults : availableGroups;
 
   const totalPages = useMemo(() => {
     if (typeof (pagination as any)?.pages === "number") {
@@ -131,7 +131,7 @@ export default function GroupsPage() {
     setIsModalOpen(true);
   };
 
-  const handleEdit = (group: GroupProps) => {
+  const handleEdit = (group: GroupApi) => {
     setSelectedGroup(group);
     setIsNew(false);
     setModalErrors(null);
@@ -139,14 +139,14 @@ export default function GroupsPage() {
   };
 
 
-  const handleSave = async (updatedGroup: GroupProps) => {
+  const handleSave = async (updatedGroup: GroupApi) => {
     setModalErrors(null);
     setModalSaving(true);
 
     const body: CreateOrUpdateGroupBody = {
-      name: updatedGroup.title.trim(),
+      name: updatedGroup.name.trim(),
       description: updatedGroup.description,
-      isPrivate: updatedGroup.isPrivate,
+      isPrivate: !!updatedGroup.isPrivate,
     };
 
     if (isNew) {
@@ -200,7 +200,7 @@ export default function GroupsPage() {
     confirmGroupDelete.ask(id);
   };
 
-  const isUserSubscribed = (g: GroupProps) => g.subscribed === true;
+  const isUserSubscribed = (g: GroupApi) => g.is_member === true;
 
   const onSubmitSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -217,15 +217,15 @@ export default function GroupsPage() {
     router.push("/groups");
   };
 
-  const handleToggleSubscription = async (group: GroupProps) => {
+  const handleToggleSubscription = async (group: GroupApi) => {
     setToggling(true);
-    const action = group.subscribed ? await dispatch(leaveGroup(group.id)) : await dispatch(joinGroup(group.id));
+    const action = group.is_member ? await dispatch(leaveGroup(group.id)) : await dispatch(joinGroup(group.id));
     setToggling(false);
 
     if (leaveGroup.rejected.match(action) || joinGroup.rejected.match(action)) {
       alert(
         (action.payload as string) ||
-        (group.subscribed ? "Leave group failed" : "Join group failed")
+        (group.is_member ? "Leave group failed" : "Join group failed")
       );
       return;
     }

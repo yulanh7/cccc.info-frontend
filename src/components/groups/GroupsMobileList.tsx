@@ -4,23 +4,21 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PencilSquareIcon, TrashIcon, CalendarIcon, LockClosedIcon } from "@heroicons/react/24/outline";
 import CardSkeleton from "@/components/feedback/CardSkeleton";
-import Spinner from "@/components/feedback/Spinner";
-import type { GroupProps } from "@/app/types";
+import type { GroupApi } from "@/app/types";
 import Pagination from "@/components/Pagination";
 import { ellipsize } from "@/app/ultility";
-import Button from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
 import SubscribeToggleButton from "@/components/ui/SubscribeToggleButton";
 import ConfirmModal from "@/components/ConfirmModal"; // 复用并传自定义按钮
 
 type Props = {
-  rows: GroupProps[];
+  rows: GroupApi[];
   listLoading: boolean;
-  canEdit: (g: GroupProps) => boolean;
-  isUserSubscribed: (g: GroupProps) => boolean;
-  onEdit: (g: GroupProps) => void;
+  canEdit: (g: GroupApi) => boolean;
+  isUserSubscribed: (g: GroupApi) => boolean;
+  onEdit: (g: GroupApi) => void;
   onDelete: (id: number) => void;
-  onToggleSubscription: (g: GroupProps) => void;
+  onToggleSubscription: (g: GroupApi) => void;
   saving: boolean;
   deleting: boolean;
   toggling: boolean;
@@ -48,11 +46,9 @@ export default function GroupsMobileList({
   formatDate,
 }: Props) {
   const router = useRouter();
+  const [pendingSubscribeGroup, setPendingSubscribeGroup] = useState<GroupApi | null>(null);
 
-  // 订阅确认弹窗（受控）
-  const [pendingSubscribeGroup, setPendingSubscribeGroup] = useState<GroupProps | null>(null);
-
-  const handleCardClick = (group: GroupProps) => {
+  const handleCardClick = (group: GroupApi) => {
     if (isUserSubscribed(group)) {
       router.push(`/groups/${group.id}`);
     } else {
@@ -95,7 +91,7 @@ export default function GroupsMobileList({
                     card relative p-4 cursor-pointer hover:shadow-sm
                     focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-dark-green
                   "
-                  aria-label={`Open group ${group.title}`}
+                  aria-label={`Open group ${group.name}`}
                 >
                   {group.isPrivate && (
                     <div className="absolute left-2 top-2 flex items-center gap-1 text-dark-gray/80">
@@ -141,8 +137,8 @@ export default function GroupsMobileList({
 
                   {/* 标题 & 时间 */}
                   <h2 className="text-lg font-semibold text-dark-gray mb-1">
-                    {group.title}
-                    {group.editable && (
+                    {group.name}
+                    {group.is_creator && (
                       <span className="ml-2 align-middle text-[10px] px-1.5 py-0.5 rounded border border-dark-green text-dark-green">
                         Owner
                       </span>
@@ -151,8 +147,8 @@ export default function GroupsMobileList({
                   <p className="text-xs text-dark-gray mb-1.5">
                     <span className="inline-flex items-center gap-1.5 italic">
                       <CalendarIcon className="h-4 w-4 " />
-                      <time dateTime={group.createdDate} className="font-medium">
-                        {group.createdDate ? formatDate(group.createdDate) : "—"}
+                      <time dateTime={group.time} className="font-medium">
+                        {group.time ? formatDate(group.time) : "—"}
                       </time>
                     </span>
                   </p>
@@ -169,9 +165,9 @@ export default function GroupsMobileList({
                   <div className="mt-4 flex justify-between items-center">
                     <span className="inline-flex items-center gap-2">
                       <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-dark-green/10 text-dark-green text-xs font-semibold">
-                        {(group.creator?.firstName?.[0] || "?").toUpperCase()}
+                        {(group.creator_name?.[0] || "?").toUpperCase()}
                       </span>
-                      <span>{group.creator?.firstName}</span>
+                      <span>{group.creator_name}</span>
                     </span>
 
                     <div onClick={(e) => e.stopPropagation()}>

@@ -2,13 +2,21 @@
 
 import { useState, useRef, useMemo, useEffect } from "react";
 import { mockUsers } from '@/app/data/mockData';
-import { GroupProps, GroupEditModalProps } from '@/app/types';
+import type { GroupApi } from '@/app/types/group';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import Button from "@/components/ui/Button";
 import SaveConfirmModal from "../SaveConfirmModal";
 
 const MAX_NAME = 50;
 const MAX_DESC = 500;
+type GroupEditModalProps = {
+  group?: GroupApi | any;
+  isNew?: boolean;
+  onSave: (updatedGroup: GroupApi) => void | Promise<void>;
+  onClose: () => void;
+  saving?: boolean;
+  externalErrors?: { name?: string; description?: string } | null;
+};
 
 export default function GroupEditModal({
   group = {},
@@ -18,19 +26,21 @@ export default function GroupEditModal({
   saving = false,
   externalErrors = null,
 }: GroupEditModalProps) {
-  const defaultItem: GroupProps = {
+  const defaultItem: GroupApi = {
     id: isNew ? Date.now() : (group?.id as number) || 0,
-    title: '',
+    name: '',
     description: '',
-    createdDate: new Date().toISOString().split('T')[0],
-    creator: mockUsers[1],
-    subscribed: false,
-    editable: true,
+    time: new Date().toISOString(),
+    creator: (mockUsers[1]?.id as number) ?? 0,
+    creator_name: mockUsers[1]?.firstName ?? '',
+    subscriber_count: 0,
+    is_member: false,
+    is_creator: true,
     isPrivate: false,
   };
 
-  const [editedItem, setEditedItem] = useState<GroupProps>(
-    isNew ? defaultItem : { ...(group as GroupProps) }
+  const [editedItem, setEditedItem] = useState<GroupApi>(
+    isNew ? defaultItem : { ...(group as GroupApi) }
   );
 
   // ---- 确认弹窗控制 & 锚点
@@ -41,39 +51,39 @@ export default function GroupEditModal({
   const [placement, setPlacement] = useState<"above" | "below">("below");
 
   // ---- 校验 & 聚焦
-  const [errors, setErrors] = useState<{ title?: string; description?: string }>({});
-  const titleRef = useRef<HTMLInputElement>(null);
+  const [errors, setErrors] = useState<{ name?: string; description?: string }>({});
+  const nameRef = useRef<HTMLInputElement>(null);
   const descRef = useRef<HTMLTextAreaElement>(null);
 
-  const titleLen = editedItem.title?.length ?? 0;
+  const nameLen = editedItem.name?.length ?? 0;
   const descLen = editedItem.description?.length ?? 0;
-  const overTitle = Math.max(0, titleLen - MAX_NAME);
+  const overName = Math.max(0, nameLen - MAX_NAME);
   const overDesc = Math.max(0, descLen - MAX_DESC);
 
   const displayErrors = useMemo(
     () => ({
-      title: externalErrors?.title ?? errors.title,
+      name: externalErrors?.name ?? errors.name,
       description: externalErrors?.description ?? errors.description,
     }),
     [externalErrors, errors]
   );
 
-  const handleChange = (field: keyof GroupProps, value: any) => {
+  const handleChange = (field: keyof GroupApi, value: any) => {
     setEditedItem((prev) => ({ ...prev, [field]: value }));
-    if (field === "title" && errors.title) setErrors((e) => ({ ...e, title: undefined }));
+    if (field === "name" && errors.name) setErrors((e) => ({ ...e, name: undefined }));
     if (field === "description" && errors.description) setErrors((e) => ({ ...e, description: undefined }));
   };
 
   // ---- 校验
   const validate = () => {
-    const next: { title?: string; description?: string } = {};
-    if (!editedItem.title.trim()) next.title = "Title is required";
+    const next: { name?: string; description?: string } = {};
+    if (!editedItem.name.trim()) next.name = "Name is required";
     if (!editedItem.description.trim()) next.description = "Description is required";
-    if (titleLen > MAX_NAME) next.title = `Group name cannot exceed ${MAX_NAME} characters.`;
+    if (nameLen > MAX_NAME) next.name = `Group name cannot exceed ${MAX_NAME} characters.`;
     if (descLen > MAX_DESC) next.description = `Group description cannot exceed ${MAX_DESC} characters.`;
 
     setErrors(next);
-    if (next.title && titleRef.current) titleRef.current.focus();
+    if (next.name && nameRef.current) nameRef.current.focus();
     else if (next.description && descRef.current) descRef.current.focus();
     return Object.keys(next).length === 0;
   };
@@ -81,9 +91,9 @@ export default function GroupEditModal({
   // ---- 保存
   const handleSave = async () => {
     if (!validate()) return;
-    const cleaned: GroupProps = {
+    const cleaned: GroupApi = {
       ...editedItem,
-      title: editedItem.title.trim(),
+      name: editedItem.name.trim(),
       description: (editedItem.description ?? "").replace(/\r\n/g, "\n"),
     };
     await onSave(cleaned);
@@ -94,13 +104,13 @@ export default function GroupEditModal({
   // ------------------------------
   // 变化检测：初始快照 vs 当前状态
   // ------------------------------
-  const baseItem = isNew ? defaultItem : (group as GroupProps);
+  const baseItem = isNew ? defaultItem : (group as GroupApi);
 
   // 稳定序列化（只挑重要字段，避免不相关属性波动误报）
-  const serialize = (it: GroupProps) =>
+  const serialize = (it: GroupApi) =>
     JSON.stringify({
       id: it.id ?? 0,
-      title: (it.title ?? "").trim(),
+      name: (it.name ?? "").trim(),
       description: (it.description ?? ""),
       isPrivate: !!it.isPrivate,
     });
@@ -108,8 +118,8 @@ export default function GroupEditModal({
   const initialSnapshotRef = useRef<string>(serialize(baseItem));
   useEffect(() => {
     // 当传入的 group 变化或 isNew 变化时，重置表单和快照
-    setEditedItem(isNew ? defaultItem : { ...(group as GroupProps) });
-    initialSnapshotRef.current = serialize(isNew ? defaultItem : (group as GroupProps));
+    setEditedItem(isNew ? defaultItem : { ...(group as GroupApi) });
+    initialSnapshotRef.current = serialize(isNew ? defaultItem : (group as GroupApi));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isNew, group?.id]);
 
@@ -141,9 +151,9 @@ export default function GroupEditModal({
 
   const confirmSaveAndClose = async () => {
     if (!validate()) return;
-    const cleaned: GroupProps = {
+    const cleaned: GroupApi = {
       ...editedItem,
-      title: editedItem.title.trim(),
+      name: editedItem.name.trim(),
       description: (editedItem.description ?? "").replace(/\r\n/g, "\n"),
     };
     await onSave(cleaned);
@@ -193,22 +203,22 @@ export default function GroupEditModal({
         <div className="md:max-w-[80vw] max-h-[90vh] overflow-y-auto">
 
 
-          {/* Title */}
+          {/* Name */}
           <label htmlFor={nameId} className="block text-sm font-medium mb-1">
-            Title
+            Name
           </label>
           <input
             id={nameId}
-            ref={titleRef}
+            ref={nameRef}
             type="text"
-            value={editedItem.title}
-            onChange={(e) => handleChange("title", e.target.value)}
-            className={`w-full p-2 mb-1 border rounded-sm ${displayErrors.title ? "border-red-500" : "border-border"}`}
+            value={editedItem.name}
+            onChange={(e) => handleChange("name", e.target.value)}
+            className={`w-full p-2 mb-1 border rounded-sm ${displayErrors.name ? "border-red-500" : "border-border"}`}
           />
-          <div className={`text-xs mb-1 ${overTitle ? "text-red-600" : "text-dark-gray"}`}>
-            {titleLen}/{MAX_NAME}
+          <div className={`text-xs mb-1 ${overName ? "text-red-600" : "text-dark-gray"}`}>
+            {nameLen}/{MAX_NAME}
           </div>
-          {displayErrors.title && <p className="text-red-600 text-sm mb-3">{displayErrors.title}</p>}
+          {displayErrors.name && <p className="text-red-600 text-sm mb-3">{displayErrors.name}</p>}
 
           {/* Description */}
           <label htmlFor={descId} className="block text-sm font-medium mb-1">

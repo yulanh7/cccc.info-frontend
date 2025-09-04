@@ -14,3 +14,5 @@ export interface AuthResponseData {
 }
 
 export type AuthResponse = ApiResponseProps<AuthResponseData>;
+
+export const isAdmin = (user?: UserProps | null): boolean => !!user?.admin;

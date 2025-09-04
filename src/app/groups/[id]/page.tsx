@@ -12,7 +12,7 @@ import ConfirmModal from "@/components/ConfirmModal";
 import GroupInfoBar from "@/components/groups/GroupInfoBar";
 import PostListSection from "@/components/posts/PostListSection";
 import { usePostListController } from "@/components/posts/usePostListController";
-import type { GroupProps } from "@/app/types";
+import type { GroupApi } from "@/app/types";
 import { canEditPostList } from "@/app/types";
 import { formatDate, mapApiErrorToFields } from "@/app/ultility";
 import {
@@ -28,10 +28,9 @@ import {
   deletePost as deletePostThunk,
 } from "@/app/features/posts/slice";
 import { updateGroup, deleteGroup } from "@/app/features/groups/slice";
-import { uploadAllFiles } from "@/app/ultility";
 
 import type { CreateOrUpdateGroupBody } from "@/app/types/group";
-import { } from "@/app/types/post";
+import { canEditGroup } from "@/app/types/group";
 
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { useConfirm } from "@/hooks/useConfirm";
@@ -78,7 +77,7 @@ export default function GroupPage() {
 
   // —— 防止“旧群数据闪现”：仅在 id 匹配时认为有效（保持你的逻辑）
   const groupMatchesRoute = group?.id === groupId;
-  const safeGroup = groupMatchesRoute ? group : null;
+  const safeGroup: GroupApi | null = groupMatchesRoute ? group : null;
   const safePosts = groupMatchesRoute ? posts : [];
   const safePagination = groupMatchesRoute ? postsPagination : null;
 
@@ -122,7 +121,7 @@ export default function GroupPage() {
     buildCreateArgs: (body) => ({
       groupId,
       body,
-      authorNameHint: safeGroup?.creator?.firstName || "",
+      authorNameHint: safeGroup?.creator_name || "",
     }),
 
     // 删除：沿用你的 thunk
@@ -169,14 +168,14 @@ export default function GroupPage() {
 
   const handleEditGroup = () => setShowEditModal(true);
 
-  const submitEditGroup = async (updatedGroup: GroupProps) => {
+  const submitEditGroup = async (updatedGroup: GroupApi) => {
     if (!safeGroup) return;
 
     setModalErrors(null);
     setModalSaving(true);
 
     const body: CreateOrUpdateGroupBody = {
-      name: updatedGroup.title.trim(),
+      name: updatedGroup.name.trim(),
       description: (updatedGroup.description ?? "").replace(/\r\n/g, "\n"),
       isPrivate: updatedGroup.isPrivate,
     };
@@ -199,7 +198,7 @@ export default function GroupPage() {
   };
 
   // 打开成员弹窗（保持你的逻辑）
-  const canManageMembers = !!safeGroup?.editable || !!user?.admin;
+
   const membersPagination = useAppSelector((s) => s.groupDetail.membersPagination);
   const membersLoading = useAppSelector(s => s.groupDetail.status.members) === 'loading';
 
@@ -215,20 +214,21 @@ export default function GroupPage() {
   };
 
   const headerItem = safeGroup
-    ? { id: safeGroup.id, author: safeGroup.creator?.firstName }
+    ? { id: safeGroup.id, author: safeGroup.creator_name }
     : undefined;
 
   const totalPages = safePagination?.total_pages ?? 1;
   const buildHref = (p: number) => `/groups/${groupId}?page=${p}`;
 
+  const canManageGroup = safeGroup ? canEditGroup(safeGroup) : false;
   return (
     <>
       <CustomHeader
         item={headerItem}
-        pageTitle={safeGroup?.title || "Group"}
+        pageTitle={safeGroup?.name || "Group"}
         showAdd={false}
-        showEdit={!!safeGroup?.editable}
-        showDelete={!!safeGroup?.editable}
+        showEdit={canManageGroup}
+        showDelete={canManageGroup}
         onEdit={handleEditGroup}
         onDelete={() => confirmGroupDelete.ask()}
       />
@@ -240,6 +240,7 @@ export default function GroupPage() {
           onShowMembers={onShowMembers}
           onNewPost={() => setIsPostModalOpen(true)}
           onEditGroup={handleEditGroup}
+          canManageGroup={canManageGroup}
           onDeleteGroup={() => confirmGroupDelete.ask()}
           // ✅ 保持你原先的“选择模式”对接
           selectMode={selectMode}
@@ -293,9 +294,9 @@ export default function GroupPage() {
         members={subscribers}
         pagination={membersPagination}
         loading={membersLoading}
-        canManage={canManageMembers}
+        canManage={canManageGroup}
         onPageChange={onMembersPageChange}
-        onAdd={canManageMembers ? async (input) => {
+        onAdd={canManageGroup ? async (input) => {
           if (!safeGroup) return;
           const trimmed = (input || "").trim();
           if (!trimmed) return;
@@ -311,7 +312,7 @@ export default function GroupPage() {
             alert(typeof e === "string" ? e : e?.message || "Add member failed");
           }
         } : undefined}
-        onKick={canManageMembers ? async (userId) => {
+        onKick={canManageGroup ? async (userId) => {
           if (!safeGroup) return;
           try {
             await dispatch(kickGroupMember({ groupId: safeGroup.id, userId })).unwrap();
@@ -385,7 +386,7 @@ export default function GroupPage() {
       )}
 
       {/* 移动端新增按钮（保持你的 UI） */}
-      {!pageLoading && safeGroup?.editable && (
+      {!pageLoading && canManageGroup && (
         <button
           onClick={() => setIsPostModalOpen(true)}
           className="fixed md:hidden bottom-8 z-20 left-1/2 -translate-x-1/2 bg-yellow px-3 py-3 rounded-[50%]"

@@ -12,17 +12,17 @@ import {
 } from "@heroicons/react/24/outline";
 import Button from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
-import type { GroupProps } from "@/app/types/group";
+import type { GroupApi } from "@/app/types/group";
 
 type Props = {
-  group: GroupProps;
+  group: GroupApi;
   subscriberCount: number;
   onShowMembers: () => void;
   onNewPost: () => void;
   onEditGroup: () => void;
   onDeleteGroup: () => void;
   formatDate: (timestamp: string, showTime?: boolean) => string;
-
+  canManageGroup: boolean;
   /** 选择模式（由父组件控制） */
   selectMode: boolean;
   selectedCount: number;
@@ -40,11 +40,9 @@ export default function GroupInfoBar({
   formatDate,
   selectMode,
   selectedCount,
-  onToggleSelectMode,
   onBulkDeleteSelected,
+  canManageGroup = false
 }: Props) {
-  // 统一权限判断：只有创建者可管理（编辑/删除/选择/新建）
-  const canManage = group.editable === true;
 
   return (
     <>
@@ -56,9 +54,9 @@ export default function GroupInfoBar({
               {/* 标题 + Owner 徽标（如果可管理） */}
               <div className="flex items-center gap-2">
                 <h2 className="text-white md:text-lg font-semibold">
-                  {group.title}
+                  {group.name}
                 </h2>
-                {canManage && (
+                {canManageGroup && (
                   <span className="text-[10px] px-1.5 py-0.5 rounded border border-yellow text-yellow">
                     Owner
                   </span>
@@ -77,7 +75,7 @@ export default function GroupInfoBar({
             </div>
 
             {/* 桌面端右上角操作，仅创建者可见 */}
-            {canManage && (
+            {canManageGroup && (
               <div className="hidden md:flex items-center gap-2">
                 <IconButton
                   className="text-white"
@@ -112,19 +110,19 @@ export default function GroupInfoBar({
             <div className=" flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-white">
               <span className="inline-flex items-center gap-2">
                 <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-yellow/40 text-white text-xs font-semibold">
-                  {(group.creator?.firstName?.[0] || "?").toUpperCase()}
+                  {(group.creator_name?.[0] || "?").toUpperCase()}
                 </span>
-                <span>{group.creator?.firstName}</span>
+                <span>{group.creator_name}</span>
               </span>
 
               <span className="inline-flex items-center gap-1.5">
                 <CalendarIcon className="h-5 w-5" />
-                <time dateTime={group.createdDate} className="font-medium">
-                  {group.createdDate ? formatDate(group.createdDate) : "—"}
+                <time dateTime={group.time} className="font-medium">
+                  {group.time ? formatDate(group.time) : "—"}
                 </time>
               </span>
 
-              {canManage ? (
+              {canManageGroup ? (
 
                 <Button
                   onClick={onShowMembers}
@@ -149,7 +147,7 @@ export default function GroupInfoBar({
               )}
 
             </div>
-            {canManage && (
+            {canManageGroup && (
               <section className="hidden md:flex justify-end gap-2 px-4">
                 {/* <Button
             onClick={onToggleSelectMode}
@@ -186,9 +184,6 @@ export default function GroupInfoBar({
           </div>
         </div>
       </section>
-
-      {/* 移动端/桌面通用：选择模式 & 新建，仅创建者可见 */}
-
     </>
   );
 }
