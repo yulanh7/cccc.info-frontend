@@ -41,7 +41,6 @@ type Props = {
 };
 
 export default function GroupListView({
-  title = "Groups",
   rows,
   listLoading,
   pageLoading,
@@ -90,7 +89,6 @@ export default function GroupListView({
     <div className="space-y-4 mt-4">
       {/* 顶部操作（桌面） */}
       <div className="hidden md:flex justify-between my-6">
-        <h2 className="text-xl font-semibold">{title}</h2>
         {canCreate && onAdd && (
           <Button
             onClick={onAdd}

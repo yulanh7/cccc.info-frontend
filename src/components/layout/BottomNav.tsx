@@ -165,7 +165,7 @@ export default function BottomNav({ unreadCount }: BottomNavProps) {
                 </Link>
 
                 <Link
-                  href="/groups/created"
+                  href="my-groups"
                   onClick={() => setSheetOpen(false)}
                   className="flex flex-col items-center rounded-xl border border-border p-4 active:scale-[0.98] transition"
                 >

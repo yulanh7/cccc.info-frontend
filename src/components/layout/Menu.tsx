@@ -82,10 +82,10 @@ export default function Menu({
                 My Posts
               </Link>
 
-              {/* 我创建的小组（若你的路由不同，改成 /groups/mine 或 /groups/created 自己项目里的路径） */}
+              {/* 我创建的小组（若你的路由不同，改成 /groups/mine 或 my-groups 自己项目里的路径） */}
               <Link
-                href="/groups/created"
-                className={`block px-4 py-2 text-sm hover:bg-gray-100 ${isActiveHref('/groups/created') ? 'text-dark-green' : 'text-dark-gray'
+                href="my-groups"
+                className={`block px-4 py-2 text-sm hover:bg-gray-100 ${isActiveHref('my-groups') ? 'text-dark-green' : 'text-dark-gray'
                   }`}
               >
                 Created Groups
