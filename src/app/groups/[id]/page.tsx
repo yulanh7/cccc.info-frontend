@@ -17,11 +17,11 @@ import { canEditPostList } from "@/app/types";
 import { formatDate, mapApiErrorToFields } from "@/app/ultility";
 import {
   fetchGroupDetail,
-  fetchGroupPosts,
   fetchGroupMembers,
   addGroupMember,
   kickGroupMember,
 } from "@/app/features/groups/detailSlice";
+import { fetchGroupPostsList } from '@/app/features/posts/slice'
 
 import {
   createPost,
@@ -106,40 +106,27 @@ export default function GroupPage() {
     dispatch,
     perPage: POST_PER_PAGE,
     currentPage,
-
-    // 取列表：沿用你的 thunk & 参数
-    fetchPosts: fetchGroupPosts,
+    fetchPosts: fetchGroupPostsList,
     buildFetchArgs: (page) => ({
       groupId,
       page,
       per_page: POST_PER_PAGE,
       append: false,
     }),
-
-    // 创建：沿用你的 thunk & 参数
     createPost: createPost,
     buildCreateArgs: (body) => ({
       groupId,
       body,
       authorNameHint: safeGroup?.creator_name || "",
     }),
-
-    // 删除：沿用你的 thunk
     deletePost: deletePostThunk,
-
-    // 权限判断：沿用你的 canEditPost
     canEdit: (p) => canEditPostList(p, user),
-
-    // 给“首次加载骨架/更新中提示”判断
     postsStatus: status.posts as any,
   });
 
-  // —— 让顶部工具栏的“选择模式”仍由你控制（与 ctrl 的 selectMode 保持一致）
   const toggleSelectMode = () => {
-    // 同步本地
     if (selectMode) setSelectedIds(new Set());
     setSelectMode((v) => !v);
-    // 同步到 ctrl
     ctrl.toggleSelectMode();
   };
   const toggleSelect = (postId: number) => {
@@ -162,7 +149,6 @@ export default function GroupPage() {
   };
 
   const onCreatePost = async (item: any) => {
-    // 兼容你原有 onCreatePost 签名，内部委托给 ctrl
     await ctrl.onCreatePost?.(item);
   };
 
@@ -196,8 +182,6 @@ export default function GroupPage() {
       setModalSaving(false);
     }
   };
-
-  // 打开成员弹窗（保持你的逻辑）
 
   const membersPagination = useAppSelector((s) => s.groupDetail.membersPagination);
   const membersLoading = useAppSelector(s => s.groupDetail.status.members) === 'loading';
@@ -242,7 +226,6 @@ export default function GroupPage() {
           onEditGroup={handleEditGroup}
           canManageGroup={canManageGroup}
           onDeleteGroup={() => confirmGroupDelete.ask()}
-          // ✅ 保持你原先的“选择模式”对接
           selectMode={selectMode}
           selectedCount={selectedIds.size}
           onToggleSelectMode={toggleSelectMode}
@@ -259,33 +242,25 @@ export default function GroupPage() {
       ) : null}
 
       <div className="container mx-auto md:p-6 p-2">
-        {/* ✅ 用抽出的 PostListSection 渲染列表 & 分页（UI 保持不变） */}
         <PostListSection
           rows={safePosts}
           totalPages={totalPages}
           currentPage={currentPage}
           formatDate={formatDate}
-
-          // 加载态（从 ctrl / 你的状态综合得出）
           initialPostsLoading={ctrl.initialPostsLoading}
           showUpdatingTip={ctrl.showUpdatingTip}
           listLoading={status.posts === "loading"}
           deleting={status.posts === "loading" && safePosts.length > 0}
-
-          // 选择 & 权限
           selectMode={selectMode}
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}
           canEdit={ctrl.canEdit}
           onEditSingle={(id) => ctrl.goEdit(id)}
           onDeleteSingle={(postId) => confirmSingleDelete.ask(postId)}
-
-          // 分页 URL（保持你的链接方案）
           buildHref={buildHref}
         />
       </div>
 
-      {/* —— 整页 Overlay（群详情加载） */}
       <LoadingOverlay show={pageLoading} text="Loading group…" />
 
       <SubscribersModal

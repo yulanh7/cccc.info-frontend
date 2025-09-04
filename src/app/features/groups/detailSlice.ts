@@ -13,8 +13,8 @@ import type {
 } from '@/app/types/group';
 import type {
   PostListItemApi,
-  PostListData,
 } from '@/app/types';
+import { fetchGroupPostsList } from '@/app/features/posts/slice';
 
 // 简单的订阅者 UI 形状（与后端 subscribers 项一致）
 type GroupSubscriberUi = { id: number; firstName: string; email: string };
@@ -63,8 +63,7 @@ export const fetchGroupDetail = createAsyncThunk<
   try {
     const res = await apiRequest<GroupDetailData>('GET', `/groups/${groupId}`);
     if (!res.success || !res.data) throw new Error(res.message || 'Fetch group detail failed');
-
-    const group = res.data; // 直接用 API 类型
+    const group = res.data;
     const subscriberCount = res.data.subscriber_count ?? 0;
     const subscribers: GroupSubscriberUi[] = (res.data.subscribers ?? []).map(s => ({
       id: s.id,
@@ -75,34 +74,6 @@ export const fetchGroupDetail = createAsyncThunk<
     return { group, subscriberCount, subscribers };
   } catch (e: any) {
     return rejectWithValue(e.message || 'Fetch group detail failed') as any;
-  }
-});
-
-// 获取群帖子：/groups/:id/posts?page=&per_page=
-export const fetchGroupPosts = createAsyncThunk<
-  {
-    posts: PostListItemApi[];
-    current_page: number;
-    total_pages: number;
-    total_posts: number;
-    append: boolean;
-  },
-  { groupId: number; page?: number; per_page?: number; append?: boolean }
->('groupDetail/fetchGroupPosts', async ({ groupId, page = 1, per_page = 20, append = false }, { rejectWithValue }) => {
-  try {
-    const qs = new URLSearchParams();
-    if (page) qs.set('page', String(page));
-    if (per_page) qs.set('per_page', String(per_page));
-
-    const url = `/groups/${groupId}/posts${qs.toString() ? `?${qs.toString()}` : ''}`;
-
-    const res = await apiRequest<PostListData>('GET', url);
-    if (!res.success || !res.data) throw new Error(res.message || 'Fetch posts failed');
-
-    const { posts, current_page, total_pages, total_posts } = res.data;
-    return { posts, current_page, total_pages, total_posts, append };
-  } catch (e: any) {
-    return rejectWithValue(e.message || 'Fetch posts failed') as any;
   }
 });
 
@@ -189,6 +160,7 @@ const groupDetailSlice = createSlice({
         s.subscriberCount = null;
         s.subscribers = [];
 
+        // 重置帖子区域（由 posts slice 再填充）
         s.posts = [];
         s.postsPagination = null;
         s.status.posts = 'idle';
@@ -209,15 +181,14 @@ const groupDetailSlice = createSlice({
         s.error.group = (a.payload as string) || 'Fetch group detail failed';
       });
 
-    // ===== posts =====
     builder
-      .addCase(fetchGroupPosts.pending, (s, a) => {
-        const { groupId } = a.meta.arg as { groupId: number };
+      .addCase(fetchGroupPostsList.pending, (s, a) => {
+        const { groupId } = a.meta.arg;
         if (s.currentGroupId !== groupId) return;
         s.status.posts = 'loading';
         s.error.posts = null;
       })
-      .addCase(fetchGroupPosts.fulfilled, (s, a) => {
+      .addCase(fetchGroupPostsList.fulfilled, (s, a) => {
         const { groupId, append } = a.meta.arg as { groupId: number; append?: boolean };
         if (s.currentGroupId !== groupId) return;
         s.status.posts = 'succeeded';
@@ -225,7 +196,7 @@ const groupDetailSlice = createSlice({
         s.posts = append ? [...s.posts, ...posts] : posts;
         s.postsPagination = { current_page, total_pages, total_posts };
       })
-      .addCase(fetchGroupPosts.rejected, (s, a) => {
+      .addCase(fetchGroupPostsList.rejected, (s, a) => {
         const { groupId } = a.meta.arg as { groupId: number };
         if (s.currentGroupId !== groupId) return;
         s.status.posts = 'failed';
