@@ -6,13 +6,19 @@ import type {
   GroupsListData,
   GroupListPaginationApi,
   GroupDetailData,
+  RawUserGroup,
+  RawAllGroup
 } from '@/app/types/group';
+import { normalizeFromUserGroups, normalizeFromAllGroups } from '@/app/types/group'
 import type { LoadStatus } from '@/app/types';
+import type { RootState, AppDispatch } from '@/app/features/store';
+
 
 const GROUP_ENDPOINTS = {
   CREATE_GROUP: '/groups',
   AVAILABLE_GROUPS: '/groups/available',
-  USER_GROUPS: '/groups',
+  USER_GROUPS: '/user/groups',
+  ALL_GROUPS: '/groups',
   UPDATE_GROUP: (id: number) => `/groups/${id}`,
   DELETE_GROUP: (id: number) => `/groups/${id}`,
   SEARCH_GROUPS: '/groups/search',
@@ -76,6 +82,35 @@ export const createGroup = createAsyncThunk<GroupApi, CreateOrUpdateGroupBody>(
 );
 
 /** 2.2 Get available groups */
+export const fetchUserGroups = createAsyncThunk<
+  { groups: GroupApi[]; pagination: GroupListPaginationApi; membership: Record<number, true> },
+  { page?: number; per_page?: number } | undefined,
+  { state: RootState; dispatch: AppDispatch }
+>('groups/fetchUserGroups', async (params, { rejectWithValue, getState }) => {
+  try {
+    const qs = new URLSearchParams();
+    if (params?.page) qs.set('page', String(params.page));
+    if (params?.per_page) qs.set('per_page', String(params.per_page));
+
+    const url = GROUP_ENDPOINTS.USER_GROUPS + (qs.toString() ? `?${qs.toString()}` : '');
+    type UserGroupsListData = {
+      groups: RawUserGroup[];
+      pagination: GroupListPaginationApi;
+    };
+    const res = await apiRequest<UserGroupsListData>('GET', url);
+    if (!res.success || !res.data) throw new Error(res.message || 'Fetch user groups failed');
+
+    const currentUserId = (getState().auth.user?.id ?? undefined) as number | undefined;
+
+    const groups = res.data.groups.map(g => normalizeFromUserGroups(g, currentUserId));
+    const membership = Object.fromEntries(groups.map(g => [g.id, true])) as Record<number, true>;
+    return { groups, pagination: res.data.pagination, membership };
+  } catch (e: any) {
+    return rejectWithValue(e.message || 'Fetch user groups failed') as any;
+  }
+});
+
+/** Available groups (public) */
 export const fetchAvailableGroups = createAsyncThunk<
   { groups: GroupApi[]; pagination: GroupListPaginationApi },
   { page?: number; per_page?: number } | undefined
@@ -85,36 +120,44 @@ export const fetchAvailableGroups = createAsyncThunk<
     if (params?.page) qs.set('page', String(params.page));
     if (params?.per_page) qs.set('per_page', String(params.per_page));
     const url = GROUP_ENDPOINTS.AVAILABLE_GROUPS + (qs.toString() ? `?${qs.toString()}` : '');
-    const res = await apiRequest<GroupsListData>('GET', url);
+
+    type AvailableGroupsData = {
+      groups: RawAllGroup[];
+      pagination: GroupListPaginationApi;
+    };
+    const res = await apiRequest<AvailableGroupsData>('GET', url);
     if (!res.success || !res.data) throw new Error(res.message || 'Fetch available groups failed');
-    return { groups: res.data.groups, pagination: res.data.pagination };
+
+    const groups = res.data.groups.map(normalizeFromAllGroups);
+    return { groups, pagination: res.data.pagination };
   } catch (e: any) {
     return rejectWithValue(e.message || 'Fetch available groups failed') as any;
   }
 });
 
-/** 2.1 Get user subscribed groups */
-export const fetchUserGroups = createAsyncThunk<
-  { groups: GroupApi[]; pagination: GroupListPaginationApi; membership: Record<number, true> },
+/** (可选) All groups 列表，如果你需要的话 */
+export const fetchAllGroups = createAsyncThunk<
+  { groups: GroupApi[]; pagination: GroupListPaginationApi },
   { page?: number; per_page?: number } | undefined
->('groups/fetchUserGroups', async (params, { rejectWithValue }) => {
+>('groups/fetchAllGroups', async (params, { rejectWithValue }) => {
   try {
     const qs = new URLSearchParams();
     if (params?.page) qs.set('page', String(params.page));
     if (params?.per_page) qs.set('per_page', String(params.per_page));
-    const url = GROUP_ENDPOINTS.USER_GROUPS + (qs.toString() ? `?${qs.toString()}` : '');
-    const res = await apiRequest<GroupsListData>('GET', url);
-    if (!res.success || !res.data) throw new Error(res.message || 'Fetch user groups failed');
+    const url = GROUP_ENDPOINTS.ALL_GROUPS + (qs.toString() ? `?${qs.toString()}` : '');
 
-    const groups = res.data.groups;
-    const membership: Record<number, true> = {};
-    for (const g of groups) membership[g.id] = true;
+    type AllGroupsData = { groups: RawAllGroup[]; pagination: GroupListPaginationApi };
+    const res = await apiRequest<AllGroupsData>('GET', url);
+    if (!res.success || !res.data) throw new Error(res.message || 'Fetch all groups failed');
 
-    return { groups, pagination: res.data.pagination, membership };
+    const groups = res.data.groups.map(normalizeFromAllGroups);
+    return { groups, pagination: res.data.pagination };
   } catch (e: any) {
-    return rejectWithValue(e.message || 'Fetch user groups failed') as any;
+    return rejectWithValue(e.message || 'Fetch all groups failed') as any;
   }
 });
+
+
 
 /** 2.6 Update group */
 export const updateGroup = createAsyncThunk<
@@ -144,6 +187,7 @@ export const deleteGroup = createAsyncThunk<{ id: number }, number>(
 );
 
 // Search group
+// Search group
 export const searchGroups = createAsyncThunk<
   { q: string; groups: GroupApi[]; pagination: GroupListPaginationApi },
   { q: string; page?: number; per_page?: number }
@@ -155,18 +199,20 @@ export const searchGroups = createAsyncThunk<
     if (per_page) qs.set('per_page', String(per_page));
 
     const url = `${GROUP_ENDPOINTS.SEARCH_GROUPS}?${qs.toString()}`;
-    const res = await apiRequest<GroupsListData>('GET', url);
+    type SearchGroupsData = { groups: RawAllGroup[]; pagination: GroupListPaginationApi };
+    const res = await apiRequest<SearchGroupsData>('GET', url);
     if (!res.success || !res.data) throw new Error(res.message || 'Search groups failed');
 
     return {
       q,
-      groups: res.data.groups,
+      groups: res.data.groups.map(normalizeFromAllGroups),
       pagination: res.data.pagination,
     };
   } catch (e: any) {
     return rejectWithValue(e.message || 'Search groups failed') as any;
   }
 });
+
 
 export const joinGroup = createAsyncThunk<{ id: number }, number>(
   'groups/joinGroup',

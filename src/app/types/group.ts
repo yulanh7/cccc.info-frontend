@@ -13,6 +13,7 @@ export interface GroupApi {
   subscriber_count: number;
   is_member: boolean;
   is_creator: boolean;
+  post_count?: number;
 }
 
 export interface GroupListPaginationApi {
@@ -76,3 +77,60 @@ export type GroupStatsResponseApi = ApiResponseProps<GroupStats>;
 /** 群组编辑权限：必须是群组创建者 */
 export const canEditGroup = (group: GroupApi): boolean =>
   group.is_creator;
+
+
+export type RawUserGroup = {
+  id: number;
+  name: string;
+  description: string;
+  creator: { id: number; firstName: string };
+  time: string;
+  isPrivate: boolean;
+  subscriber_count: number;
+  post_count: number;
+};
+
+export type RawAllGroup = {
+  id: number;
+  name: string;
+  description: string;
+  creator: number;
+  creator_name?: string;
+  time: string;
+  isPrivate: boolean;
+  subscriber_count: number;
+  is_member?: boolean;
+  is_creator?: boolean;
+};
+
+export const normalizeFromUserGroups = (
+  g: RawUserGroup,
+  currentUserId?: number
+): GroupApi => ({
+  id: g.id,
+  name: g.name,
+  description: g.description,
+  creator: g.creator.id,
+  creator_name: g.creator.firstName,
+  time: g.time,
+  isPrivate: g.isPrivate,
+  subscriber_count: g.subscriber_count,
+  post_count: g.post_count,
+  is_member: true, // 已订阅列表，恒为 true
+  is_creator: currentUserId ? g.creator.id === Number(currentUserId) : false,
+});
+
+export const normalizeFromAllGroups = (
+  g: RawAllGroup
+): GroupApi => ({
+  id: g.id,
+  name: g.name,
+  description: g.description,
+  creator: g.creator,
+  creator_name: g.creator_name,
+  time: g.time,
+  isPrivate: g.isPrivate,
+  subscriber_count: g.subscriber_count,
+  is_member: Boolean(g.is_member),
+  is_creator: Boolean(g.is_creator),
+});
