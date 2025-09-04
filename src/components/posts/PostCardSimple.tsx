@@ -1,14 +1,16 @@
 "use client";
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import type { PostListItemApi } from "@/app/types";
 import {
-  CalendarIcon,
-  UserGroupIcon,
-  HandThumbUpIcon
+  HandThumbUpIcon as HandThumbUpOutline,
 } from "@heroicons/react/24/outline";
-import { PlayIcon } from '@heroicons/react/24/solid';
+import { HandThumbUpIcon as HandThumbUpSolid, PlayIcon } from "@heroicons/react/24/solid";
 import { ellipsize } from '@/app/ultility';
 import { getYouTubeThumbnail } from '@/app/ultility';
+
+// 新增：redux hooks & actions/selectors
+import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
+import { likePost, unlikePost, setLikeCount, setLikedByMe, selectLikeCount, selectLikedByMe } from "@/app/features/posts/likeSlice";
 
 type Props = {
   post: PostListItemApi;
@@ -16,37 +18,83 @@ type Props = {
   showEnterArrow?: boolean;
 };
 
-const BG_URLS = [
-  "/images/bg-card-2.jpg",
-  // "/images/bg-card-3.jpg",
-  // "/images/bg-card-4.jpg",
-  // "/images/bg-card-5.jpg",
-  "/images/bg-for-homepage.png",
-];
+const BG_URLS = ["/images/bg-card-2.jpg", "/images/bg-for-homepage.png"];
 
 export default function PostCardSimple({
   post,
   formatDate,
   showEnterArrow = true,
 }: Props) {
+  const dispatch = useAppDispatch();
   const { id, title, created_at, author, group, summary, videos, like_count } = post;
+
+  // like 数优先取全局（被点赞后会更新），否则回退列表原始值
+  const storeCount = useAppSelector(selectLikeCount(id));
+  const count = (storeCount ?? like_count ?? 0);
+
+  // 是否已点赞：优先取全局（被点赞后会更新），否则回退接口字段（如果后端给了）
+  const storeLiked = useAppSelector(selectLikedByMe(id));
+  const initialLiked = (post as any)?.clicked_like as boolean | undefined;
+  const liked = Boolean(storeLiked ?? initialLiked ?? false);
+
+  const inFlightRef = useRef(false);
+  const [busy, setBusy] = useState(false);
+
   const bgUrl = useMemo(
     () => BG_URLS[Math.abs(post.id) % BG_URLS.length],
     [post.id]
   );
   const thumbnail = videos && videos[0] ? getYouTubeThumbnail(videos[0], 'hqdefault') : null;
 
+  useEffect(() => {
+    if (post.like_count !== undefined) {
+      dispatch(setLikeCount({ postId: post.id, like_count: post.like_count }));
+    }
+    const initialLiked = (post as any)?.clicked_like;
+    if (typeof initialLiked === "boolean") {
+      dispatch(setLikedByMe({ postId: post.id, liked: initialLiked }));
+    }
+  }, [post.id]);
+
+  // —— 点赞/取消点赞（乐观更新 + 阻止跳转）
+  const onToggleLike: React.MouseEventHandler<HTMLButtonElement> = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (inFlightRef.current) return;
+
+    const prevLiked = liked;
+    const prevCount = count;
+    const nextLiked = !prevLiked;
+    const nextCount = prevCount + (prevLiked ? -1 : 1);
+
+    // 乐观更新 + 加锁
+    inFlightRef.current = true;
+    setBusy(true);
+    dispatch(setLikedByMe({ postId: post.id, liked: nextLiked }));
+    dispatch(setLikeCount({ postId: post.id, like_count: nextCount }));
+
+    try {
+      if (prevLiked) {
+        await dispatch(unlikePost(post.id)).unwrap();
+      } else {
+        await dispatch(likePost(post.id)).unwrap();
+      }
+    } catch (err: any) {
+      // 回滚 + 正确显示后端 message
+      dispatch(setLikedByMe({ postId: post.id, liked: prevLiked }));
+      dispatch(setLikeCount({ postId: post.id, like_count: prevCount }));
+
+      const msg = typeof err === "string" ? err : err?.message || (prevLiked ? "Unlike failed" : "Like failed");
+      alert(msg);
+    } finally {
+      inFlightRef.current = false;
+      setBusy(false);
+    }
+  };
+
+
   return (
     <div className="card relative cursor-pointer border border-border">
-      {/* <div
-        className="absolute left-2 top-[100px]  -rotate-90 origin-left
-             z-10 bg-yellow text-xs text-dark-gray px-2 py-0.5 rounded"
-      >
-        <div className="flex items-center">
-          <CalendarIcon className="h-4 w-4 mr-1" />
-          <time>{formatDate(date)}</time>
-        </div>
-      </div> */}
       <div className="aspect-w-16 aspect-h-9 mb-1">
         {thumbnail ? (
           <div className="relative">
@@ -61,54 +109,59 @@ export default function PostCardSimple({
               </div>
             </div>
           </div>
-
         ) : (
           <div
-            className="
-              w-full pt-7 pb-4 px-3 min-h-20 
-               bg-cover bg-center rounded-t-xs md:rounded-t-sm 
-              items-center justify-center
-            "
+            className="w-full pt-7 pb-4 px-3 min-h-20 bg-cover bg-center rounded-t-xs md:rounded-t-sm items-center justify-center"
             style={{ backgroundImage: `url(${bgUrl})` }}
-
           >
-            <h2 className="text-dark-gray  font-'Apple Color Emoji' font-semibold text-center px-4">
+            <h2 className="text-dark-gray font-semibold text-center px-4">
               {title}
             </h2>
           </div>
         )}
       </div>
+
       <div className='px-2 pb-2'>
         <h2 className="font-semibold text-dark-gray leading-[1.3] md:leading-[1.3] mb-2">
           {ellipsize(title, 50, { byWords: true })}
         </h2>
-        {/* <div className="flex items-center">
-          <UserGroupIcon className="h-4 w-4 mr-1 text-dark-gray" />
-          <span className="truncate">{group}</span>
-        </div> */}
+
         {summary && (
           <p className="text-gray text-sm line-clamp-3 leading-[1.1] md:leading-[1.2] whitespace-pre-line">
             {ellipsize(summary, 160, { byWords: true })}
           </p>
         )}
+
         <div className="mt-2 space-y-1 text-xs text-gray">
           <span className="inline-flex items-center gap-1 text-xs">
-            <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-dark-green/10 text-dark-green  font-semibold">
+            <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-dark-green/10 text-dark-green font-semibold">
               {(author.firstName?.[0] || "?").toUpperCase()}
             </span>
             <span className="text-[9px]">
               {ellipsize(author.firstName, 10, { byWords: true })}
             </span>
           </span>
-          <div className="absolute bottom-2 right-2 z-10 pointer-events-none">
-            <div className="flex items-center gap-1 bg-white/80 backdrop-blur-sm rounded-full px-2 py-1 shadow">
-              <HandThumbUpIcon className="h-4 w-4 text-dark-gray" />
-              <span className="text-xs text-dark-gray">{like_count}</span>
-            </div>
+
+          {/* —— 右下角 Like：可点、无跳转、乐观更新 */}
+          <div className="absolute bottom-2 right-2 z-10">
+            <button
+              onClick={onToggleLike}
+              disabled={busy}
+              aria-pressed={liked}
+              aria-label={liked ? "Unlike" : "Like"}
+              className="flex items-center gap-1 bg-white/80 backdrop-blur-sm rounded-full px-2 py-1 shadow
+                 focus:outline-none focus:ring-2 focus:ring-yellow disabled:opacity-60"
+            >
+              {liked ? (
+                <HandThumbUpSolid className="h-4 w-4 text-red-500" />
+              ) : (
+                <HandThumbUpOutline className="h-4 w-4 text-dark-gray" />
+              )}
+              <span className="text-xs text-dark-gray">{count}</span>
+            </button>
           </div>
         </div>
       </div>
-
     </div>
   );
 }

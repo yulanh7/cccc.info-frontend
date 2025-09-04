@@ -14,10 +14,21 @@ import {
   ChevronRightIcon,
   XMarkIcon,
   PencilSquareIcon,
-  TrashIcon
+  TrashIcon,
+  HandThumbUpIcon as HandThumbUpOutline,
+  ChatBubbleLeftIcon
 } from "@heroicons/react/24/outline";
+import { HandThumbUpIcon as HandThumbUpSolid } from "@heroicons/react/24/solid";
 import { formatDate } from "@/app/ultility";
 import { fetchPostDetail, updatePost, deletePost } from "@/app/features/posts/slice";
+import {
+  likePost,
+  unlikePost,
+  setLikeCount,
+  setLikedByMe,
+  selectLikeCount,
+  selectLikedByMe,
+} from "@/app/features/posts/likeSlice";
 import IconButton from "@/components/ui/IconButton";
 import YouTubeList from "@/components/ui/YouTubeList";
 import { uploadAllFiles } from "@/app/ultility";
@@ -66,15 +77,17 @@ export default function PostDetailPage() {
 
   const status = useAppSelector((s) => s.posts.status["fetchPostDetail"]);
   const error = useAppSelector((s) => s.posts.error["fetchPostDetail"]);
-
-  // store 里是 PostEntity（创建体或详情体）；在详情页我们期望它是 PostDetailData
+  const storeCount = useAppSelector(selectLikeCount(postId));
+  const storeLiked = useAppSelector(selectLikedByMe(postId));
   const postFromStore = useAppSelector((s) => s.posts.byId[postId] || null) as PostDetailData | null;
   const post: PostDetailData | null = postFromStore;
-
   const user = useAppSelector((s) => s.auth.user as UserProps | null);
   const canManage = !!(post && canEditPostDetail(post, user));
   const isEdit = searchParams.get("edit") === "1";
-
+  const likeCount = storeCount ?? (post as any)?.like_count ?? 0;
+  const liked = Boolean(storeLiked ?? (post as any)?.clicked_like ?? false);
+  const inFlightRef = useRef(false);
+  const [likeBusy, setLikeBusy] = useState(false);
   // —— 内容折叠
   const [expanded, setExpanded] = useState(false);
   const [maxChars, setMaxChars] = useState(300);
@@ -87,6 +100,17 @@ export default function PostDetailPage() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState(0);
   const touchStartX = useRef<number | null>(null);
+
+  // 首次把详情里的初值写入 likes store
+  useEffect(() => {
+    if (!post) return;
+    if (typeof post.like_count === "number") {
+      dispatch(setLikeCount({ postId: post.id, like_count: post.like_count }));
+    }
+    if (typeof (post as any).clicked_like === "boolean") {
+      dispatch(setLikedByMe({ postId: post.id, liked: (post as any).clicked_like }));
+    }
+  }, [post?.id]);
 
   useEffect(() => {
     if (!Number.isFinite(postId)) return;
@@ -146,6 +170,36 @@ export default function PostDetailPage() {
       handleEditClose();
     } catch (e: any) {
       alert(e?.message || "Update post failed");
+    }
+  };
+
+  const onToggleLike = async () => {
+    if (!post || inFlightRef.current) return;
+    const prevLiked = liked;
+    const prevCount = likeCount;
+    const nextLiked = !prevLiked;
+    const nextCount = prevCount + (prevLiked ? -1 : 1);
+
+    inFlightRef.current = true;
+    setLikeBusy(true);
+    dispatch(setLikedByMe({ postId: post.id, liked: nextLiked }));
+    dispatch(setLikeCount({ postId: post.id, like_count: nextCount }));
+
+    try {
+      if (prevLiked) {
+        await dispatch(unlikePost(post.id)).unwrap();
+      } else {
+        await dispatch(likePost(post.id)).unwrap();
+      }
+      // fulfilled 时我们已经在 groupDetail/posts slice 覆盖了 props 源
+    } catch (err: any) {
+      // 回滚 + 显示后端字符串
+      dispatch(setLikedByMe({ postId: post.id, liked: prevLiked }));
+      dispatch(setLikeCount({ postId: post.id, like_count: prevCount }));
+      alert(typeof err === "string" ? err : err?.message || (prevLiked ? "Unlike failed" : "Like failed"));
+    } finally {
+      inFlightRef.current = false;
+      setLikeBusy(false);
     }
   };
 
@@ -229,43 +283,85 @@ export default function PostDetailPage() {
             showAdd={false}
             pageTitle={post.title}
           />
-
           <div className="flex items-center justify-between gap-2">
             <h1 className="text-2xl mb-2">{post.title}</h1>
-            {canManage && (
-              <div className="hidden md:flex items-center gap-2">
-                <IconButton
-                  className="text-white"
-                  title="Edit post"
-                  aria-label="Edit post"
-                  variant="outline"
-                  tone="brand"
-                  size="md"
-                  onClick={handleEditOpen}
-                >
-                  <PencilSquareIcon className="h-5 w-5" />
-                </IconButton>
 
-                <IconButton
-                  title="Delete post"
-                  aria-label="Delete post"
-                  variant="outline"
-                  tone="danger"
-                  size="md"
-                  onClick={() => handleDelete(post.id)}
-                >
-                  <TrashIcon className="h-5 w-5" />
-                </IconButton>
-              </div>
-            )}
+            <div className="hidden md:flex items-center gap-2">
+              {/* 互动条：点赞 + 评论数 */}
+              <button
+                onClick={onToggleLike}
+                disabled={likeBusy}
+                aria-pressed={liked}
+                aria-label={liked ? "Unlike" : "Like"}
+                className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-3 py-1 text-sm shadow-sm
+                 hover:bg-gray-50 disabled:opacity-60"
+                title={liked ? "Unlike" : "Like"}
+              >
+                {liked ? (
+                  <HandThumbUpSolid className="h-4 w-4 text-red-500" />
+                ) : (
+                  <HandThumbUpOutline className="h-4 w-4 text-dark-gray" />
+                )}
+                <span className="text-dark-gray">{likeCount}</span>
+              </button>
+
+              {/* 评论数（未来接入真实数值：post.comment_count 或从你的评论 slice 取） */}
+              {/* <div
+                className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-3 py-1 text-sm shadow-sm"
+                title="Comments"
+              >
+                <ChatBubbleLeftIcon className="h-4 w-4 text-dark-gray" />
+                <span className="text-dark-gray">{(post as any)?.comment_count ?? 0}</span>
+              </div> */}
+
+              {/* 分隔线 + 管理操作（仅作者/管理员可见） */}
+              {canManage && (
+                <div className="mx-1 h-5 w-px bg-border" aria-hidden />
+              )}
+              {canManage && (
+                <div className="flex items-center gap-2">
+                  <IconButton
+                    className="text-white"
+                    title="Edit post"
+                    aria-label="Edit post"
+                    variant="outline"
+                    tone="brand"
+                    size="md"
+                    onClick={handleEditOpen}
+                  >
+                    <PencilSquareIcon className="h-5 w-5" />
+                  </IconButton>
+
+                  <IconButton
+                    title="Delete post"
+                    aria-label="Delete post"
+                    variant="outline"
+                    tone="danger"
+                    size="md"
+                    onClick={() => handleDelete(post.id)}
+                  >
+                    <TrashIcon className="h-5 w-5" />
+                  </IconButton>
+                </div>
+              )}
+            </div>
           </div>
 
+
           <div className="flex flex-wrap gap-3 mb-3">
-            <div className="text-xs text-dark-green md:text-sm flex items-center">
+            <span className="hidden md:inline-flex items-center gap-1 text-xs">
+              <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-dark-green/10 text-dark-green font-semibold">
+                {(post.author.first_name?.[0] || "?").toUpperCase()}
+              </span>
+              <span className="text-sm">
+                {post.author.first_name}
+              </span>
+            </span>
+            <div className="text-xs  md:text-sm flex items-center">
               <UserGroupIcon className="h-4 w-4 mr-1 text-dark-green" />
-              {post.group_id}
+              {post.group.name}
             </div>
-            <div className="text-xs text-dark-green md:text-sm flex items-center">
+            <div className="text-xs md:text-sm flex items-center">
               <CalendarIcon className="h-4 w-4 mr-1 text-dark-green" /> {formatDate(post.created_at)}
             </div>
           </div>

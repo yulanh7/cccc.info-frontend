@@ -6,16 +6,14 @@ import type {
   PostDetailData,
   UpdatePostRequest,
   UpdatePostData,
-  LikePostData,
-  UnlikePostData,
-  PostLikesData,
   PostFileIdsData,
-  postsPagination,
   PostListItemApi,
   PostListData,
 } from "@/app/types";
 import { unwrapData } from "@/app/types/api";
 import type { LoadStatus } from "@/app/types";
+import { likePost, unlikePost } from "@/app/features/posts/likeSlice";
+
 
 /** ---------------------------------------------
  *  通用列表：我的 / 订阅 / 群组帖子
@@ -99,7 +97,7 @@ export const fetchSubscribedPosts = createAsyncThunk<
 });
 
 /** ---------------------------------------------
- *  原有：详情/创建/更新/删除/点赞/附件
+ *  详情/创建/更新/删除/附件
  * --------------------------------------------- */
 
 // 兼容：创建返回的 post（缺少 content/author 等） 与 详情返回的完整体
@@ -110,12 +108,10 @@ const POSTS_ENDPOINTS = {
   GET: (postId: number) => `/posts/${postId}`,
   UPDATE: (postId: number) => `/posts/${postId}`,
   DELETE: (postId: number) => `/posts/${postId}`,
-  LIKE: (postId: number) => `/posts/${postId}/like`,
-  LIKES: (postId: number) => `/posts/${postId}/likes`,
   FILE_IDS: (postId: number) => `/posts/${postId}/files`,
 } as const;
 
-// 3.1 创建帖子
+// 创建
 export const createPost = createAsyncThunk<
   CreatedPostData["post"],
   {
@@ -132,7 +128,7 @@ export const createPost = createAsyncThunk<
   }
 });
 
-// 3.3 获取帖子详情
+// 详情
 export const fetchPostDetail = createAsyncThunk<PostDetailData, { postId: number }>(
   "posts/fetchPostDetail",
   async ({ postId }, { rejectWithValue }) => {
@@ -146,7 +142,7 @@ export const fetchPostDetail = createAsyncThunk<PostDetailData, { postId: number
   }
 );
 
-// 3.4 更新帖子
+// 更新
 export const updatePost = createAsyncThunk<
   PostDetailData,
   {
@@ -163,7 +159,7 @@ export const updatePost = createAsyncThunk<
   }
 });
 
-// 3.5 删除帖子
+// 删除
 export const deletePost = createAsyncThunk<{ id: number }, number>(
   "posts/deletePost",
   async (postId, { rejectWithValue }) => {
@@ -177,59 +173,7 @@ export const deletePost = createAsyncThunk<{ id: number }, number>(
   }
 );
 
-// 3.6 点赞
-export const likePost = createAsyncThunk<{ postId: number; like_count: number }, number>(
-  "posts/likePost",
-  async (postId, { rejectWithValue }) => {
-    try {
-      const res = await apiRequest<LikePostData>("POST", POSTS_ENDPOINTS.LIKE(postId));
-      if (!res.success || typeof res.data?.like_count !== "number")
-        throw new Error(res.message || "Like post failed");
-      return { postId, like_count: res.data.like_count };
-    } catch (e: any) {
-      return rejectWithValue(e.message || "Like post failed") as any;
-    }
-  }
-);
-
-// 3.7 取消点赞
-export const unlikePost = createAsyncThunk<{ postId: number; like_count: number }, number>(
-  "posts/unlikePost",
-  async (postId, { rejectWithValue }) => {
-    try {
-      const res = await apiRequest<UnlikePostData>("DELETE", POSTS_ENDPOINTS.LIKE(postId));
-      if (!res.success || typeof res.data?.like_count !== "number")
-        throw new Error(res.message || "Unlike post failed");
-      return { postId, like_count: res.data.like_count };
-    } catch (e: any) {
-      return rejectWithValue(e.message || "Unlike post failed") as any;
-    }
-  }
-);
-
-// 3.8 获取帖子点赞列表
-export const fetchPostLikes = createAsyncThunk<
-  {
-    postId: number;
-    likes: PostLikesData["likes"];
-    pagination: PostLikesData["pagination"];
-  },
-  { postId: number; page?: number; per_page?: number }
->("posts/fetchPostLikes", async ({ postId, page = 1, per_page = 20 }, { rejectWithValue }) => {
-  try {
-    const qs = new URLSearchParams();
-    if (page) qs.set("page", String(page));
-    if (per_page) qs.set("per_page", String(per_page));
-    const url = `${POSTS_ENDPOINTS.LIKES(postId)}${qs.toString() ? `?${qs}` : ""}`;
-    const res = await apiRequest<PostLikesData>("GET", url);
-    if (!res.success || !res.data) throw new Error(res.message || "Fetch likes failed");
-    return { postId, likes: res.data.likes, pagination: res.data.pagination };
-  } catch (e: any) {
-    return rejectWithValue(e.message || "Fetch likes failed") as any;
-  }
-});
-
-// 3.9 获取帖子附件 id 列表
+// 附件 id 列表
 export const fetchPostFileIds = createAsyncThunk<{ postId: number; file_ids: number[] }, number>(
   "posts/fetchPostFileIds",
   async (postId, { rejectWithValue }) => {
@@ -261,17 +205,10 @@ interface PostsState {
   byId: Record<number, PostEntity>;
   current: PostEntity | null;
 
-  // 列表（统一放这里；key: 'mine' | 'subscribed' | `group:${id}` ）
+  // 列表（key: 'mine' | 'subscribed' | `group:${id}` ）
   lists: Record<string, FeedList>;
 
-  // 点赞 / 附件
-  likes: Record<
-    number,
-    {
-      list: Array<{ id: number; user: { id: number; firstName: string }; created_at: string }>;
-      pagination: postsPagination | null;
-    }
-  >;
+  // 附件
   fileIds: Record<number, number[]>;
 
   // 通用状态
@@ -293,7 +230,6 @@ const initialState: PostsState = {
   current: null,
   lists: {},
 
-  likes: {},
   fileIds: {},
 
   status: {},
@@ -305,6 +241,19 @@ const setStatus = (s: PostsState, k: string, v: LoadStatus) => {
 };
 const setError = (s: PostsState, k: string, v: string | null) => {
   s.error[k] = v;
+};
+
+const patchInAllFeeds = (
+  state: PostsState,
+  postId: number,
+  patch: Partial<PostListItemApi> & { clicked_like?: boolean }
+) => {
+  for (const key of Object.keys(state.lists)) {
+    const feed = state.lists[key];
+    if (!feed || !Array.isArray(feed.items)) continue;
+    const idx = feed.items.findIndex((p) => p.id === postId);
+    if (idx >= 0) feed.items[idx] = { ...feed.items[idx], ...patch };
+  }
 };
 
 const postsSlice = createSlice({
@@ -444,35 +393,7 @@ const postsSlice = createSlice({
         setError(s, "deletePost", (a.payload as string) || "Delete post failed");
       });
 
-    /** ====== 点赞 / 附件 ====== */
-    builder
-      .addCase(likePost.pending, (s) => setStatus(s, "likePost", "loading"))
-      .addCase(likePost.fulfilled, (s) => setStatus(s, "likePost", "succeeded"))
-      .addCase(likePost.rejected, (s, a) => {
-        setStatus(s, "likePost", "failed");
-        setError(s, "likePost", (a.payload as string) || "Like post failed");
-      });
-
-    builder
-      .addCase(unlikePost.pending, (s) => setStatus(s, "unlikePost", "loading"))
-      .addCase(unlikePost.fulfilled, (s) => setStatus(s, "unlikePost", "succeeded"))
-      .addCase(unlikePost.rejected, (s, a) => {
-        setStatus(s, "unlikePost", "failed");
-        setError(s, "unlikePost", (a.payload as string) || "Unlike post failed");
-      });
-
-    builder
-      .addCase(fetchPostLikes.pending, (s) => setStatus(s, "fetchPostLikes", "loading"))
-      .addCase(fetchPostLikes.fulfilled, (s, a) => {
-        setStatus(s, "fetchPostLikes", "succeeded");
-        const { postId, likes, pagination } = a.payload;
-        s.likes[postId] = { list: likes, pagination };
-      })
-      .addCase(fetchPostLikes.rejected, (s, a) => {
-        setStatus(s, "fetchPostLikes", "failed");
-        setError(s, "fetchPostLikes", (a.payload as string) || "Fetch likes failed");
-      });
-
+    // 附件 id
     builder
       .addCase(fetchPostFileIds.pending, (s) => setStatus(s, "fetchPostFileIds", "loading"))
       .addCase(fetchPostFileIds.fulfilled, (s, a) => {
@@ -484,6 +405,29 @@ const postsSlice = createSlice({
         setStatus(s, "fetchPostFileIds", "failed");
         setError(s, "fetchPostFileIds", (a.payload as string) || "Fetch file ids failed");
       });
+
+
+    // like覆盖当前 group 页面的post列表项（无需整页刷新）
+    builder
+      .addCase(likePost.fulfilled, (s, a) => {
+        const { postId, like_count } = a.payload;
+        patchInAllFeeds(s, postId, { like_count, clicked_like: true });
+        const cur = s.byId[postId];
+        if (cur) s.byId[postId] = { ...cur, like_count, clicked_like: true } as any;
+        if (s.current?.id === postId) {
+          s.current = { ...s.current, like_count, clicked_like: true } as any;
+        }
+      })
+      .addCase(unlikePost.fulfilled, (s, a) => {
+        const { postId, like_count } = a.payload;
+        patchInAllFeeds(s, postId, { like_count, clicked_like: false });
+        const cur = s.byId[postId];
+        if (cur) s.byId[postId] = { ...cur, like_count, clicked_like: false } as any;
+        if (s.current?.id === postId) {
+          s.current = { ...s.current, like_count, clicked_like: false } as any;
+        }
+      });
+
   },
 });
 

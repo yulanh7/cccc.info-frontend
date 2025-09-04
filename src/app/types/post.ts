@@ -85,7 +85,6 @@ export type PostDetailData = {
   description: string;
   videos: PostVideoApi[];
   files: PostFileApi[];
-  group_id: number;
   author: {
     id: number;
     first_name: string;

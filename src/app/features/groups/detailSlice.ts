@@ -15,6 +15,7 @@ import type {
   PostListItemApi,
 } from '@/app/types';
 import { fetchGroupPostsList } from '@/app/features/posts/slice';
+import { likePost, unlikePost } from "@/app/features/posts/likeSlice";
 
 // 简单的订阅者 UI 形状（与后端 subscribers 项一致）
 type GroupSubscriberUi = { id: number; firstName: string; email: string };
@@ -141,6 +142,17 @@ export const kickGroupMember = createAsyncThunk<
   }
 });
 
+const patchPostById = (
+  arr: PostListItemApi[] | undefined,
+  postId: number,
+  patch: Partial<PostListItemApi> & { clicked_like?: boolean }
+) => {
+  if (!Array.isArray(arr)) return;
+  const idx = arr.findIndex((p) => p?.id === postId);
+  if (idx >= 0) arr[idx] = { ...arr[idx], ...patch };
+};
+
+
 const groupDetailSlice = createSlice({
   name: 'groupDetail',
   initialState,
@@ -257,6 +269,17 @@ const groupDetailSlice = createSlice({
       .addCase(kickGroupMember.rejected, (s, a) => {
         s.status.kickMember = 'failed';
         s.error.kickMember = (a.payload as string) || 'Kick member failed';
+      });
+
+    // like覆盖当前 group 页面的post列表项（无需整页刷新）
+    builder
+      .addCase(likePost.fulfilled, (s, a) => {
+        const { postId, like_count } = a.payload;
+        patchPostById(s.posts, postId, { like_count, clicked_like: true });
+      })
+      .addCase(unlikePost.fulfilled, (s, a) => {
+        const { postId, like_count } = a.payload;
+        patchPostById(s.posts, postId, { like_count, clicked_like: false });
       });
   },
 });
