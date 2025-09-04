@@ -258,9 +258,9 @@ export default function GroupsPage() {
       {canCreate && (
         <button
           onClick={handleAdd}
-          className="fixed md:hidden bottom-10 z-10 left-1/2 -translate-x-1/2 bg-yellow px-3 py-3 rounded-[50%]"
+          className="fixed md:hidden bottom-20 z-10 right-10 bg-yellow p-2  rounded-[50%]"
         >
-          <PlusIcon className="h-7 w-7 text-white" />
+          <PlusIcon className="h-5 w-5 text-white" />
         </button>
       )}
 
