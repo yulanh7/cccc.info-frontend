@@ -93,9 +93,9 @@ export default function PostsListWithPagination({
             <div key={post.id} className="relative rounded-sm overflow-hidden mb-2 break-inside-avoid">
               {/* 工具条（覆盖在图片上，注意 pointer-events） */}
               {canManage && (selectMode || showDelete) && (
-                <div className="absolute left-0 top-[20px] z-10 pointer-events-none">
+                <div className="absolute right-0 top-0 z-1 pointer-events-none">
                   <div
-                    className="flex items-center gap-2 bg-yellow border-t border-border rounded-xs shadow-sm pointer-events-auto"
+                    className="flex items-center gap-2  pointer-events-auto"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {selectMode && (
@@ -103,16 +103,17 @@ export default function PostsListWithPagination({
                         title={isSelected ? "Unselect" : "Select"}
                         aria-label="Select post"
                         size="sm"
-                        variant={isSelected ? "warning" : "outline"}
+                        variant="warning"
                         onClick={() => onToggleSelect(post.id)}
                         active={isSelected}
+                        className="rounded-sm"
                       >
-                        <CheckIcon className="h-4 w-4" />
+                        {isSelected && <CheckIcon className="h-4 w-4" />}
                       </IconButton>
                     )}
 
                     {!selectMode && showDelete && (
-                      <div className="flex flex-col items-center gap-3 py-1 px-1">
+                      <div className="flex flex-col items-center gap-3 py-1 px-1 bg-yellow rounded-xs shadow-sm">
                         <IconButton
                           title="Edit post"
                           aria-label="Edit post"

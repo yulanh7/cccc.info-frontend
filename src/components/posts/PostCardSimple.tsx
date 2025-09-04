@@ -103,7 +103,7 @@ export default function PostCardSimple({
               alt={title}
               className="w-full h-25 md:h-30 object-cover rounded-t-xs md:rounded-t-sm"
             />
-            <div className="absolute top-2 right-2 pointer-events-none">
+            <div className="absolute bottom-2 right-2 pointer-events-none">
               <div className="rounded-full bg-[rgba(0,0,0,0.35)] p-2">
                 <PlayIcon className="h-3 w-3 text-white" />
               </div>
@@ -143,7 +143,7 @@ export default function PostCardSimple({
           </span>
 
           {/* —— 右下角 Like：可点、无跳转、乐观更新 */}
-          <div className="absolute bottom-2 right-2 z-10">
+          <div className="absolute bottom-2 right-2 z-1">
             <button
               onClick={onToggleLike}
               disabled={busy}
