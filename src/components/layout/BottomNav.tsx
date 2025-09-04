@@ -38,7 +38,6 @@ export default function BottomNav({ unreadCount }: BottomNavProps) {
   const dispatch = useAppDispatch();
 
   const hideBottomNav =
-    pathname.startsWith('/posts/') ||
     pathname.startsWith('/messages/') ||
     pathname.startsWith('/auth');
 
@@ -77,7 +76,7 @@ export default function BottomNav({ unreadCount }: BottomNavProps) {
   const navItems: NavItem[] = [
     { href: '/', label: 'Home', outlineIcon: OutlineHomeIcon, solidIcon: SolidHomeIcon },
     { href: '/groups', label: 'Groups', outlineIcon: OutlineUsersIcon, solidIcon: SolidUsersIcon },
-    { href: '/messages', label: 'Message', outlineIcon: OutlineBellIcon, solidIcon: SolidBellIcon, unreadCount },
+    // { href: '/messages', label: 'Message', outlineIcon: OutlineBellIcon, solidIcon: SolidBellIcon, unreadCount },
   ];
 
   if (hideBottomNav) return null;
