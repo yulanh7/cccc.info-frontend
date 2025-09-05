@@ -207,6 +207,9 @@ export default function GroupListView({
                       <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-dark-green/10 text-dark-green text-xs font-semibold">
                         {(group.creator_name?.[0] || "?").toUpperCase()}
                       </span>
+                      <span className="text-[10px]">
+                        {ellipsize(group.creator_name, 10, { byWords: true })}
+                      </span>
                     </span>
 
                     {onToggleSubscription && (
