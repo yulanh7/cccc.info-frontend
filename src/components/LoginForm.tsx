@@ -8,12 +8,15 @@ import { LoginCredentials } from '@/app/types/auth';
 import { AppDispatch } from '@/app/features/store';
 import { getRecaptchaToken } from '@/app/ultility/recaptcha';
 import Button from '@/components/ui/Button'; // ← 按你的路径修改
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPsw, setShowPsw] = useState(false);
+
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
 
@@ -54,15 +57,25 @@ export default function LoginForm() {
         required
         disabled={isLoading}
       />
-      <input
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        placeholder="Password"
-        className="w-full p-2 border border-border rounded-sm"
-        required
-        disabled={isLoading}
-      />
+      <div className="relative">
+        <input
+          type={showPsw ? 'text' : 'password'}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Confirm Password"
+          className="w-full p-2 border border-border rounded-sm"
+          required
+          disabled={isLoading}
+        />
+        <button
+          type="button"
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-white/10"
+          onClick={() => setShowPsw((v) => !v)}
+          aria-label={showPsw ? 'Hide password' : 'Show password'}
+        >
+          {showPsw ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+        </button>
+      </div>
       <Button
         type="submit"
         variant="primary"

@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/app/features/hooks';
 import { signupThunk } from '@/app/features/auth/slice';
 import { getRecaptchaToken } from '@/app/ultility/recaptcha';
-import Button from '@/components/ui/Button'; // ← 按你的路径修改
+import Button from '@/components/ui/Button';
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 export default function SignUpForm() {
   const [email, setEmail] = useState('');
@@ -16,6 +17,8 @@ export default function SignUpForm() {
   const router = useRouter();
   const { status, error } = useAppSelector((state) => state.auth);
   const isLoading = status === 'loading';
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,24 +66,46 @@ export default function SignUpForm() {
         required
         disabled={isLoading}
       />
-      <input
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        placeholder="Password"
-        className="w-full p-2 border border-border rounded-sm"
-        required
-        disabled={isLoading}
-      />
-      <input
-        type="password"
-        value={confirmPassword}
-        onChange={(e) => setConfirmPassword(e.target.value)}
-        placeholder="Confirm Password"
-        className="w-full p-2 border border-border rounded-sm"
-        required
-        disabled={isLoading}
-      />
+      <div className="relative">
+        <input
+          type={showNew ? 'text' : 'password'}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+          className="w-full p-2 border border-border rounded-sm"
+          required
+          disabled={isLoading}
+        />
+        <button
+          type="button"
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-white/10"
+          onClick={() => setShowNew((v) => !v)}
+          aria-label={showNew ? 'Hide password' : 'Show password'}
+        >
+          {showNew ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+        </button>
+      </div>
+      <div className="relative">
+        <input
+          type={showConfirm ? 'text' : 'password'}
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          placeholder="Confirm Password"
+          className="w-full p-2 border border-border rounded-sm"
+          required
+          disabled={isLoading}
+        />
+        <button
+          type="button"
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-white/10"
+          onClick={() => setShowConfirm((v) => !v)}
+          aria-label={showNew ? 'Hide password' : 'Show password'}
+        >
+          {showConfirm ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+        </button>
+      </div>
+
+
 
       <Button
         type="submit"
