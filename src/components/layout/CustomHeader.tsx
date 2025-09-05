@@ -4,6 +4,7 @@ import {
   ChevronLeftIcon, TrashIcon, PencilSquareIcon, PlusIcon, UserCircleIcon
 } from '@heroicons/react/24/outline';
 import ConfirmModal from '../ConfirmModal';
+import { ellipsize } from '@/app/ultility';
 
 interface CustomHeaderProps {
   item?: any;
@@ -50,12 +51,12 @@ export default function CustomHeader({
     <>
       <header className="fixed md:hidden top-0 left-1/2 -translate-x-1/2 z-10 w-full max-w-[769px] flex items-center justify-between p-4 border-b border-b-border bg-bg">
         <div className="flex items-center space-x-2">
-          <button
+          {/* <button
             onClick={handleBack}
             className="text-dark-gray hover:text-dark-green focus:outline-none"
           >
             <ChevronLeftIcon className="h-6 w-6 mr-1" />
-          </button>
+          </button> */}
           {item?.author && (
             <span className="flex items-center text-dark-gray text-sm">
               <UserCircleIcon className="h-5 w-5 mr-1" />
@@ -63,7 +64,7 @@ export default function CustomHeader({
             </span>
           )}
         </div>
-        <div>{pageTitle}</div>
+        <div> {ellipsize(pageTitle, 10, { byWords: true })} </div>
         <div className="flex items-center space-x-4">
           {showDelete && onDelete && item && (
             <button
