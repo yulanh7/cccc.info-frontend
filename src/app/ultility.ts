@@ -84,21 +84,43 @@ export function ellipsize(
   max = 80,
   opts: { byWords?: boolean; suffix?: string } = {}
 ): string {
-  const suffix = opts.suffix ?? '…';
-  if (!input) return '';
-  const chars = Array.from(input); // 按“字符”而不是 code unit 计数（兼容 emoji）
-  if (chars.length <= max) return input;
+  const suffix = opts.suffix ?? "…";
+  if (!input) return "";
 
-  if (opts.byWords) {
-    // 尝试在上限附近按空格断句（对中文无空格时自动退化为字符截断）
-    const slice = chars.slice(0, max + 1).join('');
-    const cut = slice.lastIndexOf(' ');
-    const base = cut > 0 ? slice.slice(0, cut) : chars.slice(0, max).join('');
-    return base + suffix;
+  const chars = Array.from(input); // 支持 emoji
+
+  // 计算“宽度”累积，中文=2，英文=1
+  let width = 0;
+  let cutIndex = chars.length;
+
+  for (let i = 0; i < chars.length; i++) {
+    const ch = chars[i];
+    // 判断是否全角（大致判断：非 ASCII）
+    const isWide = /[^\x00-\x7F]/.test(ch);
+    width += isWide ? 2 : 1;
+
+    if (width > max) {
+      cutIndex = i;
+      break;
+    }
   }
 
-  return chars.slice(0, max).join('') + suffix;
+  if (cutIndex >= chars.length) {
+    return input; // 没超长
+  }
+
+  if (opts.byWords) {
+    // 在 cutIndex 附近找最后的空格
+    const slice = chars.slice(0, cutIndex + 1).join("");
+    const lastSpace = slice.lastIndexOf(" ");
+    if (lastSpace > 0) {
+      return slice.slice(0, lastSpace) + suffix;
+    }
+  }
+
+  return chars.slice(0, cutIndex).join("") + suffix;
 }
+
 
 export const mapApiErrorToFields = (msg?: string) => {
   const lower = (msg || "").toLowerCase();
