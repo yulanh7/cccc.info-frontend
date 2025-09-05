@@ -1,5 +1,5 @@
 "use client";
-
+import { Suspense } from "react";
 import React, { useMemo, useState } from "react";
 import PageTitle from "@/components/layout/PageTitle";
 import MobileSearchHeader from "@/components/layout/MobileSearchHeader";
@@ -16,6 +16,14 @@ const PER_PAGE = 9;
 const MY_GROUPS_PATH = "/my-groupss"; // 你也可以改成 /groups/mine
 
 export default function MyGroupsPage() {
+  return (
+    <Suspense fallback={<LoadingOverlay show text="Loading groups…" />}>
+      <MyGroupsPageInner />
+    </Suspense>
+  );
+}
+
+function MyGroupsPageInner() {
   const {
     // 数据（来自已订阅）
     rows,
@@ -75,7 +83,7 @@ export default function MyGroupsPage() {
   const confirmGroupDelete = useConfirm<number>("Are you sure you want to delete this group?");
 
   return (
-    <>
+    <Suspense fallback={<LoadingOverlay show={pageLoading} text="Loading groups…" />}>
       <PageTitle title="My Groups" showPageTitle />
 
 
@@ -105,11 +113,6 @@ export default function MyGroupsPage() {
         />
       </div>
 
-      {/* 首次加载页遮罩 */}
-      <LoadingOverlay show={pageLoading} text="Loading groups…" />
-      {/* 次级操作遮罩 */}
-      <LoadingOverlay show={Boolean(saving || deleting || toggling)} text={overlayText} />
-
       {/* 新建/编辑弹窗 */}
       {isModalOpen && (
         <GroupModal
@@ -132,6 +135,6 @@ export default function MyGroupsPage() {
           await deleteGroup(id);
         })}
       />
-    </>
+    </Suspense>
   );
 }

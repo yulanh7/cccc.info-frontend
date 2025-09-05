@@ -1,5 +1,5 @@
 "use client";
-
+import { Suspense } from "react";
 import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useParams, useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
@@ -68,6 +68,14 @@ function splitFiles(files: PostFileApi[]) {
 }
 
 export default function PostDetailPage() {
+  return (
+    <Suspense fallback={<LoadingOverlay show text="Loading groups…" />}>
+      <PostDetailPageInner />
+    </Suspense>
+  );
+}
+
+function PostDetailPageInner() {
   const { id } = useParams<{ id: string }>();
   const postId = useMemo(() => Number(id), [id]);
 
@@ -256,60 +264,62 @@ export default function PostDetailPage() {
   );
 
   return (
-    <div className="container mx-auto px-4">
-      <LoadingOverlay show={pageLoading} text="Loading post…" />
-      {pageError && <div className="text-red-600 mt-20">Failed to load post: {String(pageError)}</div>}
-      {!pageLoading && post && (
-        <>
-          {/* 顶部横幅：视频优先，否则背景图 */}
-          <div>
-            {videoUrls.length > 0 ? (
-              <YouTubeList
-                videos={videoUrls}
-                iframeClassName="w-full h-[200px] md:h-[400px] rounded-sm"
-              />
-            ) : (
-              <div className="w-full min-h-30 md:min-h-60 bg-[url('/images/bg-for-homepage.png')] bg-cover bg-center rounded-t-xs md:rounded-t-sm flex items-center justify-center">
-                <h2 className="text-dark-gray text-xl md:text-5xl font-'Apple Color Emoji' font-semibold text-center px-4">
-                  {post.title}
-                </h2>
-              </div>
-            )}
-          </div>
+    <Suspense fallback={<LoadingOverlay show={pageLoading} text="Loading post…" />}>
 
-          <CustomHeader
-            item={{ id: post.id, author: post.author?.first_name }}
-            showEdit={canManage}
-            showDelete={canManage}
-            onDelete={() => handleDelete(post.id)}
-            onEdit={handleEditOpen}
-            showAdd={false}
-            pageTitle={post.title}
-          />
-          <div className="flex items-center justify-between gap-2">
-            <h1 className="text-2xl mb-2">{post.title}</h1>
+      <div className="container mx-auto px-4">
 
-            <div className="hidden md:flex items-center gap-2">
-              {/* 互动条：点赞 + 评论数 */}
-              <button
-                onClick={onToggleLike}
-                disabled={likeBusy}
-                aria-pressed={liked}
-                aria-label={liked ? "Unlike" : "Like"}
-                className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-3 py-1 text-sm shadow-sm
+        {pageError && <div className="text-red-600 mt-20">Failed to load post: {String(pageError)}</div>}
+        {!pageLoading && post && (
+          <>
+            {/* 顶部横幅：视频优先，否则背景图 */}
+            <div>
+              {videoUrls.length > 0 ? (
+                <YouTubeList
+                  videos={videoUrls}
+                  iframeClassName="w-full h-[200px] md:h-[400px] rounded-sm"
+                />
+              ) : (
+                <div className="w-full min-h-30 md:min-h-60 bg-[url('/images/bg-for-homepage.png')] bg-cover bg-center rounded-t-xs md:rounded-t-sm flex items-center justify-center">
+                  <h2 className="text-dark-gray text-xl md:text-5xl font-'Apple Color Emoji' font-semibold text-center px-4">
+                    {post.title}
+                  </h2>
+                </div>
+              )}
+            </div>
+
+            <CustomHeader
+              item={{ id: post.id, author: post.author?.first_name }}
+              showEdit={canManage}
+              showDelete={canManage}
+              onDelete={() => handleDelete(post.id)}
+              onEdit={handleEditOpen}
+              showAdd={false}
+              pageTitle={post.title}
+            />
+            <div className="flex items-center justify-between gap-2">
+              <h1 className="text-2xl mb-2">{post.title}</h1>
+
+              <div className="hidden md:flex items-center gap-2">
+                {/* 互动条：点赞 + 评论数 */}
+                <button
+                  onClick={onToggleLike}
+                  disabled={likeBusy}
+                  aria-pressed={liked}
+                  aria-label={liked ? "Unlike" : "Like"}
+                  className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-3 py-1 text-sm shadow-sm
                  hover:bg-gray-50 disabled:opacity-60"
-                title={liked ? "Unlike" : "Like"}
-              >
-                {liked ? (
-                  <HandThumbUpSolid className="h-4 w-4 text-red-500" />
-                ) : (
-                  <HandThumbUpOutline className="h-4 w-4 text-dark-gray" />
-                )}
-                <span className="text-dark-gray">{likeCount}</span>
-              </button>
+                  title={liked ? "Unlike" : "Like"}
+                >
+                  {liked ? (
+                    <HandThumbUpSolid className="h-4 w-4 text-red-500" />
+                  ) : (
+                    <HandThumbUpOutline className="h-4 w-4 text-dark-gray" />
+                  )}
+                  <span className="text-dark-gray">{likeCount}</span>
+                </button>
 
-              {/* 评论数（未来接入真实数值：post.comment_count 或从你的评论 slice 取） */}
-              {/* <div
+                {/* 评论数（未来接入真实数值：post.comment_count 或从你的评论 slice 取） */}
+                {/* <div
                 className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-3 py-1 text-sm shadow-sm"
                 title="Comments"
               >
@@ -317,206 +327,207 @@ export default function PostDetailPage() {
                 <span className="text-dark-gray">{(post as any)?.comment_count ?? 0}</span>
               </div> */}
 
-              {/* 分隔线 + 管理操作（仅作者/管理员可见） */}
-              {canManage && (
-                <div className="mx-1 h-5 w-px bg-border" aria-hidden />
-              )}
-              {canManage && (
-                <div className="flex items-center gap-2">
-                  <IconButton
-                    className="text-white"
-                    title="Edit post"
-                    aria-label="Edit post"
-                    variant="outline"
-                    tone="brand"
-                    size="md"
-                    onClick={handleEditOpen}
-                  >
-                    <PencilSquareIcon className="h-5 w-5" />
-                  </IconButton>
-
-                  <IconButton
-                    title="Delete post"
-                    aria-label="Delete post"
-                    variant="outline"
-                    tone="danger"
-                    size="md"
-                    onClick={() => handleDelete(post.id)}
-                  >
-                    <TrashIcon className="h-5 w-5" />
-                  </IconButton>
-                </div>
-              )}
-            </div>
-          </div>
-
-
-          <div className="flex flex-wrap gap-3 mb-3">
-            <span className="hidden md:inline-flex items-center gap-1 text-xs">
-              <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-dark-green/10 text-dark-green font-semibold">
-                {(post.author.first_name?.[0] || "?").toUpperCase()}
-              </span>
-              <span className="text-sm">
-                {post.author.first_name}
-              </span>
-            </span>
-            <div className="text-xs  md:text-sm flex items-center">
-              <UserGroupIcon className="h-4 w-4 mr-1 text-dark-green" />
-              {post.group.name}
-            </div>
-            <div className="text-xs md:text-sm flex items-center">
-              <CalendarIcon className="h-4 w-4 mr-1 text-dark-green" /> {formatDate(post.created_at)}
-            </div>
-          </div>
-
-          {/* 正文（纯文本 + 保留换行，点击文字本身可收起） */}
-          <div
-            className="text-gray whitespace-pre-wrap cursor-pointer mb-5"
-            onClick={() => {
-              if (expanded) setExpanded(false);
-            }}
-          >
-            {shown}
-            {isLong && !expanded && (
-              <>
-                {"… "}
-                <button
-                  className="text-dark-green underline text-sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setExpanded(true);
-                  }}
-                >
-                  See more
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* 图片缩略图 */}
-          {images.length > 0 && (
-            <div className="mb-4">
-              <ul className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
-                {images.map((img, idx) => (
-                  <li
-                    key={`${img.id ?? img.url}-${idx}`}
-                    className="relative cursor-zoom-in aspect-square"
-                    onClick={() => openLightbox(idx)}
-                    title="Click to preview"
-                  >
-                    <img
-                      src={img.url}
-                      alt={img.filename}
-                      className="w-full h-full object-cover rounded-sm border border-border"
-                    />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* 底部文档 */}
-          {documents.length > 0 && (
-            <div className="mt-4 shadow-md p-4">
-              <h3 className="text-lg font-semibold text-dark-gray mb-2">「资料」</h3>
-              <ul className="space-y-2">
-                {documents.map((file, index) => (
-                  <li key={`${file.id ?? file.url}-${index}`} className="flex items-center space-x-4">
-                    <a
-                      href={file.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex text-sm items-center text-dark-green hover:text-green underline"
-                      title={file.filename}
+                {/* 分隔线 + 管理操作（仅作者/管理员可见） */}
+                {canManage && (
+                  <div className="mx-1 h-5 w-px bg-border" aria-hidden />
+                )}
+                {canManage && (
+                  <div className="flex items-center gap-2">
+                    <IconButton
+                      className="text-white"
+                      title="Edit post"
+                      aria-label="Edit post"
+                      variant="outline"
+                      tone="brand"
+                      size="md"
+                      onClick={handleEditOpen}
                     >
-                      <EyeIcon className="h-5 w-5 mr-2" />
-                      {file.filename}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+                      <PencilSquareIcon className="h-5 w-5" />
+                    </IconButton>
 
-          {/* 评论区 */}
-          <CommentsSection
-            postId={post.id}
-            postAuthorId={post.author.id}      // 你 PostDetailData 里 author: { id, first_name }
-            currentUserId={user?.id ?? null}
-          />
-
-
-          {/* 编辑弹窗（传入与 API 对齐的数据） */}
-          {isEdit && post && (
-            <PostModal
-              item={{
-                title: post.title,
-                description: post.description,
-                content: post.content,          // ← 用 content
-                videos: videoUrls,              // ← string[]
-                fileIds: (post.files || [])
-                  .map((f) => f.id)
-                  .filter((id): id is number => typeof id === "number"),
-              }}
-              isNew={false}
-              onSave={handleEditSave as any}    // 你的 PostModal 若有专门类型，可调整此处
-              onClose={handleEditClose}
-              existingFiles={post.files as any} // 若 PostModal 期望字段名为 name，可在内部适配
-            />
-          )}
-
-          {/* 图片灯箱 */}
-          {lightboxOpen && images.length > 0 && (
-            <div
-              className="fixed inset-0 z-40 bg-black/80 flex items-center justify-center"
-              onClick={closeLightbox}
-              onTouchStart={onTouchStart}
-              onTouchEnd={onTouchEnd}
-            >
-              <button
-                className="absolute top-4 right-4 text-white p-1 rounded hover:bg-white/10"
-                onClick={(e) => { e.stopPropagation(); closeLightbox(); }}
-                aria-label="Close preview"
-                title="Close"
-              >
-                <XMarkIcon className="h-7 w-7" />
-              </button>
-
-              <button
-                className="absolute left-3 md:left-6 text-white p-2 rounded hover:bg-white/10"
-                onClick={(e) => { e.stopPropagation(); prevImg(); }}
-                aria-label="Previous image"
-                title="Previous"
-              >
-                <ChevronLeftIcon className="h-8 w-8" />
-              </button>
-
-              <img
-                src={images[lightboxIdx].url}
-                alt={images[lightboxIdx].filename}
-                className="max-h-[85vh] max-w-[90vw] object-contain rounded"
-                onClick={(e) => e.stopPropagation()}
-              />
-
-              <button
-                className="absolute right-3 md:right-6 text-white p-2 rounded hover:bg-white/10"
-                onClick={(e) => { e.stopPropagation(); nextImg(); }}
-                aria-label="Next image"
-                title="Next"
-              >
-                <ChevronRightIcon className="h-8 w-8" />
-              </button>
-
-              <div
-                className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white text-sm bg-black/40 px-3 py-1 rounded"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {lightboxIdx + 1}/{images.length}
+                    <IconButton
+                      title="Delete post"
+                      aria-label="Delete post"
+                      variant="outline"
+                      tone="danger"
+                      size="md"
+                      onClick={() => handleDelete(post.id)}
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </IconButton>
+                  </div>
+                )}
               </div>
             </div>
-          )}
-        </>
-      )}
-    </div>
+
+
+            <div className="flex flex-wrap gap-3 mb-3">
+              <span className="hidden md:inline-flex items-center gap-1 text-xs">
+                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-dark-green/10 text-dark-green font-semibold">
+                  {(post.author.first_name?.[0] || "?").toUpperCase()}
+                </span>
+                <span className="text-sm">
+                  {post.author.first_name}
+                </span>
+              </span>
+              <div className="text-xs  md:text-sm flex items-center">
+                <UserGroupIcon className="h-4 w-4 mr-1 text-dark-green" />
+                {post.group.name}
+              </div>
+              <div className="text-xs md:text-sm flex items-center">
+                <CalendarIcon className="h-4 w-4 mr-1 text-dark-green" /> {formatDate(post.created_at)}
+              </div>
+            </div>
+
+            {/* 正文（纯文本 + 保留换行，点击文字本身可收起） */}
+            <div
+              className="text-gray whitespace-pre-wrap cursor-pointer mb-5"
+              onClick={() => {
+                if (expanded) setExpanded(false);
+              }}
+            >
+              {shown}
+              {isLong && !expanded && (
+                <>
+                  {"… "}
+                  <button
+                    className="text-dark-green underline text-sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setExpanded(true);
+                    }}
+                  >
+                    See more
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* 图片缩略图 */}
+            {images.length > 0 && (
+              <div className="mb-4">
+                <ul className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                  {images.map((img, idx) => (
+                    <li
+                      key={`${img.id ?? img.url}-${idx}`}
+                      className="relative cursor-zoom-in aspect-square"
+                      onClick={() => openLightbox(idx)}
+                      title="Click to preview"
+                    >
+                      <img
+                        src={img.url}
+                        alt={img.filename}
+                        className="w-full h-full object-cover rounded-sm border border-border"
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* 底部文档 */}
+            {documents.length > 0 && (
+              <div className="mt-4 shadow-md p-4">
+                <h3 className="text-lg font-semibold text-dark-gray mb-2">「资料」</h3>
+                <ul className="space-y-2">
+                  {documents.map((file, index) => (
+                    <li key={`${file.id ?? file.url}-${index}`} className="flex items-center space-x-4">
+                      <a
+                        href={file.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex text-sm items-center text-dark-green hover:text-green underline"
+                        title={file.filename}
+                      >
+                        <EyeIcon className="h-5 w-5 mr-2" />
+                        {file.filename}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* 评论区 */}
+            <CommentsSection
+              postId={post.id}
+              postAuthorId={post.author.id}      // 你 PostDetailData 里 author: { id, first_name }
+              currentUserId={user?.id ?? null}
+            />
+
+
+            {/* 编辑弹窗（传入与 API 对齐的数据） */}
+            {isEdit && post && (
+              <PostModal
+                item={{
+                  title: post.title,
+                  description: post.description,
+                  content: post.content,          // ← 用 content
+                  videos: videoUrls,              // ← string[]
+                  fileIds: (post.files || [])
+                    .map((f) => f.id)
+                    .filter((id): id is number => typeof id === "number"),
+                }}
+                isNew={false}
+                onSave={handleEditSave as any}    // 你的 PostModal 若有专门类型，可调整此处
+                onClose={handleEditClose}
+                existingFiles={post.files as any} // 若 PostModal 期望字段名为 name，可在内部适配
+              />
+            )}
+
+            {/* 图片灯箱 */}
+            {lightboxOpen && images.length > 0 && (
+              <div
+                className="fixed inset-0 z-40 bg-black/80 flex items-center justify-center"
+                onClick={closeLightbox}
+                onTouchStart={onTouchStart}
+                onTouchEnd={onTouchEnd}
+              >
+                <button
+                  className="absolute top-4 right-4 text-white p-1 rounded hover:bg-white/10"
+                  onClick={(e) => { e.stopPropagation(); closeLightbox(); }}
+                  aria-label="Close preview"
+                  title="Close"
+                >
+                  <XMarkIcon className="h-7 w-7" />
+                </button>
+
+                <button
+                  className="absolute left-3 md:left-6 text-white p-2 rounded hover:bg-white/10"
+                  onClick={(e) => { e.stopPropagation(); prevImg(); }}
+                  aria-label="Previous image"
+                  title="Previous"
+                >
+                  <ChevronLeftIcon className="h-8 w-8" />
+                </button>
+
+                <img
+                  src={images[lightboxIdx].url}
+                  alt={images[lightboxIdx].filename}
+                  className="max-h-[85vh] max-w-[90vw] object-contain rounded"
+                  onClick={(e) => e.stopPropagation()}
+                />
+
+                <button
+                  className="absolute right-3 md:right-6 text-white p-2 rounded hover:bg-white/10"
+                  onClick={(e) => { e.stopPropagation(); nextImg(); }}
+                  aria-label="Next image"
+                  title="Next"
+                >
+                  <ChevronRightIcon className="h-8 w-8" />
+                </button>
+
+                <div
+                  className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white text-sm bg-black/40 px-3 py-1 rounded"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {lightboxIdx + 1}/{images.length}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </Suspense>
   );
 }

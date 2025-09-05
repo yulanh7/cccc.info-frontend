@@ -1,9 +1,8 @@
 "use client";
-
+import { Suspense } from "react";
 import React, { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
-import CustomHeader from "@/components/layout/CustomHeader";
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
 import PostListSection from "@/components/posts/PostListSection";
 import { usePostListController } from "@/components/posts/usePostListController";
@@ -19,8 +18,7 @@ import Button from "@/components/ui/Button";
 const POST_PER_PAGE = 11;
 
 function useSourceListState(sourceKey: string) {
-  const feed = useAppSelector((s: any) => s.posts?.lists?.[sourceKey]);
-
+  const feed = useAppSelector((s) => (s as any).posts?.lists?.[sourceKey]);
   const rows: PostListItemApi[] = feed?.items ?? [];
 
   // 统一兼容各种命名 & 兜底推导
@@ -50,6 +48,14 @@ function useSourceListState(sourceKey: string) {
 
 
 export default function MyPostsPage() {
+  return (
+    <Suspense fallback={<LoadingOverlay show text="Loading groups…" />}>
+      <MyPostsPageInner />
+    </Suspense>
+  );
+}
+
+function MyPostsPageInner() {
   const searchParams = useSearchParams();
   const currentPage = useMemo(() => {
     const p = Number(searchParams.get("page"));
@@ -89,7 +95,7 @@ export default function MyPostsPage() {
   const pageLoading = !mounted;
 
   return (
-    <>
+    <Suspense fallback={<LoadingOverlay show text="Loading posts…" />}>
       <PageTitle title="Home" showPageTitle={true} />
       <div className="container mx-auto md:p-6 p-2 mt-5 md:mt-16">
         <div className="flex items-center justify-end gap-2 mb-2 ">
@@ -143,9 +149,6 @@ export default function MyPostsPage() {
           buildHref={buildHref}
         />
       </div>
-
-      <LoadingOverlay show={pageLoading} text="Loading posts…" />
-
       {/* 批量删帖确认 */}
       {/* @ts-ignore */}
       <ConfirmModal
@@ -167,6 +170,6 @@ export default function MyPostsPage() {
           await ctrl.onDeleteSingle?.(postId);
         })}
       />
-    </>
+    </Suspense>
   );
 }

@@ -1,5 +1,5 @@
 "use client";
-
+import { Suspense } from "react";
 import React from "react";
 import PageTitle from "@/components/layout/PageTitle";
 import MobileSearchHeader from "@/components/layout/MobileSearchHeader";
@@ -14,7 +14,17 @@ import { useGroupListController } from "@/hooks/useGroupListController";
 
 const PER_PAGE = 9;
 
+// ⬅️ 外层只负责提供 Suspense 边界
 export default function GroupsPage() {
+  return (
+    <Suspense fallback={<LoadingOverlay show text="Loading groups…" />}>
+      <GroupsPageInner />
+    </Suspense>
+  );
+}
+
+// ⬅️ 把原来所有逻辑搬进来：在这个内部组件里调用 hook
+function GroupsPageInner() {
   const {
     // 数据
     rows,
@@ -22,23 +32,19 @@ export default function GroupsPage() {
     pageLoading,
     currentPage,
     totalPages,
-
     // 搜索
     qInput,
     setQInput,
     searchQuery,
     submitSearch,
     clearSearch,
-
     // 分页/刷新
     onPageChange,
-
     // 权限 & 操作
     canCreate,
     canEditGroup,
     isUserSubscribed,
     toggleSubscription,
-
     // 新建/编辑 Modal
     isModalOpen,
     isNew,
@@ -49,10 +55,8 @@ export default function GroupsPage() {
     openEdit,
     closeModal,
     saveGroup,
-
     // 删除
     deleteGroup,
-
     // 状态文案
     saving,
     deleting,
@@ -64,7 +68,6 @@ export default function GroupsPage() {
     basePath: "/groups",
   });
 
-  // 删除确认
   const confirmGroupDelete = useConfirm<number>("Are you sure you want to delete this group?");
 
   return (
@@ -101,7 +104,6 @@ export default function GroupsPage() {
           />
         </div>
 
-        {/* 通用列表视图 */}
         <GroupListView
           title="Groups"
           rows={rows}
@@ -123,11 +125,6 @@ export default function GroupsPage() {
           formatDate={formatDate}
         />
       </div>
-
-      {/* 首次加载页遮罩 */}
-      <LoadingOverlay show={pageLoading} text="Loading groups…" />
-      {/* 次级操作遮罩 */}
-      <LoadingOverlay show={Boolean(saving || deleting || toggling)} text={overlayText} />
 
       {/* 新建/编辑弹窗 */}
       {isModalOpen && (

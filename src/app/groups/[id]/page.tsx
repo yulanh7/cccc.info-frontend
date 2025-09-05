@@ -1,5 +1,5 @@
 "use client";
-
+import { Suspense } from "react";
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
@@ -38,7 +38,15 @@ import { useConfirm } from "@/hooks/useConfirm";
 const POST_PER_PAGE = 11;
 const MEMBERS_PER_PAGE = 9;
 
-export default function GroupPage() {
+export default function GroupDetailPage() {
+  return (
+    <Suspense fallback={<LoadingOverlay show text="Loading groups…" />}>
+      <GroupDetailPageInner />
+    </Suspense>
+  );
+}
+
+function GroupDetailPageInner() {
   const { id } = useParams<{ id: string }>();
   const searchParams = useSearchParams();
   const groupId = useMemo(() => Number(id), [id]);
@@ -214,7 +222,7 @@ export default function GroupPage() {
 
   const canManageGroup = safeGroup ? canEditGroup(safeGroup) : false;
   return (
-    <>
+    <Suspense fallback={<LoadingOverlay show={pageLoading} text="Loading group…" />}>
       <CustomHeader
         item={headerItem}
         pageTitle={safeGroup?.name || "Group"}
@@ -269,7 +277,6 @@ export default function GroupPage() {
         />
       </div>
 
-      <LoadingOverlay show={pageLoading} text="Loading group…" />
 
       <SubscribersModal
         open={showSubsModal}
@@ -377,6 +384,6 @@ export default function GroupPage() {
           <PlusIcon className="h-5 w-5 text-white" />
         </button>
       )}
-    </>
+    </Suspense>
   );
 }

@@ -1,5 +1,5 @@
 "use client";
-
+import { Suspense } from "react";
 import React, { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
@@ -18,8 +18,16 @@ import { canEditPostList } from "@/app/types";
 
 const POST_PER_PAGE = 11;
 
+export default function HomePage() {
+  return (
+    <Suspense fallback={<LoadingOverlay show text="Loading groups…" />}>
+      <HomePageInner />
+    </Suspense>
+  );
+}
+
 function useSourceListState(sourceKey: string) {
-  const feed = useAppSelector((s: any) => s.posts?.lists?.[sourceKey]);
+  const feed = useAppSelector((s) => (s as any).posts?.lists?.[sourceKey]);
   const rows: PostListItemApi[] = feed?.items ?? [];
   const postsStatus: "idle" | "loading" | "succeeded" | "failed" =
     feed?.status ?? "idle";
@@ -38,7 +46,7 @@ function useSourceListState(sourceKey: string) {
 }
 
 
-export default function HomePage() {
+function HomePageInner() {
   const searchParams = useSearchParams();
   const currentPage = useMemo(() => {
     const p = Number(searchParams.get("page"));
@@ -75,7 +83,7 @@ export default function HomePage() {
   const pageLoading = !mounted;
 
   return (
-    <>
+    <Suspense fallback={<LoadingOverlay show={pageLoading} text="Loading home…" />}>
       <CustomHeader
         pageTitle="Home"
         showLogo={true}
@@ -102,7 +110,6 @@ export default function HomePage() {
         />
       </div>
 
-      <LoadingOverlay show={pageLoading} text="Loading home…" />
 
       {/* 单个删帖确认 */}
       {/* @ts-ignore: ConfirmModal 的 props 由你的实现决定 */}
@@ -115,6 +122,6 @@ export default function HomePage() {
           await ctrl.onDeleteSingle?.(postId);
         })}
       />
-    </>
+    </Suspense>
   );
 }
