@@ -1,7 +1,9 @@
-export interface LoginCredentials {
+export type LoginCredentials = {
   email: string;
   password: string;
-}
+  clientHash?: boolean;
+  recaptchaToken?: string | null;
+};
 
 export type SignupCredentials = {
   email: string;
