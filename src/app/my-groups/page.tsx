@@ -2,8 +2,6 @@
 import { Suspense } from "react";
 import React, { useMemo, useState } from "react";
 import PageTitle from "@/components/layout/PageTitle";
-import MobileSearchHeader from "@/components/layout/MobileSearchHeader";
-import SearchBar from "@/components/SearchBar";
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
 import GroupModal from "@/components/groups/GroupModal";
 import ConfirmModal from "@/components/ConfirmModal";
@@ -83,9 +81,8 @@ function MyGroupsPageInner() {
   const confirmGroupDelete = useConfirm<number>("Are you sure you want to delete this group?");
 
   return (
-    <Suspense fallback={<LoadingOverlay show={pageLoading} text="Loading groups…" />}>
+    <>
       <PageTitle title="My Groups" showPageTitle />
-
 
       <div className="mx-auto w-full p-4 min-h-screen lg:container">
 
@@ -135,6 +132,6 @@ function MyGroupsPageInner() {
           await deleteGroup(id);
         })}
       />
-    </Suspense>
+    </>
   );
 }

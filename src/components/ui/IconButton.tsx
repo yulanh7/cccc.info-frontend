@@ -41,7 +41,7 @@ const variants: Record<Variant, string> = {
 };
 
 function toneClasses(variant: Variant, tone: Tone) {
-  if (tone === "default") return "";
+  if (tone === "default") return "text-gray";
   if (variant === "outline") {
     if (tone === "brand") return "text-yellow border-yellow";
     if (tone === "danger") return "text-red border-red";

@@ -94,7 +94,6 @@ export default function GroupListView({
             onClick={onAdd}
             className="ml-auto"
             variant="secondary"
-            size="sm"
             leftIcon={<PlusIcon className="h-5 w-5" />}
           >
             New Group
@@ -156,7 +155,6 @@ export default function GroupListView({
                             size="sm"
                             disabled={saving || deleting}
                             onClick={() => onEdit(group)}
-                            tone="brand"
                           >
                             <PencilSquareIcon className="h-5 w-5" />
                           </IconButton>
@@ -172,7 +170,6 @@ export default function GroupListView({
                             size="sm"
                             disabled={saving || deleting}
                             onClick={() => onDelete(group.id)}
-                            tone="brand"
                           >
                             <TrashIcon className="h-5 w-5" />
                           </IconButton>
