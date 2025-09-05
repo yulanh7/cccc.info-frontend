@@ -6,8 +6,16 @@ import {
   getToken,
   getUser,
   getRefreshToken,
+  setAccessToken,
+  setUser as persistUser,
 } from './token';
-import { UserProps, AuthResponseData } from '@/app/types/user';
+import {
+  UserProps,
+  AuthResponseData,
+  ProfileGetResponse,
+  ProfileUpdateBody,
+  ProfileUpdateResponse,
+} from '@/app/types/user';
 import { LoginCredentials, SignupCredentials } from '@/app/types/auth';
 
 interface AuthState {
@@ -16,20 +24,37 @@ interface AuthState {
   refreshToken: string | null;
   status: 'idle' | 'loading' | 'succeeded' | 'failed';
   error: string | null;
+  profileStatus: 'idle' | 'loading' | 'saving' | 'succeeded' | 'failed';
+  profileError: string | null;
+  savingProfile: boolean;
+  passwordStatus: 'idle' | 'changing' | 'succeeded' | 'failed';
+  passwordError: string | null;
+  changingPassword: boolean;
 }
-
 const initialState: AuthState = {
   user: null,
   accessToken: null,
   refreshToken: null,
   status: 'idle',
   error: null,
+  profileStatus: 'idle',
+  profileError: null,
+  savingProfile: false,
+  passwordStatus: 'idle',
+  passwordError: null,
+  changingPassword: false,
 };
+
 
 const AUTH_ENDPOINTS = {
   LOGIN: '/auth/login',
   SIGNUP: '/auth/signup',
   LOGOUT: '/auth/logout',
+  REFRESH: '/auth/refresh',
+} as const;
+
+const USER_ENDPOINTS = {
+  PROFILE: '/user/profile'
 } as const;
 
 export type AuthThunkReturn = {
@@ -88,7 +113,7 @@ export const signupThunk = createAsyncThunk<AuthThunkReturn, SignupCredentials>(
   }
 );
 
-// ====== Logout (calls backend API and clears local state) ======
+// ====== Logout ======
 export const logoutThunk = createAsyncThunk<boolean, void>(
   `${AUTH_ENDPOINTS.LOGOUT}`,
   async (_, { rejectWithValue }) => {
@@ -101,6 +126,59 @@ export const logoutThunk = createAsyncThunk<boolean, void>(
     }
   }
 );
+
+export const fetchProfileThunk = createAsyncThunk<UserProps, void>(
+  `${USER_ENDPOINTS.PROFILE}/get`,
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await apiRequest<ProfileGetResponse['data']>(
+        'GET',
+        USER_ENDPOINTS.PROFILE
+      );
+      // normalizeApiResponse 已转成 ApiResponseProps<T>
+      // 这里用 ProfileGetResponse 更直观：
+      const full = (res as unknown) as ProfileGetResponse;
+      if (!full.success || !full.data?.user) {
+        throw new Error(full.message || 'Failed to load profile');
+      }
+      persistUser(full.data.user);
+      return full.data.user;
+    } catch (e: any) {
+      return rejectWithValue(e.message || 'Failed to load profile') as any;
+    }
+  }
+);
+
+export const saveProfileNameThunk = createAsyncThunk<
+  { firstName: string },
+  { firstName: string },
+  { rejectValue: string }
+>('auth/saveProfileName', async ({ firstName }, { rejectWithValue }) => {
+  try {
+    const res = await apiRequest('PUT', USER_ENDPOINTS.PROFILE, { firstName });
+    if (!res?.success) throw new Error(res?.message || 'Update profile failed');
+    return { firstName };
+  } catch (err: any) {
+    return rejectWithValue(err?.message || 'Update profile failed');
+  }
+});
+
+export const changePasswordThunk = createAsyncThunk<
+  void,
+  { oldPassword: string; newPassword: string },
+  { rejectValue: string }
+>('auth/changePassword', async ({ oldPassword, newPassword }, { rejectWithValue }) => {
+  try {
+    const res = await apiRequest('PUT', USER_ENDPOINTS.PROFILE, {
+      password: { oldPassword, newPassword },
+    });
+    if (!res?.success) throw new Error(res?.message || 'Change password failed');
+    return;
+  } catch (err: any) {
+    return rejectWithValue(err?.message || 'Change password failed');
+  }
+});
+
 
 const authSlice = createSlice({
   name: 'auth',
@@ -118,6 +196,8 @@ const authSlice = createSlice({
     // Called when access token is refreshed successfully
     accessTokenRefreshed: (state, action: PayloadAction<string>) => {
       state.accessToken = action.payload;
+      // 同时更新 token.ts
+      setAccessToken(action.payload);
     },
   },
   extraReducers: (builder) => {
@@ -152,7 +232,7 @@ const authSlice = createSlice({
         state.status = 'failed';
         state.error = action.payload as string;
       })
-      // logout (clear state regardless of API result)
+      // logout
       .addCase(logoutThunk.fulfilled, (state) => {
         state.user = null;
         state.accessToken = null;
@@ -164,6 +244,54 @@ const authSlice = createSlice({
         state.accessToken = null;
         state.refreshToken = null;
         clearAuth();
+      })
+      // fetch profile
+      .addCase(fetchProfileThunk.pending, (state) => {
+        state.profileStatus = 'loading';
+        state.profileError = null;
+      })
+      .addCase(fetchProfileThunk.fulfilled, (state, action) => {
+        state.profileStatus = 'succeeded';
+        state.user = action.payload;
+      })
+      .addCase(fetchProfileThunk.rejected, (state, action) => {
+        state.profileStatus = 'failed';
+        state.profileError = action.payload as string;
+      })
+    builder
+      .addCase(saveProfileNameThunk.pending, (state) => {
+        state.savingProfile = true;
+        state.profileStatus = 'saving';
+        state.profileError = null;
+      })
+      .addCase(saveProfileNameThunk.fulfilled, (state, action) => {
+        state.savingProfile = false;
+        state.profileStatus = 'succeeded';
+        state.profileError = null;
+        if (state.user) {
+          state.user.firstName = action.payload.firstName;
+        }
+      })
+      .addCase(saveProfileNameThunk.rejected, (state, action) => {
+        state.savingProfile = false;
+        state.profileStatus = 'failed';
+        state.profileError = action.payload ?? 'Update profile failed';
+      });
+    builder
+      .addCase(changePasswordThunk.pending, (state) => {
+        state.changingPassword = true;
+        state.passwordStatus = 'changing';
+        state.passwordError = null;
+      })
+      .addCase(changePasswordThunk.fulfilled, (state) => {
+        state.changingPassword = false;
+        state.passwordStatus = 'succeeded';
+        state.passwordError = null;
+      })
+      .addCase(changePasswordThunk.rejected, (state, action) => {
+        state.changingPassword = false;
+        state.passwordStatus = 'failed';
+        state.passwordError = action.payload ?? 'Change password failed';
       });
   },
 });

@@ -5,6 +5,7 @@ export interface UserProps {
   email: string;
   firstName: string;
   admin: boolean;
+  created_at?: string; // 新增（可选，对应后端返回）
 }
 
 export interface AuthResponseData {
@@ -16,3 +17,21 @@ export interface AuthResponseData {
 export type AuthResponse = ApiResponseProps<AuthResponseData>;
 
 export const isAdmin = (user?: UserProps | null): boolean => !!user?.admin;
+
+/** ===== Profile API types ===== */
+export interface ProfileGetData {
+  user: UserProps;
+}
+export type ProfileGetResponse = ApiResponseProps<ProfileGetData>;
+
+export interface ProfileUpdateBody {
+  firstName?: string;
+  password?: {
+    oldPassword: string;
+    newPassword: string;
+  };
+}
+export interface ProfileUpdateData {
+  user?: UserProps;
+}
+export type ProfileUpdateResponse = ApiResponseProps<ProfileUpdateData>;

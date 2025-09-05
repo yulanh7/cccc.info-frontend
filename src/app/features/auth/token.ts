@@ -1,3 +1,4 @@
+// /app/features/auth/token.ts
 import { UserProps, AuthResponseData } from '@/app/types/user';
 
 export const storeToken = (data: AuthResponseData) => {
@@ -32,3 +33,8 @@ export const clearAuth = () => {
 };
 
 export const hasToken = (): boolean => !!getToken();
+
+/** 新增：单独更新本地的 user（用于改 firstName 后保持一致） */
+export const setUser = (user: UserProps) => {
+  localStorage.setItem('user', JSON.stringify(user));
+};
