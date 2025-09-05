@@ -126,7 +126,9 @@ export default function PostDetailPage() {
     return () => window.removeEventListener("resize", compute);
   }, []);
 
-  const pageLoading = status === "loading" || !post;
+  const [mounted, setMounted] = React.useState(false);
+  useEffect(() => setMounted(true), []);
+  const pageLoading = status === "loading" || !mounted;
   const pageError = status === "failed" && error;
 
   // —— 删除

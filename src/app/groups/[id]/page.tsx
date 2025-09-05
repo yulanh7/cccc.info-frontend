@@ -47,6 +47,9 @@ export default function GroupPage() {
     return Number.isFinite(p) && p > 0 ? p : 1;
   }, [searchParams]);
 
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+
   const dispatch = useAppDispatch();
   const router = useRouter();
   const user = useAppSelector((s) => s.auth.user);
@@ -82,7 +85,7 @@ export default function GroupPage() {
   const safePagination = groupMatchesRoute ? postsPagination : null;
 
   // —— 加载态（整页 VS 帖子局部）（保持你的变量）
-  const pageLoading = !groupMatchesRoute || status.group === "loading";
+  const pageLoading = !groupMatchesRoute || status.group === "loading" || !mounted;
   const postsLoading = status.posts === "loading" && groupMatchesRoute;
 
   const toMsg = (err: unknown) =>

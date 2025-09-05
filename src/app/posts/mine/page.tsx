@@ -56,6 +56,9 @@ export default function MyPostsPage() {
     return Number.isFinite(p) && p > 0 ? p : 1;
   }, [searchParams]);
 
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+
   const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.auth.user);
 
@@ -83,7 +86,7 @@ export default function MyPostsPage() {
     postsStatus,
   });
 
-  const pageLoading = postsStatus === "loading" && rows.length === 0;
+  const pageLoading = postsStatus === "loading" || !mounted;
 
   return (
     <>

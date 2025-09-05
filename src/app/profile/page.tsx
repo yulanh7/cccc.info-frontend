@@ -8,6 +8,7 @@ import { EyeIcon, EyeSlashIcon, ShieldCheckIcon, PencilSquareIcon, CheckIcon, XM
 import { isAdmin } from '@/app/types/user';
 import Button from '@/components/ui/Button'
 import PageTitle from '@/components/layout/PageTitle';
+import LoadingOverlay from "@/components/feedback/LoadingOverLay";
 
 export default function ProfilePage() {
   const dispatch = useAppDispatch();
@@ -17,6 +18,11 @@ export default function ProfilePage() {
   const passwordError = useAppSelector((s) => s.auth.passwordError);
   const savingProfile = useAppSelector((s) => s.auth.savingProfile);
   const [isEditing, setIsEditing] = useState(false);
+
+
+  const [mounted, setMounted] = React.useState(false);
+  useEffect(() => setMounted(true), []);
+  const pageLoading = profileStatus === "loading" || !mounted;
 
   useEffect(() => {
     dispatch(rehydrateAuth());
@@ -112,6 +118,7 @@ export default function ProfilePage() {
   return (
     <>
       <PageTitle title="My Profile" showPageTitle={true} />
+      <LoadingOverlay show={pageLoading} text="Loading profile…" />
 
       <div className="max-w-2xl mx-auto px-4 py-8">
 

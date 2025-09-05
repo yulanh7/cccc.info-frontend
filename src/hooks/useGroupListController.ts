@@ -1,6 +1,5 @@
 "use client";
-
-import { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import {
@@ -301,7 +300,9 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
         toggling ? "Updating membership…" :
           undefined;
 
-  const pageLoading = listLoading && rows.length === 0;
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+  const pageLoading = listLoading || !mounted;
 
   return {
     // 数据
