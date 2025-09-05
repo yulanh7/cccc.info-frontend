@@ -5,6 +5,7 @@ import {
 } from '@heroicons/react/24/outline';
 import ConfirmModal from '../ConfirmModal';
 import { ellipsize } from '@/app/ultility';
+import Logo from '@/components/Logo';
 
 interface CustomHeaderProps {
   item?: any;
@@ -15,6 +16,7 @@ interface CustomHeaderProps {
   onDelete?: (id: number) => void;
   onEdit?: () => void;
   onAdd?: () => void;
+  showLogo?: boolean
 }
 
 export default function CustomHeader({
@@ -25,6 +27,7 @@ export default function CustomHeader({
   onDelete,
   onEdit,
   onAdd,
+  showLogo = false
 }: CustomHeaderProps) {
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
@@ -51,20 +54,18 @@ export default function CustomHeader({
     <>
       <header className="fixed md:hidden top-0 left-1/2 -translate-x-1/2 z-10 w-full max-w-[769px] flex items-center justify-between p-4 border-b border-b-border bg-bg">
         <div className="flex items-center space-x-2">
-          {/* <button
-            onClick={handleBack}
-            className="text-dark-gray hover:text-dark-green focus:outline-none"
-          >
-            <ChevronLeftIcon className="h-6 w-6 mr-1" />
-          </button> */}
+          {showLogo && <Logo isScrolled={false} />}
+
           {item?.author && (
-            <span className="flex items-center text-dark-gray text-sm">
-              <UserCircleIcon className="h-5 w-5 mr-1" />
-              {item.author}
+            <span className="inline-flex items-center gap-2">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-dark-green/10 text-dark-green text-xs font-semibold">
+                {(item.author?.[0] || "?").toUpperCase()}
+              </span>
+              {/* <span className="text-[9px]">{item.author}</span> */}
             </span>
           )}
         </div>
-        <div> {ellipsize(pageTitle, 10, { byWords: true })} </div>
+        <div> {ellipsize(pageTitle, 20, { byWords: true })} </div>
         <div className="flex items-center space-x-4">
           {showDelete && onDelete && item && (
             <button

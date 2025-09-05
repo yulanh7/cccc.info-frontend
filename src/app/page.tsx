@@ -76,6 +76,10 @@ export default function HomePage() {
 
   return (
     <>
+      <CustomHeader
+        pageTitle="Home"
+        showLogo={true}
+      />
       <PageTitle title="Home" showPageTitle={true} />
 
       <div className="container mx-auto md:p-6 p-2 mt-0 md:mt-16">
@@ -98,7 +102,7 @@ export default function HomePage() {
         />
       </div>
 
-      <LoadingOverlay show={pageLoading} text="Loading posts…" />
+      <LoadingOverlay show={pageLoading} text="Loading home…" />
 
       {/* 单个删帖确认 */}
       {/* @ts-ignore: ConfirmModal 的 props 由你的实现决定 */}
