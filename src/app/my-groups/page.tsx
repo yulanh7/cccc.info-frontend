@@ -15,7 +15,7 @@ const MY_GROUPS_PATH = "/my-groupss"; // 你也可以改成 /groups/mine
 
 export default function MyGroupsPage() {
   return (
-    <Suspense fallback={<LoadingOverlay show text="Loading groups…" />}>
+    <Suspense fallback={<LoadingOverlay show text="Loading group…" />}>
       <MyGroupsPageInner />
     </Suspense>
   );
@@ -82,12 +82,9 @@ function MyGroupsPageInner() {
 
   return (
     <>
+      <LoadingOverlay show={pageLoading} text="Loading group…" />
       <PageTitle title="My Groups" showPageTitle />
-
       <div className="mx-auto w-full p-4 min-h-screen lg:container">
-
-
-        {/* 通用列表视图（传入已过滤 rows） */}
         <GroupListView
           // title="My Groups"
           rows={filteredRows}

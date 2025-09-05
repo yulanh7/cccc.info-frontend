@@ -69,7 +69,7 @@ function splitFiles(files: PostFileApi[]) {
 
 export default function PostDetailPage() {
   return (
-    <Suspense fallback={<LoadingOverlay show text="Loading groups…" />}>
+    <Suspense fallback={<LoadingOverlay show text="Loading post…" />}>
       <PostDetailPageInner />
     </Suspense>
   );
@@ -264,8 +264,8 @@ function PostDetailPageInner() {
   );
 
   return (
-    <Suspense fallback={<LoadingOverlay show={pageLoading} text="Loading post…" />}>
-
+    <>
+      <LoadingOverlay show={pageLoading} text="Loading post…" />
       <div className="container mx-auto px-4">
 
         {pageError && <div className="text-red-600 mt-20">Failed to load post: {String(pageError)}</div>}
@@ -528,6 +528,6 @@ function PostDetailPageInner() {
           </>
         )}
       </div>
-    </Suspense>
+    </>
   );
 }

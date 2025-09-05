@@ -49,7 +49,7 @@ function useSourceListState(sourceKey: string) {
 
 export default function MyPostsPage() {
   return (
-    <Suspense fallback={<LoadingOverlay show text="Loading groups…" />}>
+    <Suspense fallback={<LoadingOverlay show text="Loading my posts…" />}>
       <MyPostsPageInner />
     </Suspense>
   );
@@ -95,7 +95,8 @@ function MyPostsPageInner() {
   const pageLoading = !mounted;
 
   return (
-    <Suspense fallback={<LoadingOverlay show text="Loading posts…" />}>
+    <>
+      <LoadingOverlay show={pageLoading} text="Loading my posts…" />
       <PageTitle title="Home" showPageTitle={true} />
       <div className="container mx-auto md:p-6 p-2 mt-5 md:mt-16">
         <div className="flex items-center justify-end gap-2 mb-2 ">
@@ -170,6 +171,6 @@ function MyPostsPageInner() {
           await ctrl.onDeleteSingle?.(postId);
         })}
       />
-    </Suspense>
+    </>
   );
 }

@@ -61,7 +61,6 @@ function GroupsPageInner() {
     saving,
     deleting,
     toggling,
-    overlayText,
   } = useGroupListController({
     mode: "availableWithSearch",
     pageSize: PER_PAGE,
@@ -72,6 +71,7 @@ function GroupsPageInner() {
 
   return (
     <>
+      <LoadingOverlay show={pageLoading} text="Loading groups…" />
       <PageTitle title="Groups" showPageTitle />
 
       {/* Mobile 顶部搜索 */}

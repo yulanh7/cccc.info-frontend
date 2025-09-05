@@ -222,7 +222,8 @@ function GroupDetailPageInner() {
 
   const canManageGroup = safeGroup ? canEditGroup(safeGroup) : false;
   return (
-    <Suspense fallback={<LoadingOverlay show={pageLoading} text="Loading group…" />}>
+    <>
+      <LoadingOverlay show={pageLoading} text="Loading group…" />
       <CustomHeader
         item={headerItem}
         pageTitle={safeGroup?.name || "Group"}
@@ -384,6 +385,6 @@ function GroupDetailPageInner() {
           <PlusIcon className="h-5 w-5 text-white" />
         </button>
       )}
-    </Suspense>
+    </>
   );
 }

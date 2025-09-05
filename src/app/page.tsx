@@ -83,7 +83,8 @@ function HomePageInner() {
   const pageLoading = !mounted;
 
   return (
-    <Suspense fallback={<LoadingOverlay show={pageLoading} text="Loading home…" />}>
+    <>
+      <LoadingOverlay show={pageLoading} text="Loading home…" />
       <CustomHeader
         pageTitle="Home"
         showLogo={true}
@@ -122,6 +123,6 @@ function HomePageInner() {
           await ctrl.onDeleteSingle?.(postId);
         })}
       />
-    </Suspense>
+    </>
   );
 }
