@@ -86,7 +86,7 @@ export default function MyPostsPage() {
     postsStatus,
   });
 
-  const pageLoading = postsStatus === "loading" || !mounted;
+  const pageLoading = !mounted;
 
   return (
     <>

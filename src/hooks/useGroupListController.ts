@@ -302,7 +302,7 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
 
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
-  const pageLoading = listLoading || !mounted;
+  const pageLoading = !mounted;
 
   return {
     // 数据

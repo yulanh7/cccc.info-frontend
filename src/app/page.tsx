@@ -72,7 +72,7 @@ export default function HomePage() {
     postsStatus,
   });
 
-  const pageLoading = !mounted || postsStatus === "loading";
+  const pageLoading = !mounted;
 
   return (
     <>

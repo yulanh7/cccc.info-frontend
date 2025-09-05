@@ -56,6 +56,11 @@ export default function GroupPage() {
   const { group, subscriberCount, subscribers, posts, postsPagination, status } =
     useAppSelector((s) => s.groupDetail);
 
+  const postsStatus = useAppSelector(
+    (s) => s.groupDetail.status.posts
+  ) as "idle" | "loading" | "succeeded" | "failed";
+
+
   // —— 本地 UI 状态
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -83,10 +88,10 @@ export default function GroupPage() {
   const safeGroup: GroupApi | null = groupMatchesRoute ? group : null;
   const safePosts = groupMatchesRoute ? posts : [];
   const safePagination = groupMatchesRoute ? postsPagination : null;
+  const postsLoading = postsStatus === "loading" && groupMatchesRoute;
 
   // —— 加载态（整页 VS 帖子局部）（保持你的变量）
   const pageLoading = !groupMatchesRoute || status.group === "loading" || !mounted;
-  const postsLoading = status.posts === "loading" && groupMatchesRoute;
 
   const toMsg = (err: unknown) =>
     typeof err === 'string' ? err : (err as any)?.message || '';
