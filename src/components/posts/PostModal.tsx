@@ -136,20 +136,24 @@ export default function PostModal({
     setFileIds((prev) => prev.filter((x) => x !== id));
   };
 
-  const MAX_FILE_SIZE = 40 * 1024 * 1024;
+  const MAX_IMAGE_MB = 3;
+  const MAX_DOC_MB = 40;
+  const MAX_IMAGE_FILE_SIZE = MAX_IMAGE_MB * 1024 * 1024;
+  const MAX_DOC_FILE_SIZE = MAX_DOC_MB * 1024 * 1024;
   const formatMB = (bytes: number) => (bytes / (1024 * 1024)).toFixed(1) + " MB";
+
 
   const onPickImages: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     const files = e.target.files;
     if (!files || !files.length) return;
 
     const picked = Array.from(files);
-    const tooBig = picked.filter((f) => f.size > MAX_FILE_SIZE);
-    const ok = picked.filter((f) => f.size <= MAX_FILE_SIZE);
+    const tooBig = picked.filter((f) => f.size > MAX_IMAGE_FILE_SIZE);
+    const ok = picked.filter((f) => f.size <= MAX_IMAGE_FILE_SIZE);
 
     if (tooBig.length) {
       alert(
-        `These images exceed 40MB and were skipped:\n` +
+        `These images exceed ${MAX_IMAGE_MB}MB and were skipped:\n` +
         tooBig.map((f) => `• ${f.name} (${formatMB(f.size)})`).join("\n")
       );
     }
@@ -160,17 +164,18 @@ export default function PostModal({
     e.currentTarget.value = "";
   };
 
+
   const onPickDocs: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     const files = e.target.files;
     if (!files || !files.length) return;
 
     const picked = Array.from(files);
-    const tooBig = picked.filter((f) => f.size > MAX_FILE_SIZE);
-    const ok = picked.filter((f) => f.size <= MAX_FILE_SIZE);
+    const tooBig = picked.filter((f) => f.size > MAX_DOC_FILE_SIZE);
+    const ok = picked.filter((f) => f.size <= MAX_DOC_FILE_SIZE);
 
     if (tooBig.length) {
       alert(
-        `These documents exceed 40MB and were skipped:\n` +
+        `These documents exceed ${MAX_DOC_MB}MB and were skipped:\n` +
         tooBig.map((f) => `• ${f.name} (${formatMB(f.size)})`).join("\n")
       );
     }
@@ -180,6 +185,7 @@ export default function PostModal({
     setLocalDocs((prev) => [...prev, ...deduped]);
     e.currentTarget.value = "";
   };
+
 
   const removeLocalImage = (idx: number) => setLocalImages((prev) => prev.filter((_, i) => i !== idx));
   const removeLocalDoc = (idx: number) => setLocalDocs((prev) => prev.filter((_, i) => i !== idx));
@@ -429,7 +435,7 @@ export default function PostModal({
                 className="block w-full text-sm text-dark-gray file:mr-3 file:py-2 file:px-3 file:rounded-sm file:border-0 file:text-sm file:font-medium file:bg-gray-100 hover:file:bg-gray-200"
               />
               <p id="image-size-hint" className="mt-1 text-xs text-dark-gray">
-                * Each img ≤ {(40).toFixed(0)} MB.
+                * Each image ≤ {MAX_IMAGE_MB} MB.
               </p>
 
               {localImages.length > 0 && (
@@ -507,7 +513,7 @@ export default function PostModal({
                 className="block w-full text-sm text-dark-gray file:mr-3 file:py-2 file:px-3 file:rounded-sm file:border-0 file:text-sm file:font-medium file:bg-gray-100 hover:file:bg-gray-200"
               />
               <p id="doc-size-hint" className="mt-1 text-xs text-dark-gray">
-                * Each file ≤ {(40).toFixed(0)} MB.
+                * Each file ≤ {MAX_DOC_MB} MB.
               </p>
               {localDocs.length > 0 && (
                 <ul className="mt-2 divide-y divide-gray-200 border border-border rounded">
