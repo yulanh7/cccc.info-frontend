@@ -376,7 +376,7 @@ function GroupDetailPageInner() {
       )}
 
       {/* 移动端新增按钮（保持你的 UI） */}
-      {!pageLoading && canManageGroup && (
+      {!pageLoading && (
         <button
           onClick={() => setIsPostModalOpen(true)}
           className="fixed md:hidden bottom-20 z-10 right-10 bg-yellow p-2 rounded-[50%]"

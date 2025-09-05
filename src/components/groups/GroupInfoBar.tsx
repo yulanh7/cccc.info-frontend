@@ -147,9 +147,8 @@ export default function GroupInfoBar({
               )}
 
             </div>
-            {canManageGroup && (
-              <section className="hidden md:flex justify-end gap-2 px-4">
-                {/* <Button
+            <section className="hidden md:flex justify-end gap-2 px-4">
+              {/* <Button
             onClick={onToggleSelectMode}
             variant={selectMode ? "warning" : "outline"}
             size="sm"
@@ -159,28 +158,26 @@ export default function GroupInfoBar({
             {selectMode ? "Cancel" : "Select Posts"}
           </Button> */}
 
-                {selectMode && (
-                  <Button
-                    onClick={onBulkDeleteSelected}
-                    variant="danger"
-                    size="sm"
-                    leftIcon={<TrashIcon className="h-5 w-5" />}
-                    disabled={selectedCount === 0}
-                  >
-                    Delete{selectedCount > 0 ? ` (${selectedCount})` : ""}
-                  </Button>
-                )}
-
+              {selectMode && canManageGroup && (
                 <Button
-                  onClick={onNewPost}
-                  variant="primary"
+                  onClick={onBulkDeleteSelected}
+                  variant="danger"
                   size="sm"
-                  leftIcon={<PlusIcon className="h-5 w-5" />}
+                  leftIcon={<TrashIcon className="h-5 w-5" />}
+                  disabled={selectedCount === 0}
                 >
-                  New Post
+                  Delete{selectedCount > 0 ? ` (${selectedCount})` : ""}
                 </Button>
-              </section>
-            )}
+              )}
+
+              <Button
+                onClick={onNewPost}
+                variant="primary"
+                leftIcon={<PlusIcon className="h-5 w-5" />}
+              >
+                New Post
+              </Button>
+            </section>
           </div>
         </div>
       </section>
