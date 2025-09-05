@@ -99,30 +99,32 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError<any>) => {
-    const originalRequest = error.config as AxiosRequestConfig & {
-      _retry?: boolean;
-    };
+    const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
 
-    // 非 401 或已经重试过 → 直接抛出
-    if (error.response?.status !== 401 || originalRequest?._retry) {
+    // ✨ 新增：鉴权端点检测
+    const url = (originalRequest?.url || '') as string;
+    const isAuthEndpoint =
+      typeof url === 'string' &&
+      /^\/?auth\/(login|signup|refresh|logout)/i.test(url);
+
+    // 非 401、已重试、或鉴权端点 → 直接抛出（不会触发刷新/跳转）
+    if (error.response?.status !== 401 || originalRequest?._retry || isAuthEndpoint) {
       const serverMsg = pickServerMessage(error.response?.data);
-      if (serverMsg) (error as any).message = serverMsg; // 覆盖成后端的人话
+      if (serverMsg) (error as any).message = serverMsg;
       throw error;
     }
 
-    // 没有 refresh token → 无法刷新 → 清理并引导登录
-    const refreshToken =
-      typeof window !== 'undefined' ? getRefreshToken() : null;
+    // ↓↓↓ 以下保持你的原逻辑不变 ↓↓↓
+
+    const refreshToken = typeof window !== 'undefined' ? getRefreshToken() : null;
     if (!refreshToken) {
       clearAuth();
-      // 友好提示并引导
       promptLoginRedirect('登录已过期或未登录，需要先登录。现在去登录？');
       throw error;
     }
 
     originalRequest._retry = true;
 
-    // 如果正在刷新，加入队列
     if (isRefreshing) {
       return new Promise((resolve, reject) => {
         failedQueue.push({
@@ -138,42 +140,25 @@ api.interceptors.response.use(
       });
     }
 
-    // 开始刷新
     isRefreshing = true;
 
     try {
-      // 用干净实例避免递归触发拦截器
       const raw = axios.create({ baseURL: BASE_URL });
-
-      const refreshResp: AxiosResponse<{
-        success: boolean;
-        message: string;
-        data: { access_token: string };
-      }> = await raw.post(
-        '/auth/refresh',
-        {},
-        { headers: { Authorization: `Bearer ${refreshToken}` } }
-      );
+      const refreshResp = await raw.post('/auth/refresh', {}, {
+        headers: { Authorization: `Bearer ${refreshToken}` }
+      });
 
       const newAccess = refreshResp.data?.data?.access_token;
       if (!newAccess) throw new Error('No access_token in refresh response');
 
-      // 保存新 access token
-      if (typeof window !== 'undefined') {
-        setAccessToken(newAccess);
-      }
-      // 通知监听者（如 Redux）
+      if (typeof window !== 'undefined') setAccessToken(newAccess);
       onAccessTokenRefreshed?.(newAccess);
-
-      // 处理队列
       processQueue(null, newAccess);
 
-      // 以新 token 重试发起的请求
       originalRequest.headers = originalRequest.headers ?? {};
       (originalRequest.headers as any).Authorization = `Bearer ${newAccess}`;
       return api(originalRequest);
     } catch (err) {
-      // 刷新失败：清理、引导登录，并拒绝队列
       processQueue(err, null);
       clearAuth();
       promptLoginRedirect('登录已过期，需要重新登录。现在去登录？');
@@ -183,6 +168,7 @@ api.interceptors.response.use(
     }
   }
 );
+
 
 // ====== Main API request function: returns ApiResponseProps<T> ======
 export const apiRequest = async <T>(
