@@ -16,7 +16,6 @@ import {
   PencilSquareIcon,
   TrashIcon,
   HandThumbUpIcon as HandThumbUpOutline,
-  ChatBubbleLeftIcon
 } from "@heroicons/react/24/outline";
 import { HandThumbUpIcon as HandThumbUpSolid } from "@heroicons/react/24/solid";
 import { formatDate } from "@/app/ultility";
@@ -41,6 +40,13 @@ import type {
   PostFileApi,
 } from "@/app/types";
 import { canEditPostDetail } from "@/app/types/post";
+
+type PostWithUI = PostDetailData & {
+  like_count?: number;
+  clicked_like?: boolean;
+  comment_count?: number;
+};
+
 
 // —— 本页内部使用：编辑表单的最小类型（与 PostModal 对接）
 type EditForm = {
@@ -80,13 +86,14 @@ export default function PostDetailPage() {
   const error = useAppSelector((s) => s.posts.error["fetchPostDetail"]);
   const storeCount = useAppSelector(selectLikeCount(postId));
   const storeLiked = useAppSelector(selectLikedByMe(postId));
-  const postFromStore = useAppSelector((s) => s.posts.byId[postId] || null) as PostDetailData | null;
-  const post: PostDetailData | null = postFromStore;
+  const post = useAppSelector((s) => s.posts.byId[postId] || null) as PostWithUI | null;
+
   const user = useAppSelector((s) => s.auth.user as UserProps | null);
   const canManage = !!(post && canEditPostDetail(post, user));
   const isEdit = searchParams.get("edit") === "1";
-  const likeCount = storeCount ?? (post as any)?.like_count ?? 0;
-  const liked = Boolean(storeLiked ?? (post as any)?.clicked_like ?? false);
+  const likeCount = storeCount ?? post?.like_count ?? 0;
+  const liked = Boolean(storeLiked ?? post?.clicked_like ?? false);
+
   const inFlightRef = useRef(false);
   const [likeBusy, setLikeBusy] = useState(false);
   // —— 内容折叠
@@ -108,10 +115,10 @@ export default function PostDetailPage() {
     if (typeof post.like_count === "number") {
       dispatch(setLikeCount({ postId: post.id, like_count: post.like_count }));
     }
-    if (typeof (post as any).clicked_like === "boolean") {
-      dispatch(setLikedByMe({ postId: post.id, liked: (post as any).clicked_like }));
+    if (typeof post.clicked_like === "boolean") {
+      dispatch(setLikedByMe({ postId: post.id, liked: post.clicked_like }));
     }
-  }, [post?.id]);
+  }, [dispatch, post?.id, post?.like_count, post?.clicked_like]);
 
   useEffect(() => {
     if (!Number.isFinite(postId)) return;
@@ -137,7 +144,6 @@ export default function PostDetailPage() {
       await dispatch(deletePost(id)).unwrap();
       history.back();
     } catch (e: any) {
-      alert(e?.message || "Delete post failed");
     }
   };
 
@@ -171,8 +177,7 @@ export default function PostDetailPage() {
 
       await dispatch(updatePost({ postId: post.id, body })).unwrap();
       handleEditClose();
-    } catch (e: any) {
-      alert(e?.message || "Update post failed");
+    } catch (e: unknown) {
     }
   };
 

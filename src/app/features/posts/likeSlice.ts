@@ -7,6 +7,7 @@ import type {
   PostLikesData,
   postsPagination,
 } from "@/app/types";
+import { errMsg } from '@/app/features/auth/slice'
 
 const LIKE_ENDPOINT = (postId: number) => `/posts/${postId}/like`;
 const LIKES_LIST_ENDPOINT = (postId: number) => `/posts/${postId}/likes`;
@@ -22,7 +23,7 @@ export const likePost = createAsyncThunk<{ postId: number; like_count: number },
       }
       return { postId, like_count: res.data.like_count };
     } catch (e: any) {
-      return rejectWithValue(e.message || "Like post failed") as any;
+      return rejectWithValue(errMsg(e, "Like post failed"));
     }
   }
 );
@@ -38,7 +39,7 @@ export const unlikePost = createAsyncThunk<{ postId: number; like_count: number 
       }
       return { postId, like_count: res.data.like_count };
     } catch (e: any) {
-      return rejectWithValue(e.message || "Unlike post failed") as any;
+      return rejectWithValue(errMsg(e, "Unlike post failed"));
     }
   }
 );
@@ -59,7 +60,7 @@ export const fetchPostLikes = createAsyncThunk<
 
     return { postId, likes: res.data.likes, pagination: res.data.pagination };
   } catch (e: any) {
-    return rejectWithValue(e.message || "Fetch likes failed") as any;
+    return rejectWithValue(errMsg(e, "Fetch likes failed"));
   }
 });
 

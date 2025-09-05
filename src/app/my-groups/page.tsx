@@ -1,9 +1,7 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React from "react";
 import PageTitle from "@/components/layout/PageTitle";
-import MobileSearchHeader from "@/components/layout/MobileSearchHeader";
-import SearchBar from "@/components/SearchBar";
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
 import GroupModal from "@/components/groups/GroupModal";
 import ConfirmModal from "@/components/ConfirmModal";
@@ -48,10 +46,8 @@ export default function MyGroupsPage() {
     deleteGroup,
 
     // 状态文案
-    saving,
     deleting,
     toggling,
-    overlayText,
   } = useGroupListController({
     mode: "user",         // ✅ 只拉取用户订阅的群组
     pageSize: PER_PAGE,
@@ -60,16 +56,7 @@ export default function MyGroupsPage() {
 
 
 
-  // ========== 本地搜索（仅过滤已订阅群组） ==========
-  const [qInput, setQInput] = useState("");
-  const filteredRows = useMemo(() => {
-    const q = qInput.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter(g => {
-      const hay = `${g.name} ${g.creator_name ?? ""} ${g.description ?? ""}`.toLowerCase();
-      return hay.includes(q);
-    });
-  }, [rows, qInput]);
+
 
   // 删除确认
   const confirmGroupDelete = useConfirm<number>("Are you sure you want to delete this group?");
@@ -85,7 +72,7 @@ export default function MyGroupsPage() {
         {/* 通用列表视图（传入已过滤 rows） */}
         <GroupListView
           // title="My Groups"
-          rows={filteredRows}
+          rows={rows}
           listLoading={listLoading}
           pageLoading={pageLoading}
           currentPage={currentPage}
@@ -98,7 +85,6 @@ export default function MyGroupsPage() {
           canEdit={canEditGroup}
           isUserSubscribed={isUserSubscribed}              // 已订阅列表里恒为 true，但保持一致接口
           onToggleSubscription={toggleSubscription}        // 允许在此页退订
-          saving={saving}
           deleting={deleting}
           toggling={toggling}
           formatDate={formatDate}
@@ -108,7 +94,7 @@ export default function MyGroupsPage() {
       {/* 首次加载页遮罩 */}
       <LoadingOverlay show={pageLoading} text="Loading groups…" />
       {/* 次级操作遮罩 */}
-      <LoadingOverlay show={Boolean(saving || deleting || toggling)} text={overlayText} />
+      <LoadingOverlay show={Boolean(deleting || toggling)} />
 
       {/* 新建/编辑弹窗 */}
       {isModalOpen && (

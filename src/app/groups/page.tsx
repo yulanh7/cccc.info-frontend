@@ -54,10 +54,8 @@ export default function GroupsPage() {
     deleteGroup,
 
     // 状态文案
-    saving,
     deleting,
     toggling,
-    overlayText,
   } = useGroupListController({
     mode: "availableWithSearch",
     pageSize: PER_PAGE,
@@ -117,7 +115,6 @@ export default function GroupsPage() {
           canEdit={canEditGroup}
           isUserSubscribed={isUserSubscribed}
           onToggleSubscription={toggleSubscription}
-          saving={saving}
           deleting={deleting}
           toggling={toggling}
           formatDate={formatDate}
@@ -127,7 +124,7 @@ export default function GroupsPage() {
       {/* 首次加载页遮罩 */}
       <LoadingOverlay show={pageLoading} text="Loading groups…" />
       {/* 次级操作遮罩 */}
-      <LoadingOverlay show={Boolean(saving || deleting || toggling)} text={overlayText} />
+      <LoadingOverlay show={Boolean(deleting || toggling)} />
 
       {/* 新建/编辑弹窗 */}
       {isModalOpen && (

@@ -3,7 +3,6 @@ import { apiRequest } from '../request';
 import type {
   GroupApi,
   CreateOrUpdateGroupBody,
-  GroupsListData,
   GroupListPaginationApi,
   GroupDetailData,
   RawUserGroup,
@@ -12,6 +11,7 @@ import type {
 import { normalizeFromUserGroups, normalizeFromAllGroups } from '@/app/types/group'
 import type { LoadStatus } from '@/app/types';
 import type { RootState, AppDispatch } from '@/app/features/store';
+import { errMsg } from '@/app/features/auth/slice'
 
 
 const GROUP_ENDPOINTS = {
@@ -76,7 +76,7 @@ export const createGroup = createAsyncThunk<GroupApi, CreateOrUpdateGroupBody>(
       if (!res.success || !res.data?.group) throw new Error(res.message || 'Create group failed');
       return res.data.group; // 直接返回 GroupApi
     } catch (e: any) {
-      return rejectWithValue(e.message || 'Create group failed') as any;
+      return rejectWithValue(errMsg(e, 'Create group failed'))
     }
   }
 );
@@ -106,7 +106,7 @@ export const fetchUserGroups = createAsyncThunk<
     const membership = Object.fromEntries(groups.map(g => [g.id, true])) as Record<number, true>;
     return { groups, pagination: res.data.pagination, membership };
   } catch (e: any) {
-    return rejectWithValue(e.message || 'Fetch user groups failed') as any;
+    return rejectWithValue(errMsg(e, 'Fetch user groups failed'))
   }
 });
 
@@ -131,7 +131,7 @@ export const fetchAvailableGroups = createAsyncThunk<
     const groups = res.data.groups.map(normalizeFromAllGroups);
     return { groups, pagination: res.data.pagination };
   } catch (e: any) {
-    return rejectWithValue(e.message || 'Fetch available groups failed') as any;
+    return rejectWithValue(errMsg(e, 'Fetch available groups failed'))
   }
 });
 
@@ -153,7 +153,7 @@ export const fetchAllGroups = createAsyncThunk<
     const groups = res.data.groups.map(normalizeFromAllGroups);
     return { groups, pagination: res.data.pagination };
   } catch (e: any) {
-    return rejectWithValue(e.message || 'Fetch all groups failed') as any;
+    return rejectWithValue(errMsg(e, 'Fetch all groups failed'))
   }
 });
 
@@ -169,7 +169,7 @@ export const updateGroup = createAsyncThunk<
     if (!res.success || !res.data?.group) throw new Error(res.message || 'Update group failed');
     return res.data.group;
   } catch (e: any) {
-    return rejectWithValue(e.message || 'Update group failed') as any;
+    return rejectWithValue(errMsg(e, 'Update group failed'))
   }
 });
 
@@ -181,7 +181,7 @@ export const deleteGroup = createAsyncThunk<{ id: number }, number>(
       if (!res.success) throw new Error(res.message || 'Delete group failed');
       return { id: groupId };
     } catch (e: any) {
-      return rejectWithValue(e.message || 'Delete group failed') as any;
+      return rejectWithValue(errMsg(e, 'Delete group failed'))
     }
   }
 );
@@ -209,7 +209,7 @@ export const searchGroups = createAsyncThunk<
       pagination: res.data.pagination,
     };
   } catch (e: any) {
-    return rejectWithValue(e.message || 'Search groups failed') as any;
+    return rejectWithValue(errMsg(e, 'Search groups failed'))
   }
 });
 
@@ -222,7 +222,7 @@ export const joinGroup = createAsyncThunk<{ id: number }, number>(
       if (!res.success) throw new Error(res.message || 'Join group failed');
       return { id: groupId };
     } catch (e: any) {
-      return rejectWithValue(e.message || 'Join group failed') as any;
+      return rejectWithValue(errMsg(e, 'Join group failed'))
     }
   }
 );
@@ -235,7 +235,7 @@ export const leaveGroup = createAsyncThunk<{ id: number }, number>(
       if (!res.success) throw new Error(res.message || 'Leave group failed');
       return { id: groupId };
     } catch (e: any) {
-      return rejectWithValue(e.message || 'Leave group failed') as any;
+      return rejectWithValue(errMsg(e, 'Leave group failed'))
     }
   }
 );
@@ -249,7 +249,7 @@ export const fetchGroupDetail = createAsyncThunk<GroupApi, number>(
       if (!res.success || !res.data) throw new Error(res.message || 'Fetch group detail failed');
       return res.data; // 直接使用后端返回
     } catch (e: any) {
-      return rejectWithValue(e.message || 'Fetch group detail failed') as any;
+      return rejectWithValue(errMsg(e, 'Fetch group detail failed'))
     }
   }
 );

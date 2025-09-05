@@ -5,7 +5,6 @@ import Link from 'next/link';
 import {
   HomeIcon as OutlineHomeIcon,
   UsersIcon as OutlineUsersIcon,
-  BellIcon as OutlineBellIcon,
   UserIcon as OutlineUserIcon,
   DocumentTextIcon,
   ArrowRightStartOnRectangleIcon,
@@ -13,7 +12,6 @@ import {
 import {
   HomeIcon as SolidHomeIcon,
   UsersIcon as SolidUsersIcon,
-  BellIcon as SolidBellIcon,
   UserIcon as SolidUserIcon,
 } from '@heroicons/react/24/solid';
 import { usePathname, useRouter } from 'next/navigation';
@@ -32,7 +30,7 @@ interface BottomNavProps {
   unreadCount: number;
 }
 
-export default function BottomNav({ unreadCount }: BottomNavProps) {
+export default function BottomNav({ }: BottomNavProps) {
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -94,11 +92,11 @@ export default function BottomNav({ unreadCount }: BottomNavProps) {
               className={`flex flex-col items-center relative ${isActive ? 'text-dark-green' : 'text-dark-gray'} hover:text-dark-green`}
             >
               <Icon className="h-6 w-6" />
-              {item.unreadCount !== undefined && item.unreadCount > 0 && (
+              {/* {item.unreadCount !== undefined && item.unreadCount > 0 && (
                 <span className="absolute top-0 right-0 bg-red text-white text-xs rounded-full px-1.5 py-0.5">
                   {item.unreadCount}
                 </span>
-              )}
+              )} */}
               <span className="text-xs">{item.label}</span>
             </Link>
           );

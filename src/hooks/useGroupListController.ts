@@ -58,7 +58,6 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
 
   // ===== 本地 UI 状态
   const [listLoading, setListLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [toggling, setToggling] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -293,12 +292,7 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
     }
   }, [dispatch, pagination, pageSize, currentPage, router, buildHref, refreshPage]);
 
-  // ===== 覆盖文案
-  const overlayText =
-    saving ? "Saving…" :
-      deleting ? "Deleting…" :
-        toggling ? "Updating membership…" :
-          undefined;
+
 
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
@@ -340,14 +334,8 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
     openEdit,
     closeModal,
     saveGroup,
-
-    // 删除
     deleteGroup,
-
-    // 其他状态
-    saving,
     deleting,
     toggling,
-    overlayText,
   };
 }

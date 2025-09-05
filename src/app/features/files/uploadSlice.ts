@@ -2,6 +2,8 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AxiosProgressEvent, AxiosResponse } from "axios";
 import api from "@/app/features/request";
 import type { ApiResponseRaw } from "@/app/types/api";
+import { errMsg } from '@/app/features/auth/slice'
+
 
 export type FileCategory = "avatar" | "content" | "attachment";
 
@@ -77,7 +79,7 @@ export const uploadFile = createAsyncThunk<UploadedFile, UploadApiPayload>(
       };
       return normalized;
     } catch (e: any) {
-      return rejectWithValue(e?.message || "Upload failed") as any;
+      return rejectWithValue(errMsg(e, "Upload failed"));
     }
   }
 );

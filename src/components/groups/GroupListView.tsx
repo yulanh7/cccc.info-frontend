@@ -43,10 +43,8 @@ type Props = {
 export default function GroupListView({
   rows,
   listLoading,
-  pageLoading,
   currentPage,
   totalPages,
-
   onPageChange,
   onAdd,
   canCreate,

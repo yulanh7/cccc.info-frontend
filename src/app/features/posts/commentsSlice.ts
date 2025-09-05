@@ -8,19 +8,15 @@ import { unwrapData } from "@/app/types/api";
 import type {
   CommentItemApi,
   CommentListData,
-  CommentListResponse,
-  CommentDetailResponse,
   CreateCommentRequest,
-  CreateCommentResponse,
   UpdateCommentRequest,
-  UpdateCommentResponse,
-  DeleteCommentResponse,
   CommentsPagination,
   CreateCommentData,
   UpdateCommentData,
   CommentDetailData,
   DeleteCommentData,
 } from "@/app/types/comments";
+import { errMsg } from '@/app/features/auth/slice'
 
 /* ======================================================
  *                   URL Builders
@@ -85,7 +81,7 @@ export const fetchPostRootComments = createAsyncThunk<
     const data = unwrapData(res);
     return { ...data, sourceKey: sourceKeyOf.root(postId), append };
   } catch (e: any) {
-    return rejectWithValue(e.message || "Fetch comments failed") as any;
+    return rejectWithValue(errMsg(e, "Fetch comments failed"));
   }
 });
 
@@ -102,7 +98,7 @@ export const fetchChildComments = createAsyncThunk<
     const data = unwrapData(res);
     return { ...data, sourceKey: sourceKeyOf.children(parentId), parentId, append };
   } catch (e: any) {
-    return rejectWithValue(e.message || "Fetch child comments failed") as any;
+    return rejectWithValue(errMsg(e, "Fetch child comments failed"));
   }
 });
 
@@ -121,7 +117,7 @@ export const createComment = createAsyncThunk<
     const data = unwrapData(res); // { comment }
     return data.comment;
   } catch (e: any) {
-    return rejectWithValue(e.message || "Create comment failed") as any;
+    return rejectWithValue(errMsg(e, "Create comment failed"));
   }
 });
 
@@ -135,7 +131,7 @@ export const replyToComment = createAsyncThunk<
     const data = unwrapData(res); // { comment }
     return data.comment;
   } catch (e: any) {
-    return rejectWithValue(e.message || "Reply comment failed") as any;
+    return rejectWithValue(errMsg(e, "Reply comment failed"));
   }
 });
 
@@ -148,7 +144,7 @@ export const fetchCommentDetail = createAsyncThunk<CommentItemApi, { commentId: 
       const data = unwrapData(res); // CommentItemApi
       return data;
     } catch (e: any) {
-      return rejectWithValue(e.message || "Fetch comment failed") as any;
+      return rejectWithValue(errMsg(e, "Fetch comment failed"));
     }
   }
 );
@@ -164,7 +160,7 @@ export const updateComment = createAsyncThunk<
     const data = unwrapData(res); // { comment }
     return data.comment;
   } catch (e: any) {
-    return rejectWithValue(e.message || "Update comment failed") as any;
+    return rejectWithValue(errMsg(e, "Update comment failed"));
   }
 });
 
@@ -178,7 +174,7 @@ export const deleteComment = createAsyncThunk<
     if (!res.success) throw new Error(res.message || "Delete comment failed");
     return { commentId, parent_id };
   } catch (e: any) {
-    return rejectWithValue(e.message || "Delete comment failed") as any;
+    return rejectWithValue(errMsg(e, "Delete comment failed"));
   }
 });
 

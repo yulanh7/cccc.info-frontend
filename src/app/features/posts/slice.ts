@@ -13,6 +13,7 @@ import type {
 import { unwrapData } from "@/app/types/api";
 import type { LoadStatus } from "@/app/types";
 import { likePost, unlikePost } from "@/app/features/posts/likeSlice";
+import { errMsg } from '@/app/features/auth/slice'
 
 
 /** ---------------------------------------------
@@ -68,7 +69,7 @@ export const fetchGroupPostsList = createAsyncThunk<
     const data = await fetchPostsApi("group", { groupId, page, per_page });
     return { ...data, append, sourceKey: sourceKeyOf("group", groupId) };
   } catch (e: any) {
-    return rejectWithValue(e.message || "Fetch posts failed") as any;
+    return rejectWithValue(errMsg(e, "Fetch posts failed"))
   }
 });
 
@@ -80,7 +81,7 @@ export const fetchMyPosts = createAsyncThunk<
     const data = await fetchPostsApi("mine", { page, per_page });
     return { ...data, append, sourceKey: sourceKeyOf("mine") };
   } catch (e: any) {
-    return rejectWithValue(e.message || "Fetch my posts failed") as any;
+    return rejectWithValue(errMsg(e, "Fetch my posts failed"))
   }
 });
 
@@ -92,7 +93,7 @@ export const fetchSubscribedPosts = createAsyncThunk<
     const data = await fetchPostsApi("subscribed", { page, per_page });
     return { ...data, append, sourceKey: sourceKeyOf("subscribed") };
   } catch (e: any) {
-    return rejectWithValue(e.message || "Fetch subscribed posts failed") as any;
+    return rejectWithValue(errMsg(e, "Fetch subscribed posts failed"))
   }
 });
 
@@ -124,7 +125,7 @@ export const createPost = createAsyncThunk<
     const data = unwrapData(res);
     return data.post;
   } catch (e: any) {
-    return rejectWithValue(e.message || "Create post failed") as any;
+    return rejectWithValue(errMsg(e, "Create post failed"))
   }
 });
 
@@ -137,7 +138,7 @@ export const fetchPostDetail = createAsyncThunk<PostDetailData, { postId: number
       if (!res.success || !res.data) throw new Error(res.message || "Fetch post failed");
       return res.data;
     } catch (e: any) {
-      return rejectWithValue(e.message || "Fetch post failed") as any;
+      return rejectWithValue(errMsg(e, "Fetch post failed"))
     }
   }
 );
@@ -155,7 +156,7 @@ export const updatePost = createAsyncThunk<
     if (!res.success || !res.data?.post) throw new Error(res.message || "Update post failed");
     return res.data.post;
   } catch (e: any) {
-    return rejectWithValue(e.message || "Update post failed") as any;
+    return rejectWithValue(errMsg(e, "Update post failed"))
   }
 });
 
@@ -168,7 +169,7 @@ export const deletePost = createAsyncThunk<{ id: number }, number>(
       if (!res.success) throw new Error(res.message || "Delete post failed");
       return { id: postId };
     } catch (e: any) {
-      return rejectWithValue(e.message || "Delete post failed") as any;
+      return rejectWithValue(errMsg(e, "Delete post failed"))
     }
   }
 );
@@ -182,7 +183,7 @@ export const fetchPostFileIds = createAsyncThunk<{ postId: number; file_ids: num
       if (!res.success || !res.data) throw new Error(res.message || "Fetch file ids failed");
       return { postId, file_ids: res.data.file_ids || [] };
     } catch (e: any) {
-      return rejectWithValue(e.message || "Fetch file ids failed") as any;
+      return rejectWithValue(errMsg(e, "Fetch file ids failed"))
     }
   }
 );

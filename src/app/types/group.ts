@@ -1,5 +1,4 @@
 import type { ApiResponseProps } from "./api";
-import type { UserProps } from "./user";
 
 
 export type PaginationProps = {

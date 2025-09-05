@@ -7,7 +7,6 @@ import {
   TrashIcon,
   CalendarIcon,
   UserPlusIcon,
-  CheckCircleIcon,
   LockClosedIcon
 } from "@heroicons/react/24/outline";
 import Button from "@/components/ui/Button";

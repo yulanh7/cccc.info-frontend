@@ -16,6 +16,7 @@ import type {
 } from '@/app/types';
 import { fetchGroupPostsList } from '@/app/features/posts/slice';
 import { likePost, unlikePost } from "@/app/features/posts/likeSlice";
+import { errMsg } from '@/app/features/auth/slice'
 
 // 简单的订阅者 UI 形状（与后端 subscribers 项一致）
 type GroupSubscriberUi = { id: number; firstName: string; email: string };
@@ -74,7 +75,7 @@ export const fetchGroupDetail = createAsyncThunk<
 
     return { group, subscriberCount, subscribers };
   } catch (e: any) {
-    return rejectWithValue(e.message || 'Fetch group detail failed') as any;
+    return rejectWithValue(errMsg(e, 'Fetch group detail failed'));
   }
 });
 
@@ -101,7 +102,7 @@ export const fetchGroupMembers = createAsyncThunk<
 
       return { members, pagination: data.pagination };
     } catch (e: any) {
-      return rejectWithValue(e.message || 'Fetch members failed') as any;
+      return rejectWithValue(errMsg(e, 'Fetch members failed'));
     }
   }
 );
@@ -124,7 +125,7 @@ export const addGroupMember = createAsyncThunk<
       message: res.message,
     };
   } catch (e: any) {
-    return rejectWithValue(e.message || 'Add member failed') as any;
+    return rejectWithValue(errMsg(e, 'Add member failed'));
   }
 });
 
@@ -138,7 +139,7 @@ export const kickGroupMember = createAsyncThunk<
     if (!res.success) throw new Error(res.message || 'Kick member failed');
     return { userId, message: res.message };
   } catch (e: any) {
-    return rejectWithValue(e.message || 'Kick member failed') as any;
+    return rejectWithValue(errMsg(e, 'Kick member failed'));
   }
 });
 

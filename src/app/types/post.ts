@@ -17,6 +17,8 @@ export type PostFileApi = {
 
 
 
+
+
 export type PostGroupApi = {
   id: number;
   name: string;
@@ -37,6 +39,7 @@ export type CreatePostRequest = {
   video_urls?: string[];
   file_ids?: number[];
 };
+
 
 export type CreatedPostData = {
   post: {
@@ -105,7 +108,7 @@ export type UpdatePostData = {
 };
 export type UpdatePostResponse = ApiResponseProps<UpdatePostData>;
 
-export type DeletePostData = {};
+export type DeletePostData = Record<string, never>;
 export type DeletePostResponse = ApiResponseProps<DeletePostData>;
 
 /** 5) 点赞 / 取消点赞 */
