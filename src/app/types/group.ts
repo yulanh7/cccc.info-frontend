@@ -1,6 +1,15 @@
 import type { ApiResponseProps } from "./api";
 import type { UserProps } from "./user";
 
+
+export type PaginationProps = {
+  currentPage: number;
+  totalPages: number;
+  onPageChange?: (p: number) => void;
+  siblingCount?: number;
+  className?: string;
+};
+
 /** ===================== API Models (mirror backend) ===================== */
 export interface GroupApi {
   id: number;
