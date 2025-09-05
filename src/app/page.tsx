@@ -18,26 +18,25 @@ import { canEditPostList } from "@/app/types";
 
 const POST_PER_PAGE = 11;
 
-/** 兼容不同的 posts slice 结构，尽量容错 */
 function useSourceListState(sourceKey: string) {
-  const containers = useAppSelector((s: any) => ({
-    // 你项目里实际的命名可能是其中之一
-    v1: s.posts?.lists?.[sourceKey],
-    v2: s.posts?.sources?.[sourceKey],
-    v3: s.posts?.[sourceKey],
-  }));
-
-  const box = containers.v1 ?? containers.v2 ?? containers.v3 ?? null;
-
-  const rows: PostListItemApi[] = box?.rows ?? box?.items ?? [];
-  const pagination = box?.pagination ?? box?.pageInfo ?? null;
-
-  const statusMap = useAppSelector((s: any) => s.posts?.status ?? {});
+  const feed = useAppSelector((s: any) => s.posts?.lists?.[sourceKey]);
+  const rows: PostListItemApi[] = feed?.items ?? [];
   const postsStatus: "idle" | "loading" | "succeeded" | "failed" =
-    statusMap?.[sourceKey] ?? statusMap?.list ?? statusMap ?? "idle";
+    feed?.status ?? "idle";
+  const rawTotalPages =
+    feed?.total_pages ?? feed?.pages ?? feed?.totalPages ?? null;
+  const totalCount =
+    feed?.total_posts ?? feed?.total ?? feed?.totalCount ?? null;
+  const perPageGuess = rows.length > 0 ? rows.length : null;
+  const totalPages =
+    rawTotalPages ??
+    (totalCount && perPageGuess
+      ? Math.max(1, Math.ceil(Number(totalCount) / Number(perPageGuess)))
+      : 1);
 
-  return { rows, pagination, postsStatus };
+  return { rows, totalPages, postsStatus };
 }
+
 
 export default function HomePage() {
   const searchParams = useSearchParams();
@@ -46,14 +45,16 @@ export default function HomePage() {
     return Number.isFinite(p) && p > 0 ? p : 1;
   }, [searchParams]);
 
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+
   const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.auth.user);
 
   const SRC = "subscribed";
-  const { rows, pagination, postsStatus } = useSourceListState(SRC);
+  const { rows, totalPages, postsStatus } = useSourceListState(SRC);
 
   const confirmSingleDelete = useConfirm<number>("Delete this post?");
-  const totalPages = pagination?.total_pages ?? pagination?.pages ?? 1;
   const buildHref = (p: number) => `/?page=${p}`;
 
   const ctrl = usePostListController({
@@ -71,7 +72,7 @@ export default function HomePage() {
     postsStatus,
   });
 
-  const pageLoading = postsStatus === "loading" && rows.length === 0;
+  const pageLoading = !mounted || postsStatus === "loading";
 
   return (
     <>

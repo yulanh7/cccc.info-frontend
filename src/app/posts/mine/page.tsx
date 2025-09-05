@@ -19,23 +19,35 @@ import Button from "@/components/ui/Button";
 const POST_PER_PAGE = 11;
 
 function useSourceListState(sourceKey: string) {
-  const containers = useAppSelector((s: any) => ({
-    v1: s.posts?.lists?.[sourceKey],
-    v2: s.posts?.sources?.[sourceKey],
-    v3: s.posts?.[sourceKey],
-  }));
+  const feed = useAppSelector((s: any) => s.posts?.lists?.[sourceKey]);
 
-  const box = containers.v1 ?? containers.v2 ?? containers.v3 ?? null;
+  const rows: PostListItemApi[] = feed?.items ?? [];
 
-  const rows: PostListItemApi[] = box?.rows ?? box?.items ?? [];
-  const pagination = box?.pagination ?? box?.pageInfo ?? null;
+  // 统一兼容各种命名 & 兜底推导
+  const currentPage =
+    feed?.current_page ?? feed?.currentPage ?? null;
 
-  const statusMap = useAppSelector((s: any) => s.posts?.status ?? {});
+  const rawTotalPages =
+    feed?.total_pages ?? feed?.pages ?? feed?.totalPages ?? null;
+
+  const totalCount =
+    feed?.total_posts ?? feed?.total ?? feed?.totalCount ?? null;
+
+  const perPageGuess =
+    rows.length > 0 ? rows.length : null;
+
+  const totalPages =
+    rawTotalPages ??
+    (totalCount && perPageGuess
+      ? Math.max(1, Math.ceil(Number(totalCount) / Number(perPageGuess)))
+      : 1);
+
   const postsStatus: "idle" | "loading" | "succeeded" | "failed" =
-    statusMap?.[sourceKey] ?? statusMap?.list ?? statusMap ?? "idle";
+    feed?.status ?? "idle";
 
-  return { rows, pagination, postsStatus };
+  return { rows, totalPages, currentPage, postsStatus };
 }
+
 
 export default function MyPostsPage() {
   const searchParams = useSearchParams();
@@ -48,11 +60,12 @@ export default function MyPostsPage() {
   const user = useAppSelector((s) => s.auth.user);
 
   const SRC = "mine";
-  const { rows, pagination, postsStatus } = useSourceListState(SRC);
+  const { rows, totalPages, postsStatus } = useSourceListState(SRC);
+
+
 
   const confirmSingleDelete = useConfirm<number>("Delete this post?");
   const confirmBulkDelete = useConfirm<number[]>("Delete selected posts?");
-  const totalPages = pagination?.total_pages ?? pagination?.pages ?? 1;
   const buildHref = (p: number) => `/posts/mine?page=${p}`;
 
   const ctrl = usePostListController({
