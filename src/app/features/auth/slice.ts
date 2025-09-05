@@ -15,6 +15,7 @@ import {
   ProfileGetResponse,
   ProfileUpdateBody,
   ProfileUpdateResponse,
+  ProfileGetData,
 } from '@/app/types/user';
 import { LoginCredentials, SignupCredentials } from '@/app/types/auth';
 
@@ -64,90 +65,90 @@ export type AuthThunkReturn = {
 };
 
 // ====== Login ======
-export const loginThunk = createAsyncThunk<AuthThunkReturn, LoginCredentials>(
-  `${AUTH_ENDPOINTS.LOGIN}`,
-  async (credentials, { rejectWithValue }) => {
-    try {
-      const res = await apiRequest<AuthResponseData>(
-        'POST',
-        AUTH_ENDPOINTS.LOGIN,
-        credentials,
-        false
-      );
-      if (!res.success || !res.data)
-        throw new Error(res.message || 'Login failed');
-      storeToken(res.data);
-      return {
-        user: res.data.user,
-        accessToken: res.data.access_token,
-        refreshToken: res.data.refresh_token,
-      };
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Login failed') as any;
-    }
+export const loginThunk = createAsyncThunk<
+  AuthThunkReturn,
+  LoginCredentials,
+  { rejectValue: string }
+>(`${AUTH_ENDPOINTS.LOGIN}`, async (credentials, { rejectWithValue }) => {
+  try {
+    const res = await apiRequest<AuthResponseData>('POST', AUTH_ENDPOINTS.LOGIN, credentials, false);
+    if (!res.success || !res.data) throw new Error(res.message || 'Login failed');
+    storeToken(res.data);
+    return {
+      user: res.data.user,
+      accessToken: res.data.access_token,
+      refreshToken: res.data.refresh_token,
+    };
+  } catch (e: any) {
+    return rejectWithValue(e.message || 'Login failed');
   }
-);
+});
 
-// ====== Signup ======
-export const signupThunk = createAsyncThunk<AuthThunkReturn, SignupCredentials>(
-  `${AUTH_ENDPOINTS.SIGNUP}`,
-  async (credentials, { rejectWithValue }) => {
-    try {
-      const res = await apiRequest<AuthResponseData>(
-        'POST',
-        AUTH_ENDPOINTS.SIGNUP,
-        credentials,
-        false
-      );
-      if (!res.success || !res.data)
-        throw new Error(res.message || 'Signup failed');
-      storeToken(res.data);
-      return {
-        user: res.data.user,
-        accessToken: res.data.access_token,
-        refreshToken: res.data.refresh_token,
-      };
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Signup failed') as any;
-    }
+export const signupThunk = createAsyncThunk<
+  AuthThunkReturn,
+  SignupCredentials,
+  { rejectValue: string }
+>(`${AUTH_ENDPOINTS.SIGNUP}`, async (credentials, { rejectWithValue }) => {
+  try {
+    const res = await apiRequest<AuthResponseData>('POST', AUTH_ENDPOINTS.SIGNUP, credentials, false);
+    if (!res.success || !res.data) throw new Error(res.message || 'Signup failed');
+    storeToken(res.data);
+    return {
+      user: res.data.user,
+      accessToken: res.data.access_token,
+      refreshToken: res.data.refresh_token,
+    };
+  } catch (e: any) {
+    return rejectWithValue(e.message || 'Signup failed');
   }
-);
+});
 
-// ====== Logout ======
-export const logoutThunk = createAsyncThunk<boolean, void>(
+export const logoutThunk = createAsyncThunk<boolean, void, { rejectValue: string }>(
   `${AUTH_ENDPOINTS.LOGOUT}`,
   async (_, { rejectWithValue }) => {
     try {
       const res = await apiRequest<{}>('POST', AUTH_ENDPOINTS.LOGOUT, {}, true);
       if (!res.success) throw new Error(res.message || 'Logout failed');
       return true;
-    } catch (error: any) {
-      return rejectWithValue(error.message || 'Logout failed') as any;
+    } catch (e: any) {
+      return rejectWithValue(e.message || 'Logout failed');
     }
   }
 );
 
-export const fetchProfileThunk = createAsyncThunk<UserProps, void>(
+
+
+
+export const fetchProfileThunk = createAsyncThunk<UserProps, void, { rejectValue: string }>(
   `${USER_ENDPOINTS.PROFILE}/get`,
   async (_, { rejectWithValue }) => {
     try {
-      const res = await apiRequest<ProfileGetResponse['data']>(
-        'GET',
-        USER_ENDPOINTS.PROFILE
-      );
-      // normalizeApiResponse 已转成 ApiResponseProps<T>
-      // 这里用 ProfileGetResponse 更直观：
-      const full = (res as unknown) as ProfileGetResponse;
-      if (!full.success || !full.data?.user) {
-        throw new Error(full.message || 'Failed to load profile');
-      }
-      persistUser(full.data.user);
-      return full.data.user;
+      const res = await apiRequest<ProfileGetData>('GET', USER_ENDPOINTS.PROFILE);
+      if (!res.success || !res.data?.user) throw new Error(res.message || 'Failed to load profile');
+      persistUser(res.data.user);
+      return res.data.user;
     } catch (e: any) {
-      return rejectWithValue(e.message || 'Failed to load profile') as any;
+      return rejectWithValue(e.message || 'Failed to load profile');
     }
   }
 );
+
+export const refreshThunk = createAsyncThunk<
+  { accessToken: string },
+  void,
+  { rejectValue: string }
+>(`${AUTH_ENDPOINTS.REFRESH}`, async (_, { rejectWithValue, dispatch }) => {
+  try {
+    // 根据你的 apiRequest 约定：带 refresh token 或 cookie
+    const res = await apiRequest<{ access_token: string }>('POST', AUTH_ENDPOINTS.REFRESH, {}, false);
+    if (!res?.success || !res?.data?.access_token) throw new Error(res?.message || 'Refresh failed');
+    dispatch(accessTokenRefreshed(res.data.access_token)); // 同步到 store + localStorage
+    return { accessToken: res.data.access_token };
+  } catch (e: any) {
+    return rejectWithValue(e.message || 'Refresh failed');
+  }
+});
+
 
 export const saveProfileNameThunk = createAsyncThunk<
   { firstName: string },
@@ -215,7 +216,7 @@ const authSlice = createSlice({
       })
       .addCase(loginThunk.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.payload as string;
+        state.error = action.payload ?? (action.error.message || 'Login failed');
       })
       // signup
       .addCase(signupThunk.pending, (state) => {
@@ -230,7 +231,7 @@ const authSlice = createSlice({
       })
       .addCase(signupThunk.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.payload as string;
+        state.error = action.payload ?? (action.error.message || 'Signup failed');
       })
       // logout
       .addCase(logoutThunk.fulfilled, (state) => {
@@ -256,7 +257,7 @@ const authSlice = createSlice({
       })
       .addCase(fetchProfileThunk.rejected, (state, action) => {
         state.profileStatus = 'failed';
-        state.profileError = action.payload as string;
+        state.profileError = action.payload ?? (action.error.message || 'Failed to load profile');
       })
     builder
       .addCase(saveProfileNameThunk.pending, (state) => {
@@ -291,7 +292,7 @@ const authSlice = createSlice({
       .addCase(changePasswordThunk.rejected, (state, action) => {
         state.changingPassword = false;
         state.passwordStatus = 'failed';
-        state.passwordError = action.payload ?? 'Change password failed';
+        state.passwordError = action.payload ?? (action.error.message || 'Change password failed');
       });
   },
 });

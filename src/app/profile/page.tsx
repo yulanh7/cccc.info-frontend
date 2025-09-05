@@ -241,7 +241,7 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-white/10"
-                  onClick={() => setShowNew((v) => !v)}
+                  onClick={() => setShowCurrent((v) => !v)}
                   aria-label={showCurrent ? 'Hide password' : 'Show password'}
                 >
                   {showCurrent ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}

@@ -3,8 +3,10 @@ export interface LoginCredentials {
   password: string;
 }
 
-export interface SignupCredentials {
+export type SignupCredentials = {
   email: string;
   firstName: string;
   password: string;
-}
+  clientHash?: boolean;
+  recaptchaToken?: string | null;
+};
