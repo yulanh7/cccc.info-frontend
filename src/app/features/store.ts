@@ -4,6 +4,7 @@ import groupsReducer from './groups/slice';
 import groupDetailReducer from './groups/detailSlice';
 import postsReducer from './posts/slice';
 import likesReducer from './posts/likeSlice';
+import commentsReducer from "@/app/features/posts/commentsSlice";
 
 export const store = configureStore({
   reducer: {
@@ -11,7 +12,8 @@ export const store = configureStore({
     groups: groupsReducer,
     groupDetail: groupDetailReducer,
     posts: postsReducer,
-    likes: likesReducer
+    likes: likesReducer,
+    comments: commentsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

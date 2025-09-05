@@ -32,6 +32,7 @@ import {
 import IconButton from "@/components/ui/IconButton";
 import YouTubeList from "@/components/ui/YouTubeList";
 import { uploadAllFiles } from "@/app/ultility";
+import CommentsSection from "@/components/posts/CommentsSection";
 
 import type { UserProps } from "@/app/types";
 import type {
@@ -434,6 +435,14 @@ export default function PostDetailPage() {
               </ul>
             </div>
           )}
+
+          {/* 评论区 */}
+          <CommentsSection
+            postId={post.id}
+            postAuthorId={post.author.id}      // 你 PostDetailData 里 author: { id, first_name }
+            currentUserId={user?.id ?? null}
+          />
+
 
           {/* 编辑弹窗（传入与 API 对齐的数据） */}
           {isEdit && post && (
