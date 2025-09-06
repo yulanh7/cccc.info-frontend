@@ -121,7 +121,7 @@ export default function PostCardSimple({
               alt={title}
               className="w-full h-25 md:h-30 object-cover rounded-t-xs md:rounded-t-sm"
             />
-            <div className="absolute bottom-2 right-2 pointer-events-none">
+            <div className="absolute bottom-3 left-3 pointer-events-none">
               <div className="rounded-full bg-[rgba(0,0,0,0.35)] p-2">
                 <PlayIcon className="h-3 w-3 text-white" />
               </div>
@@ -150,28 +150,12 @@ export default function PostCardSimple({
 
 
       <div className='px-2 pb-2'>
-        <h2 className="font-semibold text-dark-gray leading-[1.3] md:leading-[1.3] mb-2">
-          {ellipsize(title, 50, { byWords: true })}
-        </h2>
+        <div className="flex justify-between">
 
-        {summary && (
-          <p className="text-gray text-sm line-clamp-3 leading-[1.1] md:leading-[1.2] whitespace-pre-line">
-            {ellipsize(summary, 160, { byWords: true })}
-          </p>
-        )}
-
-        <div className="mt-2 space-y-1 text-xs text-gray">
-          <span className="inline-flex items-center gap-1 text-xs">
-            <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-dark-green/10 text-dark-green font-semibold">
-              {(author.firstName?.[0] || "?").toUpperCase()}
-            </span>
-            <span className="text-[9px]">
-              {ellipsize(author.firstName, 10, { byWords: true })}
-            </span>
-          </span>
-
-          {/* —— 右下角 Like：可点、无跳转、乐观更新 */}
-          <div className="absolute bottom-2 right-2 z-1 mt-1">
+          <h2 className="flex-1 font-semibold text-dark-gray leading-[1.3] md:leading-[1.3] mb-2">
+            {ellipsize(title, 50, { byWords: true })}
+          </h2>
+          <div className="ml-1">
             <button
               onClick={onToggleLike}
               disabled={busy}
@@ -188,6 +172,26 @@ export default function PostCardSimple({
               <span className="text-xs text-dark-gray">{count}</span>
             </button>
           </div>
+        </div>
+
+        {summary && (
+          <p className="text-gray text-sm line-clamp-3 leading-[1.1] md:leading-[1.2] whitespace-pre-line mt-2">
+            {ellipsize(summary, 160, { byWords: true })}
+          </p>
+        )}
+
+        <div className="mt-4 space-y-1 text-xs text-gray">
+          <span className="inline-flex items-center gap-1 text-xs">
+            <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-dark-green/10 text-dark-green font-semibold">
+              {(author.firstName?.[0] || "?").toUpperCase()}
+            </span>
+            <span className="text-[9px]">
+              {ellipsize(author.firstName, 10, { byWords: true })}
+            </span>
+          </span>
+
+          {/* —— 右下角 Like：可点、无跳转、乐观更新 */}
+
         </div>
       </div>
     </div>

@@ -79,7 +79,7 @@ export default function PostsListWithPagination({
     }
 
     return (
-      <div className="columns-2 md:columns-3 lg:columns-4 gap-2 md:gap-4">
+      <div className="columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-2 md:gap-4">
         {rows.map((post) => {
           const canManage = !!canEdit?.(post);
           const isSelected = selectedIds.has(post.id);
@@ -93,7 +93,7 @@ export default function PostsListWithPagination({
             <div key={post.id} className="relative rounded-sm overflow-hidden mb-2 break-inside-avoid">
               {/* 工具条（覆盖在图片上，注意 pointer-events） */}
               {canManage && (selectMode || showDelete) && (
-                <div className="absolute right-0 top-0 z-1 pointer-events-none">
+                <div className="absolute right-2 bottom-2 z-1 pointer-events-none">
                   <div
                     className="flex items-center gap-2  pointer-events-auto"
                     onClick={(e) => e.stopPropagation()}
@@ -113,7 +113,7 @@ export default function PostsListWithPagination({
                     )}
 
                     {!selectMode && showDelete && (
-                      <div className="flex flex-col items-center gap-3 py-1 px-1 bg-yellow rounded-xs shadow-sm">
+                      <div className="flex  items-center gap-3 ">
                         <IconButton
                           title="Edit post"
                           aria-label="Edit post"
