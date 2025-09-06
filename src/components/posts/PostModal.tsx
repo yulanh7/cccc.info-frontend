@@ -27,7 +27,7 @@ type PostModalProps = {
   existingFiles?: PostFileApi[];
 };
 
-const MAX_TITLE = 70;
+const MAX_TITLE = 100;
 const MAX_DESC = 300;
 
 // —— 简单的 MIME 判断（与文件 API 对齐）

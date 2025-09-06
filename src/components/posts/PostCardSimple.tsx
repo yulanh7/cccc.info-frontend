@@ -141,7 +141,7 @@ export default function PostCardSimple({
             style={{ backgroundImage: `url(${bgUrl})` }}
           >
             <h2 className="text-dark-gray font-semibold text-center px-4">
-              {title}
+              {ellipsize(title, 90, { byWords: true })}
             </h2>
           </div>
         )}
