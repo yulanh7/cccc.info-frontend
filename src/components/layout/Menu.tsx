@@ -88,7 +88,7 @@ export default function Menu({
                 className={`block px-4 py-2 text-sm hover:bg-gray-100 ${isActiveHref('my-groups') ? 'text-dark-green' : 'text-dark-gray'
                   }`}
               >
-                Created Groups
+                My Groups
               </Link>
 
               <button

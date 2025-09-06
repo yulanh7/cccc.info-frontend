@@ -43,24 +43,19 @@ type Props = {
 export default function GroupListView({
   rows,
   listLoading,
-  pageLoading,
   currentPage,
   totalPages,
-
   onPageChange,
   onAdd,
   canCreate,
   onEdit,
   onDelete,
   canEdit,
-
   isUserSubscribed,
   onToggleSubscription,
-
   saving = false,
   deleting = false,
   toggling = false,
-
   formatDate,
 }: Props) {
   const router = useRouter();
@@ -93,7 +88,7 @@ export default function GroupListView({
           <Button
             onClick={onAdd}
             className="ml-auto"
-            variant="secondary"
+            variant="primary"
             leftIcon={<PlusIcon className="h-5 w-5" />}
           >
             New Group

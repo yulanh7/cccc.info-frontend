@@ -170,7 +170,7 @@ export default function BottomNav({ unreadCount }: BottomNavProps) {
                   className="flex flex-col items-center rounded-xl border border-border p-4 active:scale-[0.98] transition"
                 >
                   <OutlineUsersIcon className="h-7 w-7 mb-1.5" />
-                  <span className="text-sm">Groups I Created</span>
+                  <span className="text-sm">My Groups</span>
                 </Link>
 
                 <button

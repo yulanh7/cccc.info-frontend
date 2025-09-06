@@ -112,7 +112,6 @@ function GroupsPageInner() {
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={onPageChange}
-          onAdd={openNew}
           canCreate={canCreate}
           onEdit={openEdit}
           onDelete={(id) => confirmGroupDelete.ask(id)}
