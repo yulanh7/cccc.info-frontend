@@ -266,7 +266,7 @@ function PostDetailPageInner() {
   return (
     <>
       <LoadingOverlay show={pageLoading} text="Loading post…" />
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 mt-16">
 
         {pageError && <div className="text-red-600 mt-20">Failed to load post: {String(pageError)}</div>}
         {!pageLoading && post && (

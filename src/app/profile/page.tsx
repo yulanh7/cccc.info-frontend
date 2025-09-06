@@ -9,6 +9,7 @@ import { isAdmin } from '@/app/types/user';
 import Button from '@/components/ui/Button'
 import PageTitle from '@/components/layout/PageTitle';
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
+import CustomHeader from "@/components/layout/CustomHeader";
 
 export default function ProfilePage() {
   const dispatch = useAppDispatch();
@@ -117,10 +118,14 @@ export default function ProfilePage() {
 
   return (
     <>
+      <CustomHeader
+        pageTitle="My Profile"
+        showLogo={true}
+      />
       <PageTitle title="My Profile" showPageTitle={true} />
       <LoadingOverlay show={pageLoading} text="Loading profile…" />
 
-      <div className="max-w-2xl mx-auto px-4 py-8">
+      <div className="max-w-2xl mx-auto px-4 py-8 mt-16">
 
         {/* 基本资料 */}
         <section className="bg-white/5 rounded-2xl overflow-hidden shadow-sm mb-8 border border-white/10">

@@ -79,13 +79,7 @@ export default function Header({
           <Logo isScrolled={isFixed} />
           <Menu isLoggedIn={isLoggedIn} userName={userName} unreadCount={unreadCount} />
         </div>
-        <div
-          className={`sm-header md:hidden flex items-center justify-between border-b border-b-border bg-bg ${isFixed ? 'p-2 shadow-lg' : 'p-2'
-            }`}
-        >
-          <Logo isScrolled={isFixed} />
-          {/* <MagnifyingGlassIcon className="h-5 w-5 text-dark-gray" /> */}
-        </div>
+
       </header>
       <div style={{ height: `${headerHeight}px` }}></div>
     </>

@@ -15,6 +15,7 @@ import type { PostListItemApi } from "@/app/types";
 import { canEditPostList } from "@/app/types";
 import Button from "@/components/ui/Button";
 import { POSTS_PER_PAGE } from "@/app/constants";
+import CustomHeader from "@/components/layout/CustomHeader";
 
 function useSourceListState(sourceKey: string) {
   const feed = useAppSelector((s) => (s as any).posts?.lists?.[sourceKey]);
@@ -96,8 +97,12 @@ function MyPostsPageInner() {
   return (
     <>
       <LoadingOverlay show={pageLoading} text="Loading my posts…" />
+      <CustomHeader
+        pageTitle="My Posts"
+        showLogo={true}
+      />
       <PageTitle title="My Posts" showPageTitle={true} />
-      <div className="container mx-auto md:p-6 p-2 mt-5 md:mt-16">
+      <div className="container mx-auto md:p-6 p-2 mt-18 md:mt-16">
         <div className="flex items-center justify-end gap-2 mb-2 ">
           <div className="text-sm text-dark-gray">
             {ctrl.selectMode ? `${ctrl.selectedIds.size} selected` : " "}

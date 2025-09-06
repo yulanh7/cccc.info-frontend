@@ -10,6 +10,7 @@ import { formatDate } from "@/app/ultility";
 import { useConfirm } from "@/hooks/useConfirm";
 import { useGroupListController } from "@/hooks/useGroupListController";
 import { POSTS_PER_PAGE } from "@/app/constants";
+import CustomHeader from "@/components/layout/CustomHeader";
 
 const MY_GROUPS_PATH = "/my-groupss";
 
@@ -83,8 +84,12 @@ function MyGroupsPageInner() {
   return (
     <>
       <LoadingOverlay show={pageLoading} text="Loading group…" />
+      <CustomHeader
+        pageTitle="My Groups"
+        showLogo={true}
+      />
       <PageTitle title="My Groups" showPageTitle />
-      <div className="mx-auto w-full p-4 min-h-screen lg:container">
+      <div className="mx-auto w-full p-4 min-h-screen lg:container mt-16">
         <GroupListView
           // title="My Groups"
           rows={filteredRows}
