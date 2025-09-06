@@ -8,6 +8,7 @@ export type PaginationProps = {
   onPageChange?: (p: number) => void;
   siblingCount?: number;
   className?: string;
+  buildHref?: (page: number) => string;
 };
 
 /** ===================== API Models (mirror backend) ===================== */
