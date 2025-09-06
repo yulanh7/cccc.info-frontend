@@ -91,60 +91,20 @@ export default function PostsListWithPagination({
 
           return (
             <div key={post.id} className="relative rounded-sm overflow-hidden mb-2 break-inside-avoid">
-              {/* 工具条（覆盖在图片上，注意 pointer-events） */}
-              {canManage && (selectMode || showDelete) && (
-                <div className="absolute right-2 bottom-2 z-1 pointer-events-none">
-                  <div
-                    className="flex items-center gap-2  pointer-events-auto"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {selectMode && (
-                      <IconButton
-                        title={isSelected ? "Unselect" : "Select"}
-                        aria-label="Select post"
-                        size="sm"
-                        variant="warning"
-                        onClick={() => onToggleSelect(post.id)}
-                        active={isSelected}
-                        className="rounded-sm"
-                      >
-                        {isSelected && <CheckIcon className="h-4 w-4" />}
-                      </IconButton>
-                    )}
-
-                    {!selectMode && showDelete && (
-                      <div className="flex  items-center gap-3 ">
-                        <IconButton
-                          title="Edit post"
-                          aria-label="Edit post"
-                          rounded="full"
-                          variant="ghost"
-                          size="xs"
-                          onClick={() => onEditSingle?.(post.id)}
-                        >
-                          <PencilSquareIcon className="h-5 w-5" />
-                        </IconButton>
-
-                        <IconButton
-                          title="Delete post"
-                          aria-label="Delete post"
-                          rounded="full"
-                          variant="ghost"
-                          size="xs"
-                          onClick={() => onDeleteSingle?.(post.id)}
-                        >
-                          <TrashIcon className="h-5 w-5" />
-                        </IconButton>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* 内容卡片 */}
               <Link href={`/posts/${post.id}`} className="block">
-                <PostCardSimple post={post} formatDate={formatDate} />
+                <PostCardSimple
+                  post={post}
+                  formatDate={formatDate}
+                  canManage={canManage}
+                  selectMode={selectMode}
+                  isSelected={isSelected}
+                  onToggleSelect={onToggleSelect}
+                  showDelete={showDelete}
+                  onEditSingle={onEditSingle}
+                  onDeleteSingle={onDeleteSingle}
+                />
               </Link>
+
             </div>
           );
         })}

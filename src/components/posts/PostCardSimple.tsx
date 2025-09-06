@@ -3,7 +3,9 @@ import React, { useMemo, useState, useEffect, useRef } from "react";
 import type { PostListItemApi } from "@/app/types";
 import {
   HandThumbUpIcon as HandThumbUpOutline,
+  CheckIcon, TrashIcon, PencilSquareIcon
 } from "@heroicons/react/24/outline";
+import IconButton from "@/components/ui/IconButton";
 import { HandThumbUpIcon as HandThumbUpSolid, PlayIcon } from "@heroicons/react/24/solid";
 import { ellipsize } from '@/app/ultility';
 import { getYouTubeThumbnail } from '@/app/ultility';
@@ -16,6 +18,13 @@ type Props = {
   post: PostListItemApi;
   formatDate: (timestamp: string, showTime?: boolean) => string;
   showEnterArrow?: boolean;
+  canManage?: boolean;
+  selectMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (id: number) => void;
+  showDelete?: boolean;
+  onEditSingle?: (id: number) => void;
+  onDeleteSingle?: (id: number) => void;
 };
 
 const BG_URLS = ["/images/bg-card-2.jpg", "/images/bg-for-homepage.png"];
@@ -24,7 +33,15 @@ export default function PostCardSimple({
   post,
   formatDate,
   showEnterArrow = true,
+  canManage = false,
+  selectMode = false,
+  isSelected = false,
+  onToggleSelect,
+  showDelete = false,
+  onEditSingle,
+  onDeleteSingle,
 }: Props) {
+
   const dispatch = useAppDispatch();
   const { id, title, files, author, summary, videos, like_count } = post;
 
@@ -121,7 +138,7 @@ export default function PostCardSimple({
               alt={title}
               className="w-full h-25 md:h-30 object-cover rounded-t-xs md:rounded-t-sm"
             />
-            <div className="absolute bottom-3 left-3 pointer-events-none">
+            <div className="absolute top-3 left-3 pointer-events-none">
               <div className="rounded-full bg-[rgba(0,0,0,0.35)] p-2">
                 <PlayIcon className="h-3 w-3 text-white" />
               </div>
@@ -150,11 +167,98 @@ export default function PostCardSimple({
 
 
       <div className='px-2 pb-2'>
-        <div className="flex justify-between">
-
+        <div className="flex justify-between gap-1">
           <h2 className="flex-1 font-semibold text-dark-gray leading-[1.3] md:leading-[1.3] mb-2">
             {ellipsize(title, 50, { byWords: true })}
           </h2>
+          {canManage && (selectMode || showDelete) && (
+            <>
+              <div className="absolute right-2 top-2 z-1 pointer-events-none">
+                <div
+                  className="pointer-events-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {selectMode && (
+                    <IconButton
+                      title={isSelected ? "Unselect" : "Select"}
+                      aria-label="Select post"
+                      size="sm"
+                      variant={isSelected ? "primary" : "outline"}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onToggleSelect?.(post.id);
+                      }}
+                      active={isSelected}
+                      className="rounded-sm"
+                    >
+                      {isSelected && <CheckIcon className="h-4 w-4" />}
+                    </IconButton>
+                  )}
+                </div>
+              </div>
+
+              <div className="z-1 pointer-events-none">
+                <div
+                  className="pointer-events-auto"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {!selectMode && showDelete && (
+                    <div className="flex items-center gap-1">
+                      <IconButton
+                        title="Edit post"
+                        aria-label="Edit post"
+                        rounded="full"
+                        variant="ghost"
+                        size="xs"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onEditSingle?.(post.id);
+                        }}
+                      >
+                        <PencilSquareIcon className="h-5 w-5" />
+                      </IconButton>
+
+                      <IconButton
+                        title="Delete post"
+                        aria-label="Delete post"
+                        rounded="full"
+                        variant="ghost"
+                        size="xs"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onDeleteSingle?.(post.id);
+                        }}
+                      >
+                        <TrashIcon className="h-5 w-5" />
+                      </IconButton>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
+        </div>
+
+        {summary && (
+          <p className="text-gray text-sm line-clamp-3 leading-[1.1] md:leading-[1.2] whitespace-pre-line mt-2">
+            {ellipsize(summary, 160, { byWords: true })}
+          </p>
+        )}
+
+        <div className="mt-4 space-y-1 text-xs text-gray flex gap-1">
+          <span className="flex-1 inline-flex items-center gap-1 text-xs">
+            <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-dark-green/10 text-dark-green font-semibold">
+              {(author.firstName?.[0] || "?").toUpperCase()}
+            </span>
+            <span className="text-[9px]">
+              {ellipsize(author.firstName, 10, { byWords: true })}
+            </span>
+          </span>
+
           <div className="ml-1">
             <button
               onClick={onToggleLike}
@@ -172,26 +276,6 @@ export default function PostCardSimple({
               <span className="text-xs text-dark-gray">{count}</span>
             </button>
           </div>
-        </div>
-
-        {summary && (
-          <p className="text-gray text-sm line-clamp-3 leading-[1.1] md:leading-[1.2] whitespace-pre-line mt-2">
-            {ellipsize(summary, 160, { byWords: true })}
-          </p>
-        )}
-
-        <div className="mt-4 space-y-1 text-xs text-gray">
-          <span className="inline-flex items-center gap-1 text-xs">
-            <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-dark-green/10 text-dark-green font-semibold">
-              {(author.firstName?.[0] || "?").toUpperCase()}
-            </span>
-            <span className="text-[9px]">
-              {ellipsize(author.firstName, 10, { byWords: true })}
-            </span>
-          </span>
-
-          {/* —— 右下角 Like：可点、无跳转、乐观更新 */}
-
         </div>
       </div>
     </div>

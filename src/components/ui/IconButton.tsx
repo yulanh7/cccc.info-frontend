@@ -4,11 +4,11 @@ import { cn } from "./cn";
 
 type Variant = "primary" | "warning" | "outline" | "ghost" | "danger";
 type Size = "xs" | "sm" | "md";
-type Tone = "default" | "brand" | "danger";
+type Tone = "default" | "brand" | "danger" | "warning" | "secondary";
 
 type Props = {
   children: React.ReactNode;
-  onClick?: () => void;
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
   title?: string;
   "aria-label"?: string;
   disabled?: boolean;
@@ -45,10 +45,14 @@ function toneClasses(variant: Variant, tone: Tone) {
   if (variant === "outline") {
     if (tone === "brand") return "text-yellow border-yellow";
     if (tone === "danger") return "text-red border-red";
+    if (tone === "warning") return "text-[#FBD402]";
+    if (tone === "secondary") return "text-green";
   }
   if (variant === "ghost") {
     if (tone === "brand") return "text-yellow";
     if (tone === "danger") return "text-red";
+    if (tone === "warning") return "text-[#FBD402]";
+    if (tone === "secondary") return "text-green";
   }
   return "";
 }

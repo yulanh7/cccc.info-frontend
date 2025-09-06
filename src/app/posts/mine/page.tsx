@@ -96,14 +96,14 @@ function MyPostsPageInner() {
   return (
     <>
       <LoadingOverlay show={pageLoading} text="Loading my posts…" />
-      <PageTitle title="Home" showPageTitle={true} />
+      <PageTitle title="My Posts" showPageTitle={true} />
       <div className="container mx-auto md:p-6 p-2 mt-5 md:mt-16">
         <div className="flex items-center justify-end gap-2 mb-2 ">
           <div className="text-sm text-dark-gray">
             {ctrl.selectMode ? `${ctrl.selectedIds.size} selected` : " "}
           </div>
           <Button
-            variant="primary"
+            variant={ctrl.selectMode ? "secondary" : "primary"}
             onClick={ctrl.toggleSelectMode}
             active={ctrl.selectMode}
             aria-pressed={ctrl.selectMode}
