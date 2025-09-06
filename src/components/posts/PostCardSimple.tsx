@@ -26,7 +26,7 @@ export default function PostCardSimple({
   showEnterArrow = true,
 }: Props) {
   const dispatch = useAppDispatch();
-  const { id, title, created_at, author, group, summary, videos, like_count } = post;
+  const { id, title, files, author, summary, videos, like_count } = post;
 
   // like 数优先取全局（被点赞后会更新），否则回退列表原始值
   const storeCount = useAppSelector(selectLikeCount(id));
@@ -45,6 +45,24 @@ export default function PostCardSimple({
     [post.id]
   );
   const thumbnail = videos && videos[0] ? getYouTubeThumbnail(videos[0], 'hqdefault') : null;
+
+  const withFilesPrefix = (u: string) =>
+    /^https?:\/\//i.test(u) || u.startsWith('/files/')
+      ? u
+      : `/files/${u.replace(/^\/+/, '')}`;
+
+  const isImageUrl = (url: string) =>
+    typeof url === 'string' && /\.(png|jpe?g|gif|bmp|webp)(\?|#|$)/i.test(url);
+
+  const imageUrl = useMemo(() => {
+    const candidates = (post.files ?? [])
+      .map((f: any) => (typeof f === 'string' ? f : f?.url))
+      .filter((u: unknown): u is string => typeof u === 'string');
+
+    const raw = candidates.find(isImageUrl);
+    return raw ? withFilesPrefix(raw) : null;
+  }, [post.files]);
+
 
   useEffect(() => {
     if (post.like_count !== undefined) {
@@ -109,6 +127,14 @@ export default function PostCardSimple({
               </div>
             </div>
           </div>
+        ) : imageUrl ? (
+          <div className="relative">
+            <img
+              src={imageUrl}
+              alt={title}
+              className="w-full h-auto min-h-20 max-h-27 md:min-h-25 md:max-h-32 object-cover rounded-t-xs md:rounded-t-sm"
+            />
+          </div>
         ) : (
           <div
             className="w-full pt-7 pb-4 px-3 min-h-20 bg-cover bg-center rounded-t-xs md:rounded-t-sm items-center justify-center"
@@ -120,6 +146,8 @@ export default function PostCardSimple({
           </div>
         )}
       </div>
+
+
 
       <div className='px-2 pb-2'>
         <h2 className="font-semibold text-dark-gray leading-[1.3] md:leading-[1.3] mb-2">
@@ -143,7 +171,7 @@ export default function PostCardSimple({
           </span>
 
           {/* —— 右下角 Like：可点、无跳转、乐观更新 */}
-          <div className="absolute bottom-2 right-2 z-1">
+          <div className="absolute bottom-2 right-2 z-1 mt-1">
             <button
               onClick={onToggleLike}
               disabled={busy}
