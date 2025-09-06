@@ -11,8 +11,8 @@ import GroupListView from "@/components/groups/GroupListView";
 import { formatDate } from "@/app/ultility";
 import { useConfirm } from "@/hooks/useConfirm";
 import { useGroupListController } from "@/hooks/useGroupListController";
+import { GROUPS_PER_PAGE } from "@/app/constants";
 
-const PER_PAGE = 9;
 
 // ⬅️ 外层只负责提供 Suspense 边界
 export default function GroupsPage() {
@@ -63,7 +63,7 @@ function GroupsPageInner() {
     toggling,
   } = useGroupListController({
     mode: "availableWithSearch",
-    pageSize: PER_PAGE,
+    pageSize: GROUPS_PER_PAGE,
     basePath: "/groups",
   });
 

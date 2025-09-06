@@ -14,8 +14,7 @@ import { fetchMyPosts, deletePost as deletePostThunk } from "@/app/features/post
 import type { PostListItemApi } from "@/app/types";
 import { canEditPostList } from "@/app/types";
 import Button from "@/components/ui/Button";
-
-const POST_PER_PAGE = 11;
+import { POSTS_PER_PAGE } from "@/app/constants";
 
 function useSourceListState(sourceKey: string) {
   const feed = useAppSelector((s) => (s as any).posts?.lists?.[sourceKey]);
@@ -79,12 +78,12 @@ function MyPostsPageInner() {
 
   const ctrl = usePostListController({
     dispatch,
-    perPage: POST_PER_PAGE,
+    perPage: POSTS_PER_PAGE,
     currentPage,
     fetchPosts: fetchMyPosts,
     buildFetchArgs: (page) => ({
       page,
-      per_page: POST_PER_PAGE,
+      per_page: POSTS_PER_PAGE,
       append: false,
     }),
     deletePost: deletePostThunk,

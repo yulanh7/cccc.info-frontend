@@ -22,21 +22,17 @@ import {
   kickGroupMember,
 } from "@/app/features/groups/detailSlice";
 import { fetchGroupPostsList } from '@/app/features/posts/slice'
-
 import {
   createPost,
   deletePost as deletePostThunk,
 } from "@/app/features/posts/slice";
 import { updateGroup, deleteGroup } from "@/app/features/groups/slice";
-
 import type { CreateOrUpdateGroupBody } from "@/app/types/group";
 import { canEditGroup } from "@/app/types/group";
-
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { useConfirm } from "@/hooks/useConfirm";
+import { POSTS_PER_PAGE, MEMBERS_PER_PAGE } from "@/app/constants";
 
-const POST_PER_PAGE = 11;
-const MEMBERS_PER_PAGE = 9;
 
 export default function GroupDetailPage() {
   return (
@@ -120,13 +116,13 @@ function GroupDetailPageInner() {
   // —— 把“帖子列表控制逻辑”交给通用钩子（策略：当前为 Group 数据源）
   const ctrl = usePostListController({
     dispatch,
-    perPage: POST_PER_PAGE,
+    perPage: POSTS_PER_PAGE,
     currentPage,
     fetchPosts: fetchGroupPostsList,
     buildFetchArgs: (page) => ({
       groupId,
       page,
-      per_page: POST_PER_PAGE,
+      per_page: POSTS_PER_PAGE,
       append: false,
     }),
     createPost: createPost,

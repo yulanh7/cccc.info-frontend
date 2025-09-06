@@ -11,12 +11,11 @@ import { formatDate } from "@/app/ultility";
 import { useConfirm } from "@/hooks/useConfirm";
 import ConfirmModal from "@/components/ConfirmModal";
 import PageTitle from '@/components/layout/PageTitle';
-
 import { fetchSubscribedPosts, deletePost as deletePostThunk } from "@/app/features/posts/slice";
 import type { PostListItemApi } from "@/app/types";
 import { canEditPostList } from "@/app/types";
+import { POSTS_PER_PAGE } from "@/app/constants";
 
-const POST_PER_PAGE = 11;
 
 export default function HomePage() {
   return (
@@ -67,12 +66,12 @@ function HomePageInner() {
 
   const ctrl = usePostListController({
     dispatch,
-    perPage: POST_PER_PAGE,
+    perPage: POSTS_PER_PAGE,
     currentPage,
     fetchPosts: fetchSubscribedPosts,
     buildFetchArgs: (page) => ({
       page,
-      per_page: POST_PER_PAGE,
+      per_page: POSTS_PER_PAGE,
       append: false,
     }),
     deletePost: deletePostThunk,

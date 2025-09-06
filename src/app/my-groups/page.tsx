@@ -9,9 +9,9 @@ import GroupListView from "@/components/groups/GroupListView";
 import { formatDate } from "@/app/ultility";
 import { useConfirm } from "@/hooks/useConfirm";
 import { useGroupListController } from "@/hooks/useGroupListController";
+import { POSTS_PER_PAGE } from "@/app/constants";
 
-const PER_PAGE = 9;
-const MY_GROUPS_PATH = "/my-groupss"; // 你也可以改成 /groups/mine
+const MY_GROUPS_PATH = "/my-groupss";
 
 export default function MyGroupsPage() {
   return (
@@ -60,7 +60,7 @@ function MyGroupsPageInner() {
     overlayText,
   } = useGroupListController({
     mode: "user",         // ✅ 只拉取用户订阅的群组
-    pageSize: PER_PAGE,
+    pageSize: POSTS_PER_PAGE,
     basePath: MY_GROUPS_PATH,
   });
 
