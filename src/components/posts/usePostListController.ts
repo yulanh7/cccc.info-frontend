@@ -71,6 +71,9 @@ export function usePostListController<
 
   const router = useRouter();
 
+  const [uploading, setUploading] = useState(false);
+  const [uploadingProgress, setUploadingProgress] = useState(0); // 0~100（多文件平均）
+
   // —— 选择模式
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -118,7 +121,7 @@ export function usePostListController<
   }, [fetchStarted, postsStatus]);
 
   const initialPostsLoading = postsStatus === "loading" && !everLoaded && fetchStarted;
-  const showUpdatingTip = postsStatus === "loading" && everLoaded;
+  const showUpdatingTip = (postsStatus === "loading" && everLoaded) || uploading;
 
   // —— 刷新当前页：立即用当前参数强制拉取（即便 key 未变化）
   const refreshCurrentPage = useCallback(() => {
@@ -130,23 +133,43 @@ export function usePostListController<
     async (form: CreatePostForm) => {
       if (!createPost || !buildCreateArgs) return;
 
-      const newIds = form.localFiles?.length
-        ? await uploadAllFiles(form.localFiles, dispatch)
-        : [];
+      let newIds: number[] = [];
+      try {
+        // 开始上传：打开“Updating …”提示
+        if (form.localFiles?.length) {
+          setUploading(true);
+          setUploadingProgress(0);
 
-      const fileIds = [...(form.fileIds ?? []), ...newIds];
+          // 多文件进度：对每个文件的进度做简单平均
+          const count = form.localFiles.length;
+          const filePercents = Array(count).fill(0);
+          const onEachProgress = (index: number, percent: number) => {
+            filePercents[index] = percent; // 每个文件 0~100
+            const avg = filePercents.reduce((a, b) => a + b, 0) / count;
+            setUploadingProgress(Math.round(avg));
+          };
 
-      // ✅ 直接拼装最新 API 的 CreatePostRequest
-      const body: CreatePostRequest = {
-        title: form.title?.trim() ?? "",
-        content: form.content ?? "",
-        description: form.description ?? "",
-        video_urls: form.videos ?? [],
-        file_ids: fileIds,
-      };
+          newIds = await uploadAllFiles(form.localFiles, dispatch, onEachProgress);
+        }
 
-      await dispatch(createPost(buildCreateArgs(body))).unwrap();
-      refreshCurrentPage();
+        const fileIds = [...(form.fileIds ?? []), ...newIds];
+        const body: CreatePostRequest = {
+          title: form.title?.trim() ?? "",
+          content: form.content ?? "",
+          description: form.description ?? "",
+          video_urls: form.videos ?? [],
+          file_ids: fileIds,
+        };
+
+        await dispatch(createPost(buildCreateArgs(body))).unwrap();
+
+        // 成功后刷新列表
+        refreshCurrentPage();
+      } finally {
+        // 结束上传：关闭 uploading，但“列表拉取中”的加载仍由 postsStatus 控制
+        setUploading(false);
+        setUploadingProgress(0);
+      }
     },
     [createPost, buildCreateArgs, dispatch, refreshCurrentPage]
   );
@@ -190,6 +213,7 @@ export function usePostListController<
     // 加载提示
     initialPostsLoading,
     showUpdatingTip,
+    uploadingPercent: uploading ? uploadingProgress : 0,
 
     // 动作
     onCreatePost,
