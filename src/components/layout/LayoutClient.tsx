@@ -1,34 +1,47 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/app/features/hooks';
 import { rehydrateAuth } from '@/app/features/auth/slice';
 import Header from './Header';
 import BottomNav from './BottomNav';
 
+const PUBLIC_PATHS = ['/', '/auth'];
+
 export default function LayoutClient({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const dispatch = useAppDispatch();
 
-  const user = useAppSelector((state) => state.auth.user);
+  const user = useAppSelector((s) => s.auth.user);
   const isLoggedIn = !!user;
 
-  // 自动从 localStorage 恢复 Redux 登录状态
+  const [bootstrapped, setBootstrapped] = useState(false);
+  const didBootstrap = useRef(false);
+
+  // 1) 恢复本地登录状态（同步 action，无 unwrap）
   useEffect(() => {
+    if (didBootstrap.current) return;
+    didBootstrap.current = true;
+
     dispatch(rehydrateAuth());
+    setBootstrapped(true);
   }, [dispatch]);
 
-  // 路由守卫逻辑
+  // 2) 登录守卫：等待 bootstrapped 再执行
   useEffect(() => {
-    const publicPaths = ['/', '/auth'];
-    const isPublic = publicPaths.some((path) => pathname.startsWith(path));
+    if (!bootstrapped) return;
+
+    const isPublic = PUBLIC_PATHS.some((p) =>
+      p === '/' ? pathname === '/' : pathname.startsWith(p)
+    );
 
     if (!isLoggedIn && !isPublic) {
-      router.replace('/auth'); // 使用 replace 避免“回退跳回来”的问题
+      const next = encodeURIComponent(pathname || '/');
+      router.replace(`/auth?next=${next}`);
     }
-  }, [isLoggedIn, pathname, router]);
+  }, [bootstrapped, isLoggedIn, pathname, router]);
 
   return (
     <>
