@@ -16,6 +16,7 @@ type Props = {
   // 加载与提示
   initialPostsLoading: boolean;
   showUpdatingTip: boolean;
+  uploadingPercent?: number;
   listLoading: boolean;
   deleting?: boolean;
 
@@ -42,6 +43,7 @@ export default function PostListSection({
   formatDate,
   initialPostsLoading,
   showUpdatingTip,
+  uploadingPercent = 0,
   listLoading,
   deleting = false,
   selectMode,
@@ -71,6 +73,7 @@ export default function PostListSection({
         <div className="sticky top-[72px] z-10 mb-2 flex items-center gap-2 text-xs text-dark-gray">
           <span className="inline-block h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
           Updating posts…
+          {uploadingPercent > 0 ? ` – uploading ${uploadingPercent}%` : ""}…
         </div>
       )}
 

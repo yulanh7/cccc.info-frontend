@@ -143,6 +143,7 @@ function MyPostsPageInner() {
           formatDate={formatDate}
           initialPostsLoading={ctrl.initialPostsLoading}
           showUpdatingTip={ctrl.showUpdatingTip}
+          uploadingPercent={ctrl.uploadingPercent}
           listLoading={postsStatus === "loading"}
           deleting={postsStatus === "loading" && rows.length > 0}
           selectMode={ctrl.selectMode}

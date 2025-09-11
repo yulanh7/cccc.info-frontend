@@ -262,6 +262,7 @@ function GroupDetailPageInner() {
           formatDate={formatDate}
           initialPostsLoading={ctrl.initialPostsLoading}
           showUpdatingTip={ctrl.showUpdatingTip}
+          uploadingPercent={ctrl.uploadingPercent}
           listLoading={status.posts === "loading"}
           deleting={status.posts === "loading" && safePosts.length > 0}
           selectMode={selectMode}
