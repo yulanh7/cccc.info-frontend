@@ -364,10 +364,10 @@ function PostDetailPageInner() {
             <div className="flex flex-wrap gap-3 mb-3">
               <span className="hidden md:inline-flex items-center gap-1 text-xs">
                 <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-dark-green/10 text-dark-green font-semibold">
-                  {(post.author.first_name?.[0] || "?").toUpperCase()}
+                  {(post?.author?.first_name?.[0] || "?").toUpperCase()}
                 </span>
                 <span className="text-sm">
-                  {post.author.first_name}
+                  {post?.author?.first_name}
                 </span>
               </span>
               <div className="text-xs  md:text-sm flex items-center">

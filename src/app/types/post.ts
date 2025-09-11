@@ -139,6 +139,21 @@ export type PostFileIdsResponse = ApiResponseProps<PostFileIdsData>;
 export const canEditPostList = (post: PostListItemApi, user?: UserProps | null) =>
   !!user && Number(post.author.id) === Number(user.id);
 
-export const canEditPostDetail = (post: PostDetailData, user?: UserProps | null) => {
-  return !!user && Number(post.author.id) === Number(user.id);
-}
+
+export const canEditPostDetail = (
+  post?: PostDetailData | null,
+  user?: UserProps | null
+): boolean => {
+  if (!post || !user) return false;
+
+  // Prefer a stable author id field if your API has one
+  const postAuthorId =
+    post.author?.id ??
+    // fallback fields if your API provides creator id separately
+    (post as any).author_id ??
+    (post as any).created_by_id ??
+    null;
+
+  if (!postAuthorId || !user.id) return false;
+  return Number(postAuthorId) === Number(user.id);
+};
