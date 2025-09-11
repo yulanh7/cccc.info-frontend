@@ -25,6 +25,7 @@ type PostModalProps = {
   onClose: () => void;
   saving?: boolean;
   existingFiles?: PostFileApi[];
+  uploadingPercent?: number;
 };
 
 const MAX_TITLE = 100;
@@ -52,6 +53,7 @@ export default function PostModal({
   onClose,
   saving = false,
   existingFiles = [],
+  uploadingPercent = 0,
 }: PostModalProps) {
   const [title, setTitle] = useState(item?.title ?? "");
   const [description, setDescription] = useState(item?.description ?? "");
@@ -551,7 +553,9 @@ export default function PostModal({
             Cancel
           </Button>
           <Button variant="primary" size="sm" onClick={handleSave} disabled={saving}>
-            {saving ? "Saving…" : isNew ? "Create" : "Save"}
+            {saving
+              ? (uploadingPercent > 0 ? `Uploading… ${uploadingPercent}%` : "Saving…")
+              : (isNew ? "Create" : "Save")}
           </Button>
         </footer>
       </div>

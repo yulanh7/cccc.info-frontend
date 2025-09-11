@@ -84,6 +84,9 @@ function PostDetailPageInner() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
+  const [editSaving, setEditSaving] = useState(false);
+  const [editUploadingPercent, setEditUploadingPercent] = useState(0);
+
   const status = useAppSelector((s) => s.posts.status["fetchPostDetail"]);
   const error = useAppSelector((s) => s.posts.error["fetchPostDetail"]);
   const storeCount = useAppSelector(selectLikeCount(postId));
@@ -165,10 +168,25 @@ function PostDetailPageInner() {
   const handleEditSave = async (form: EditForm) => {
     if (!post) return;
     try {
-      const uploadedIds = form.localFiles?.length ? await uploadAllFiles(form.localFiles, dispatch) : [];
+      setEditSaving(true);
+      setEditUploadingPercent(0);
+
+      // 带进度地上传本地文件
+      const uploadedIds = form.localFiles?.length
+        ? await (async () => {
+          const count = form.localFiles!.length;
+          const per = Array(count).fill(0);
+          const onEachProgress = (idx: number, percent: number) => {
+            per[idx] = percent;                          // 0~100
+            const avg = per.reduce((a, b) => a + b, 0) / count;
+            setEditUploadingPercent(Math.round(avg));    // 整体平均进度
+          };
+          return await uploadAllFiles(form.localFiles!, dispatch, onEachProgress);
+        })()
+        : [];
+
       const fileIds = [...(form.fileIds ?? []), ...uploadedIds];
 
-      // 直接构造严格 API 的 UpdatePostRequest
       const body: UpdatePostRequest = {
         title: form.title?.trim() ?? "",
         content: form.content ?? "",
@@ -181,8 +199,12 @@ function PostDetailPageInner() {
       handleEditClose();
     } catch (e: any) {
       alert(e?.message || "Update post failed");
+    } finally {
+      setEditSaving(false);
+      setEditUploadingPercent(0);
     }
   };
+
 
   const onToggleLike = async () => {
     if (!post || inFlightRef.current) return;
@@ -471,7 +493,9 @@ function PostDetailPageInner() {
                 isNew={false}
                 onSave={handleEditSave as any}    // 你的 PostModal 若有专门类型，可调整此处
                 onClose={handleEditClose}
-                existingFiles={post.files as any} // 若 PostModal 期望字段名为 name，可在内部适配
+                existingFiles={post.files as any}
+                saving={editSaving}
+                uploadingPercent={editUploadingPercent}
               />
             )}
 
