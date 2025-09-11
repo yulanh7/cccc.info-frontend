@@ -32,7 +32,7 @@ Thanks.`
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center -mb-30 -mt-16 md:-mt-30">
+    <div className="min-h-screen flex items-center justify-center -mb-30 -mt-16 md:mt-0">
       <div className="p-6 rounded-sm shadow-lg">
         <div className="flex flex-col items-center justify-center mb-6">
           <Image
