@@ -57,7 +57,7 @@ export default function NewChatModal({
                   className="mr-2"
                 />
                 <UserCircleIcon className="h-6 w-6 text-gray mr-2" />
-                <span>{user.first_name}</span>
+                <span>{user.firstName}</span>
               </li>
             ))}
         </ul>
