@@ -1,14 +1,36 @@
 // app/ultility/recaptcha.ts
 let recaptchaLoadingPromise: Promise<void> | null = null;
 
+
+
+function isEnabled(): boolean {
+  if (!RAW_ENABLED || !SITE_KEY) return false;
+  if (!isBrowser()) return false;
+  const { protocol, hostname } = window.location;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') return false;
+  if (protocol !== 'https:') return false;
+  if (isIpHost(hostname)) return false;
+  return true;
+
+}
 function isBrowser() {
   return typeof window !== 'undefined';
 }
 
-function isIpHost(host: string) {
-  // 简单判断 IPv4 裸 IP（如果你有内网段或 IPv6 需求可扩展）
-  return /^\d{1,3}(\.\d{1,3}){3}$/.test(host);
+export function initRecaptcha() {
+  if (isEnabled() && isBrowser()) {
+    loadRecaptchaScript().catch(() => { });
+  }
 }
+
+function isIpHost(host: string) {
+  const h = host.replace(/:\d+$/, '');
+  return (
+    /^\d{1,3}(\.\d{1,3}){3}$/.test(h) ||
+    /^\[?[0-9a-f:]+\]?$/i.test(h)
+  );
+}
+
 
 const RAW_ENABLED = (process.env.NEXT_PUBLIC_RECAPTCHA_ENABLED || '').toLowerCase() === 'true';
 const SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '';
@@ -52,7 +74,7 @@ function waitForGrecaptchaReady(timeoutMs = 8000): Promise<void> {
 }
 
 function loadRecaptchaScript(): Promise<void> {
-  if (!ENABLED) return Promise.resolve();
+  if (!isEnabled()) return Promise.resolve();
   if (recaptchaLoadingPromise) return recaptchaLoadingPromise;
 
   recaptchaLoadingPromise = new Promise<void>((resolve, reject) => {
@@ -83,16 +105,28 @@ function loadRecaptchaScript(): Promise<void> {
 }
 
 /** 获取 token（本地或 IP/HTTP 下将直接返回 null） */
-export async function getRecaptchaToken(action: string): Promise<string | null> {
-  if (!ENABLED || !isBrowser()) return null;
+// recaptcha.ts
+export async function getRecaptchaToken(action: string): Promise<string | void | null> {
+  if (!isEnabled()) return Promise.resolve();
+
+  const softTimeout = (ms: number) =>
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), ms));
 
   try {
-    await loadRecaptchaScript();
-    if (!window.grecaptcha || typeof window.grecaptcha.execute !== 'function') return null;
-    const token = await window.grecaptcha.execute(SITE_KEY, { action });
-    return token || null;
+    // 谁先完成用谁：600ms 后直接走 null，不阻塞
+    const tokenOrNull = await Promise.race([
+      (async () => {
+        await loadRecaptchaScript();                // 可能很慢/被拦截
+        if (!window.grecaptcha?.execute) return null;
+        const t = await window.grecaptcha.execute(SITE_KEY, { action });
+        return t || null;
+      })(),
+      softTimeout(600),
+    ]);
+
+    return tokenOrNull;
   } catch {
-    // 任意异常都降级为 null，不阻塞用户操作
     return null;
   }
 }
+

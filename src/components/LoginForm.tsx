@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDispatch } from 'react-redux';
 import { loginThunk } from '@/app/features/auth/slice';
 import { LoginCredentials } from '@/app/types/auth';
 import { AppDispatch } from '@/app/features/store';
-import { getRecaptchaToken } from '@/app/ultility/recaptcha';
+import { getRecaptchaToken, initRecaptcha } from '@/app/ultility/recaptcha';
 import Button from '@/components/ui/Button'; // ← 按你的路径修改
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
@@ -45,6 +45,9 @@ export default function LoginForm() {
     }
   };
 
+  useEffect(() => { initRecaptcha(); }, []);
+
+
   return (
     <form onSubmit={handleSubmit} className="max-w-md mx-auto p-4 space-y-4">
       {error && <div className="text-red-500 text-sm">{error}</div>}
@@ -56,16 +59,18 @@ export default function LoginForm() {
         className="w-full p-2 border border-border rounded-sm"
         required
         disabled={isLoading}
+        autoComplete="email"
       />
       <div className="relative">
         <input
           type={showPsw ? 'text' : 'password'}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder="Confirm Password"
+          placeholder="Password"
           className="w-full p-2 border border-border rounded-sm"
           required
           disabled={isLoading}
+          autoComplete="password"
         />
         <button
           type="button"

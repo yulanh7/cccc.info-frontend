@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/app/features/hooks';
 import { signupThunk } from '@/app/features/auth/slice';
-import { getRecaptchaToken } from '@/app/ultility/recaptcha';
+import { getRecaptchaToken, initRecaptcha } from '@/app/ultility/recaptcha';
 import Button from '@/components/ui/Button';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
@@ -45,6 +45,7 @@ export default function SignUpForm() {
       router.push('/groups');
     }
   };
+  useEffect(() => { initRecaptcha(); }, []);
 
   return (
     <form onSubmit={handleSubmit} className="max-w-md mx-auto p-4 space-y-4">
