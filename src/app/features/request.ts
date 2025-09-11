@@ -17,7 +17,6 @@ import {
 // ====== Base configuration ======
 const BASE_URL = '/api';
 
-
 const api: AxiosInstance = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
@@ -29,6 +28,36 @@ export const setOnAccessTokenRefreshed = (fn: (token: string) => void) => {
   onAccessTokenRefreshed = fn;
 };
 
+// ====== 新增：全局 5xx 错误广播（事件 + 订阅）======
+export type ServerErrorInfo = {
+  code: number;
+  message: string;
+  method?: string;
+  url?: string;
+};
+
+let serverErrorListeners: Array<(info: ServerErrorInfo) => void> = [];
+
+export const subscribeServerError = (fn: (info: ServerErrorInfo) => void) => {
+  serverErrorListeners.push(fn);
+  return () => {
+    serverErrorListeners = serverErrorListeners.filter((f) => f !== fn);
+  };
+};
+
+const notifyServerError = (info: ServerErrorInfo) => {
+  // DOM 事件（更通用，无需导入）
+  if (typeof window !== 'undefined') {
+    try {
+      window.dispatchEvent(new CustomEvent('global-http-5xx', { detail: info }));
+    } catch { }
+  }
+  // 订阅回调（可选）
+  serverErrorListeners.forEach((fn) => {
+    try { fn(info); } catch { }
+  });
+};
+
 // ====== 小工具：统一的登录引导（弹提示 → 跳转 /auth?next=...）======
 const promptLoginRedirect = (msg?: string) => {
   if (typeof window === 'undefined') return;
@@ -37,7 +66,6 @@ const promptLoginRedirect = (msg?: string) => {
     window.location.pathname + window.location.search + window.location.hash;
   const tip = msg ?? '请先登录后再继续操作。现在前往登录页？';
 
-  // 原生 confirm 简单可靠；如果你有自定义 Modal，可以把这里替换成 Modal 逻辑
   const ok = window.confirm(tip);
   if (ok) {
     window.location.href = `/auth?next=${encodeURIComponent(next)}`;
@@ -101,21 +129,33 @@ api.interceptors.response.use(
   async (error: AxiosError<any>) => {
     const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
 
-    // ✨ 新增：鉴权端点检测
+    // ✨ 鉴权端点检测（保持你的逻辑不变）
     const url = (originalRequest?.url || '') as string;
     const isAuthEndpoint =
       typeof url === 'string' &&
       /^\/?auth\/(login|signup|refresh|logout)/i.test(url);
 
-    // 非 401、已重试、或鉴权端点 → 直接抛出（不会触发刷新/跳转）
-    if (error.response?.status !== 401 || originalRequest?._retry || isAuthEndpoint) {
+    const status = error.response?.status;
+
+    // 非 401 或已重试 或 鉴权端点 → 直接抛出（并在 5xx 时广播事件）
+    if (status !== 401 || originalRequest?._retry || isAuthEndpoint) {
       const serverMsg = pickServerMessage(error.response?.data);
       if (serverMsg) (error as any).message = serverMsg;
+
+      // 🔔 新增：5xx 全局广播
+      if (typeof status === 'number' && status >= 500) {
+        notifyServerError({
+          code: status,
+          message: serverMsg || error.message || 'Server Error',
+          method: (originalRequest?.method || 'GET').toUpperCase(),
+          url: originalRequest?.url || '',
+        });
+      }
+
       throw error;
     }
 
     // ↓↓↓ 以下保持你的原逻辑不变 ↓↓↓
-
     const refreshToken = typeof window !== 'undefined' ? getRefreshToken() : null;
     if (!refreshToken) {
       clearAuth();
@@ -180,6 +220,10 @@ export const apiRequest = async <T>(
   try {
     const config: AxiosRequestConfig = { method, url: endpoint, data };
 
+    if (requireAuth && typeof window === 'undefined') {
+      // SSR 环境不做本地 token 注入
+    }
+
     if (requireAuth && typeof window !== 'undefined') {
       const token = getToken();
       if (!token) {
@@ -206,6 +250,29 @@ export const apiRequest = async <T>(
     if (error.code === 'ECONNREFUSED') {
       message = `Cannot connect to ${BASE_URL}${endpoint}. Ensure the backend server is running.`;
     }
+
+    // 控制台便捷日志
+    try {
+      // eslint-disable-next-line no-console
+      console.error(
+        '[API ERROR]',
+        method,
+        endpoint,
+        code,
+        error?.response?.data || message
+      );
+    } catch { }
+
+    // 🔔 新增：5xx 全局广播
+    if (code >= 500) {
+      notifyServerError({
+        code,
+        message,
+        method,
+        url: endpoint,
+      });
+    }
+
     throw { code, message } as { code: number; message: string };
   }
 };
