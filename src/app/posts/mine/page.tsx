@@ -13,7 +13,7 @@ import ConfirmModal from "@/components/ConfirmModal";
 import PageTitle from '@/components/layout/PageTitle';
 import { fetchMyPosts, deletePost as deletePostThunk } from "@/app/features/posts/slice";
 import type { PostListItemApi } from "@/app/types";
-import { canEditPostList } from "@/app/types";
+import { isPostAuthor, isGroupCreatorOfPost } from "@/app/types";
 import Button from "@/components/ui/Button";
 import { POSTS_PER_PAGE } from "@/app/constants";
 import CustomHeader from "@/components/layout/CustomHeader";
@@ -73,8 +73,6 @@ function MyPostsPageInner() {
   const SRC = "mine";
   const { rows, totalPages, postsStatus } = useSourceListState(SRC);
 
-
-
   const confirmSingleDelete = useConfirm<number>("Delete this post?");
   const confirmBulkDelete = useConfirm<number[]>("Delete selected posts?");
   const buildHref = (p: number) => `/posts/mine?page=${p}`;
@@ -90,7 +88,8 @@ function MyPostsPageInner() {
       append: false,
     }),
     deletePost: deletePostThunk,
-    canEdit: (p) => canEditPostList(p, user),
+    canEdit: (p) => isPostAuthor(p, user),
+    canDelete: (p) => isPostAuthor(p, user) || isGroupCreatorOfPost(p, user),
     postsStatus,
   });
 
@@ -215,6 +214,7 @@ function MyPostsPageInner() {
             emptyText={''}
             onToggleSelect={ctrl.toggleSelect}
             canEdit={ctrl.canEdit}
+            canDelete={ctrl.canDelete}
             onEditSingle={(id) => ctrl.goEdit(id)}
             onDeleteSingle={(postId) => confirmSingleDelete.ask(postId)}
             buildHref={buildHref}

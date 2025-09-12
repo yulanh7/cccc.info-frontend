@@ -13,7 +13,7 @@ import ConfirmModal from "@/components/ConfirmModal";
 import PageTitle from '@/components/layout/PageTitle';
 import { fetchSubscribedPosts, deletePost as deletePostThunk } from "@/app/features/posts/slice";
 import type { PostListItemApi } from "@/app/types";
-import { canEditPostList } from "@/app/types";
+import { isPostAuthor, isGroupCreatorOfPost } from "@/app/types";
 import { POSTS_PER_PAGE } from "@/app/constants";
 
 
@@ -61,7 +61,6 @@ function HomePageInner() {
   const SRC = "subscribed";
   const { rows, totalPages, postsStatus } = useSourceListState(SRC);
 
-  const confirmSingleDelete = useConfirm<number>("Delete this post?");
   const buildHref = (p: number) => `/?page=${p}`;
 
   const ctrl = usePostListController({
@@ -75,11 +74,36 @@ function HomePageInner() {
       append: false,
     }),
     deletePost: deletePostThunk,
-    canEdit: (p) => canEditPostList(p, user),
+    canEdit: (p) => isPostAuthor(p, user),
+    canDelete: (p) => isPostAuthor(p, user) || isGroupCreatorOfPost(p, user),
     postsStatus,
   });
 
   const pageLoading = !mounted;
+
+  // 1) 增加两个确认框实例
+  const confirmOwnDelete = useConfirm<number>("Delete this post?");
+  const confirmOtherDelete = useConfirm<number>(
+    "This post was created by someone else. You are a group owner and have permission to delete it. Delete anyway?"
+  );
+
+  // 2) 点删除时根据身份弹不同提示
+  const askDeleteWithContext = (postId: number) => {
+    const p = rows.find((x) => Number(x.id) === Number(postId));
+    if (!p) return;
+
+    if (isPostAuthor(p, user)) {
+      // 自己的帖子
+      confirmOwnDelete.ask(postId);
+    } else if (isGroupCreatorOfPost(p, user)) {
+      // 别人的帖子，但你是该帖所属小组的创建者/组长
+      confirmOtherDelete.ask(postId);
+    } else {
+      // 没权限（理论上按钮不该出现；兜底）
+      // 你也可以这里 toast 一下
+    }
+  };
+
 
   return (
     <>
@@ -105,8 +129,9 @@ function HomePageInner() {
           selectedIds={ctrl.selectedIds}
           onToggleSelect={ctrl.toggleSelect}
           canEdit={ctrl.canEdit}
+          canDelete={ctrl.canDelete}
           onEditSingle={(id) => ctrl.goEdit(id)}
-          onDeleteSingle={(postId) => confirmSingleDelete.ask(postId)}
+          onDeleteSingle={(postId) => askDeleteWithContext(postId)}
           buildHref={buildHref}
         />
       </div>
@@ -115,10 +140,20 @@ function HomePageInner() {
       {/* 单个删帖确认 */}
       {/* @ts-ignore: ConfirmModal 的 props 由你的实现决定 */}
       <ConfirmModal
-        isOpen={confirmSingleDelete.open}
-        message={confirmSingleDelete.message}
-        onCancel={confirmSingleDelete.cancel}
-        onConfirm={confirmSingleDelete.confirm(async (postId) => {
+        isOpen={confirmOwnDelete.open}
+        message={confirmOwnDelete.message}
+        onCancel={confirmOwnDelete.cancel}
+        onConfirm={confirmOwnDelete.confirm(async (postId) => {
+          if (!postId) return;
+          await ctrl.onDeleteSingle?.(postId);
+        })}
+      />
+
+      <ConfirmModal
+        isOpen={confirmOtherDelete.open}
+        message={confirmOtherDelete.message}
+        onCancel={confirmOtherDelete.cancel}
+        onConfirm={confirmOtherDelete.confirm(async (postId) => {
           if (!postId) return;
           await ctrl.onDeleteSingle?.(postId);
         })}

@@ -2,11 +2,9 @@
 
 import React, { useMemo } from "react";
 import Link from "next/link";
-import { CheckIcon, TrashIcon, PencilSquareIcon } from "@heroicons/react/24/outline";
 import CardSkeleton from "@/components/feedback/CardSkeleton";
 import type { PostListItemApi } from "@/app/types";
 import PostCardSimple from "./PostCardSimple";
-import IconButton from "@/components/ui/IconButton";
 import Pagination from "@/components/ui/Pagination";
 
 type Props = {
@@ -21,6 +19,7 @@ type Props = {
 
   // 权限/操作（可选）
   canEdit?: (p: PostListItemApi) => boolean;
+  canDelete?: (p: PostListItemApi) => boolean;
   onDeleteSingle?: (id: number) => void;
   onEditSingle?: (id: number) => void;
   deleting?: boolean;
@@ -51,6 +50,7 @@ export default function PostsListWithPagination({
   selectedIds,
   onToggleSelect,
   canEdit,
+  canDelete,
   onDeleteSingle,
   onEditSingle,
   deleting = false,
@@ -81,11 +81,12 @@ export default function PostsListWithPagination({
     return (
       <div className="columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-2 md:gap-4">
         {rows.map((post) => {
-          const canManage = !!canEdit?.(post);
+          const canManageEdit = !!canEdit?.(post);
+          const canManageDelete = !!canDelete?.(post);
           const isSelected = selectedIds.has(post.id);
           const showDelete =
             !selectMode &&
-            canManage &&
+            canManageDelete &&
             typeof onDeleteSingle === "function" &&
             typeof onEditSingle === "function";
 
@@ -95,7 +96,8 @@ export default function PostsListWithPagination({
                 <PostCardSimple
                   post={post}
                   formatDate={formatDate}
-                  canManage={canManage}
+                  canEdit={canManageEdit}
+                  canDelete={canManageDelete}
                   selectMode={selectMode}
                   isSelected={isSelected}
                   onToggleSelect={onToggleSelect}
@@ -116,6 +118,7 @@ export default function PostsListWithPagination({
     selectMode,
     selectedIds,
     canEdit,
+    canDelete,
     onDeleteSingle,
     onEditSingle,
     onToggleSelect,

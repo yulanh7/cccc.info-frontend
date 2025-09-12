@@ -18,7 +18,8 @@ type Props = {
   post: PostListItemApi;
   formatDate: (timestamp: string, showTime?: boolean) => string;
   showEnterArrow?: boolean;
-  canManage?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
   selectMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: (id: number) => void;
@@ -33,7 +34,8 @@ export default function PostCardSimple({
   post,
   formatDate,
   showEnterArrow = true,
-  canManage = false,
+  canEdit = false,
+  canDelete = false,
   selectMode = false,
   isSelected = false,
   onToggleSelect,
@@ -177,7 +179,7 @@ export default function PostCardSimple({
           <h2 className="flex-1 font-semibold text-dark-gray leading-[1.3] md:leading-[1.3] mb-2">
             {ellipsize(title, 50, { byWords: true })}
           </h2>
-          {canManage && (selectMode || showDelete) && (
+          {canDelete && (selectMode || showDelete) && (
             <>
               <div className="absolute right-2 top-2 z-1 pointer-events-none">
                 <div
@@ -212,20 +214,22 @@ export default function PostCardSimple({
                 >
                   {!selectMode && showDelete && (
                     <div className="flex items-center gap-1">
-                      <IconButton
-                        title="Edit post"
-                        aria-label="Edit post"
-                        rounded="full"
-                        variant="ghost"
-                        size="xs"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          onEditSingle?.(post.id);
-                        }}
-                      >
-                        <PencilSquareIcon className="h-5 w-5" />
-                      </IconButton>
+                      {canEdit && (
+                        <IconButton
+                          title="Edit post"
+                          aria-label="Edit post"
+                          rounded="full"
+                          variant="ghost"
+                          size="xs"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onEditSingle?.(post.id);
+                          }}
+                        >
+                          <PencilSquareIcon className="h-5 w-5" />
+                        </IconButton>
+                      )}
 
                       <IconButton
                         title="Delete post"

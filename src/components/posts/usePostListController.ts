@@ -46,6 +46,7 @@ export type UsePostListControllerOptions<
 
   // —— 权限 & UI 注入
   canEdit: (p: PostListItemApi) => boolean;
+  canDelete: (p: PostListItemApi) => boolean;
 
   // —— 外部状态（用于“首次加载骨架”和“更新中提示”的判定）
   postsStatus: Status;
@@ -66,6 +67,7 @@ export function usePostListController<
     buildCreateArgs,
     deletePost,
     canEdit,
+    canDelete,
     postsStatus,
   } = opts;
 
@@ -220,6 +222,7 @@ export function usePostListController<
     onDeleteSingle,
     onBulkDelete,
     canEdit,
+    canDelete,
     goEdit,
 
     // 手动刷新

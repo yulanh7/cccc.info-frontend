@@ -21,6 +21,7 @@ export type PostGroupApi = {
   id: number;
   name: string;
   isPrivate: boolean;
+  creator: number;
 };
 
 
@@ -157,3 +158,32 @@ export const canEditPostDetail = (
   if (!postAuthorId || !user.id) return false;
   return Number(postAuthorId) === Number(user.id);
 };
+
+export function isPostAuthor(
+  post: PostListItemApi | PostDetailData | null | undefined,
+  user?: UserProps | null
+): boolean {
+  if (!post || !user) return false;
+
+  // 列表与详情字段略不同：列表一定有 author.id；详情可能有其他备用字段
+  const authorId =
+    (post as any).author?.id ??
+    (post as any).author_id ??
+    (post as any).created_by_id ??
+    null;
+
+  return authorId != null && Number(authorId) === Number(user.id);
+}
+
+/**
+ * 判断当前用户是否是该帖子所在群组的创建者
+ */
+export function isGroupCreatorOfPost(
+  post: PostListItemApi | PostDetailData | null | undefined,
+  user?: UserProps | null
+): boolean {
+  if (!post || !user) return false;
+  // group.creator 现在是 number
+  const creatorId = (post as any).group?.creator ?? null;
+  return creatorId != null && Number(creatorId) === Number(user.id);
+}

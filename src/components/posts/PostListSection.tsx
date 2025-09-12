@@ -25,6 +25,7 @@ type Props = {
   selectedIds: Set<number>;
   onToggleSelect: (id: number) => void;
   canEdit: (p: PostListItemApi) => boolean;
+  canDelete: (p: PostListItemApi) => boolean;
   onDeleteSingle?: (id: number) => void;
   onEditSingle?: (id: number) => void;
 
@@ -50,6 +51,7 @@ export default function PostListSection({
   selectedIds,
   onToggleSelect,
   canEdit,
+  canDelete,
   onDeleteSingle,
   onEditSingle,
   buildHref,
@@ -86,6 +88,7 @@ export default function PostListSection({
           selectedIds={selectedIds}
           onToggleSelect={onToggleSelect}
           canEdit={canEdit}
+          canDelete={canDelete}
           onDeleteSingle={onDeleteSingle}
           onEditSingle={onEditSingle}
           deleting={deleting}

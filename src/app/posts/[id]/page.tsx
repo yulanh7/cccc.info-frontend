@@ -16,7 +16,6 @@ import {
   PencilSquareIcon,
   TrashIcon,
   HandThumbUpIcon as HandThumbUpOutline,
-  ChatBubbleLeftIcon
 } from "@heroicons/react/24/outline";
 import { HandThumbUpIcon as HandThumbUpSolid } from "@heroicons/react/24/solid";
 import { formatDate } from "@/app/ultility";
@@ -39,7 +38,9 @@ import type {
   UpdatePostRequest,
   PostFileApi,
 } from "@/app/types";
-import { canEditPostDetail } from "@/app/types/post";
+import { isPostAuthor, isGroupCreatorOfPost } from "@/app/types";
+import ConfirmModal from "@/components/ConfirmModal";
+import { useConfirm } from "@/hooks/useConfirm";
 
 // —— 本页内部使用：编辑表单的最小类型（与 PostModal 对接）
 type EditForm = {
@@ -93,7 +94,6 @@ function PostDetailPageInner() {
   const postFromStore = useAppSelector((s) => s.posts.byId[postId] || null) as PostDetailData | null;
   const post: PostDetailData | null = postFromStore;
   const user = useAppSelector((s) => s.auth.user as UserProps | null);
-  const canManage = !!(post && canEditPostDetail(post, user));
   const isEdit = searchParams.get("edit") === "1";
   const likeCount = storeCount ?? (post as any)?.like_count ?? 0;
   const liked = Boolean(storeLiked ?? (post as any)?.clicked_like ?? false);
@@ -111,6 +111,22 @@ function PostDetailPageInner() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState(0);
   const touchStartX = useRef<number | null>(null);
+
+  const confirmOwnDelete = useConfirm<number>("Delete this post?");
+  const confirmOtherDelete = useConfirm<number>(
+    "This post was created by someone else. You are a group owner and have permission to delete it. Delete anyway?"
+  );
+
+  const askDeleteWithContext = (p: PostDetailData | null) => {
+    if (!p) return;
+    if (isPostAuthor(p, user)) {
+      confirmOwnDelete.ask(p.id);
+    } else if (isGroupCreatorOfPost(p, user)) {
+      confirmOtherDelete.ask(p.id);
+    } else {
+      // 正常不会走到这里（按钮本就不可见），留作兜底
+    }
+  };
 
   // 首次把详情里的初值写入 likes store
   useEffect(() => {
@@ -293,9 +309,9 @@ function PostDetailPageInner() {
         <>
           <CustomHeader
             item={{ id: post.id, author: post.author?.first_name }}
-            showEdit={canManage}
-            showDelete={canManage}
-            onDelete={() => handleDelete(post.id)}
+            showEdit={!!(post && isPostAuthor(post, user))}
+            showDelete={!!(post && (isPostAuthor(post, user) || isGroupCreatorOfPost(post, user)))}
+            onDelete={() => askDeleteWithContext(post)}
             onEdit={handleEditOpen}
             showAdd={false}
             pageTitle={post.title}
@@ -350,35 +366,42 @@ function PostDetailPageInner() {
               </div> */}
 
                 {/* 分隔线 + 管理操作（仅作者/管理员可见） */}
-                {canManage && (
+                {!!(post && (isPostAuthor(post, user) || isGroupCreatorOfPost(post, user))) && (
                   <div className="mx-1 h-5 w-px bg-border" aria-hidden />
                 )}
-                {canManage && (
+                {!!post && (
                   <div className="flex items-center gap-2">
-                    <IconButton
-                      className="text-white"
-                      title="Edit post"
-                      aria-label="Edit post"
-                      variant="outline"
-                      tone="brand"
-                      size="md"
-                      onClick={handleEditOpen}
-                    >
-                      <PencilSquareIcon className="h-5 w-5" />
-                    </IconButton>
+                    {/* 编辑：只能帖子作者 */}
+                    {isPostAuthor(post, user) && (
+                      <IconButton
+                        className="text-white"
+                        title="Edit post"
+                        aria-label="Edit post"
+                        variant="outline"
+                        tone="brand"
+                        size="md"
+                        onClick={handleEditOpen}
+                      >
+                        <PencilSquareIcon className="h-5 w-5" />
+                      </IconButton>
+                    )}
 
-                    <IconButton
-                      title="Delete post"
-                      aria-label="Delete post"
-                      variant="outline"
-                      tone="danger"
-                      size="md"
-                      onClick={() => handleDelete(post.id)}
-                    >
-                      <TrashIcon className="h-5 w-5" />
-                    </IconButton>
+                    {/* 删除：帖子作者 或 小组创建者 */}
+                    {(isPostAuthor(post, user) || isGroupCreatorOfPost(post, user)) && (
+                      <IconButton
+                        title="Delete post"
+                        aria-label="Delete post"
+                        variant="outline"
+                        tone="danger"
+                        size="md"
+                        onClick={() => askDeleteWithContext(post)}   // ← 修改这里
+                      >
+                        <TrashIcon className="h-5 w-5" />
+                      </IconButton>
+                    )}
                   </div>
                 )}
+
               </div>
             </div>
 
@@ -553,6 +576,28 @@ function PostDetailPageInner() {
         </>
 
       )}
+
+      {/* 自己帖子：确认删除 */}
+      <ConfirmModal
+        isOpen={confirmOwnDelete.open}
+        message={confirmOwnDelete.message}
+        onCancel={confirmOwnDelete.cancel}
+        onConfirm={confirmOwnDelete.confirm(async (id) => {
+          if (!id) return;
+          await handleDelete(id);
+        })}
+      />
+
+      {/* 别人帖子但你是组长：权限说明 + 确认 */}
+      <ConfirmModal
+        isOpen={confirmOtherDelete.open}
+        message={confirmOtherDelete.message}
+        onCancel={confirmOtherDelete.cancel}
+        onConfirm={confirmOtherDelete.confirm(async (id) => {
+          if (!id) return;
+          await handleDelete(id);
+        })}
+      />
 
     </>
   );

@@ -13,7 +13,6 @@ import GroupInfoBar from "@/components/groups/GroupInfoBar";
 import PostListSection from "@/components/posts/PostListSection";
 import { usePostListController } from "@/components/posts/usePostListController";
 import type { GroupApi } from "@/app/types";
-import { canEditPostList } from "@/app/types";
 import { formatDate, mapApiErrorToFields } from "@/app/ultility";
 import {
   fetchGroupDetail,
@@ -28,7 +27,7 @@ import {
 } from "@/app/features/posts/slice";
 import { updateGroup, deleteGroup } from "@/app/features/groups/slice";
 import type { CreateOrUpdateGroupBody } from "@/app/types/group";
-import { canEditGroup } from "@/app/types/group";
+import { isPostAuthor, isGroupCreatorOfPost, canEditGroup } from "@/app/types";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { useConfirm } from "@/hooks/useConfirm";
 import { POSTS_PER_PAGE, MEMBERS_PER_PAGE } from "@/app/constants";
@@ -79,7 +78,29 @@ function GroupDetailPageInner() {
   // —— 通用确认器（删群 / 批量删帖 / 单个删帖）
   const confirmGroupDelete = useConfirm("Are you sure you want to delete this group?");
   const confirmBulkDelete = useConfirm<number[]>("Delete selected posts?");
-  const confirmSingleDelete = useConfirm<number>("Delete this post?");
+
+  // 新增：自己帖子的确认 与 别人帖子的确认（但你是组长/创建者）
+  const confirmOwnDelete = useConfirm<number>("Delete this post?");
+  const confirmOtherDelete = useConfirm<number>(
+    "This post was created by someone else. You are a group owner and have permission to delete it. Delete anyway?"
+  );
+
+  const askDeleteWithContext = (postId: number) => {
+    const p = safePosts.find((x) => Number(x.id) === Number(postId));
+    if (!p) return;
+
+    if (isPostAuthor(p, user)) {
+      // 自己的帖子
+      confirmOwnDelete.ask(postId);
+    } else if (isGroupCreatorOfPost(p, user)) {
+      // 别人的帖子，但你是该组的创建者/组长
+      confirmOtherDelete.ask(postId);
+    } else {
+      // 没权限（理论上按钮不会出现；兜底）
+      // 这里可以做个 toast / alert
+    }
+  };
+
 
   // —— 拉取 group 详情（保持你的逻辑）
   useEffect(() => {
@@ -132,7 +153,8 @@ function GroupDetailPageInner() {
       authorNameHint: safeGroup?.creator_name || "",
     }),
     deletePost: deletePostThunk,
-    canEdit: (p) => canEditPostList(p, user),
+    canEdit: (p) => isPostAuthor(p, user),
+    canDelete: (p) => isPostAuthor(p, user) || isGroupCreatorOfPost(p, user),
     postsStatus: status.posts as any,
   });
 
@@ -269,8 +291,9 @@ function GroupDetailPageInner() {
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}
           canEdit={ctrl.canEdit}
+          canDelete={ctrl.canDelete}
           onEditSingle={(id) => ctrl.goEdit(id)}
-          onDeleteSingle={(postId) => confirmSingleDelete.ask(postId)}
+          onDeleteSingle={(postId) => askDeleteWithContext(postId)}
           buildHref={buildHref}
         />
       </div>
@@ -345,16 +368,28 @@ function GroupDetailPageInner() {
         })}
       />
 
-      {/* 单个删帖确认（委托 ctrl.onDeleteSingle） */}
+      {/* 自己帖子：确认删除 */}
       <ConfirmModal
-        isOpen={confirmSingleDelete.open}
-        message={confirmSingleDelete.message}
-        onCancel={confirmSingleDelete.cancel}
-        onConfirm={confirmSingleDelete.confirm(async (postId) => {
+        isOpen={confirmOwnDelete.open}
+        message={confirmOwnDelete.message}
+        onCancel={confirmOwnDelete.cancel}
+        onConfirm={confirmOwnDelete.confirm(async (postId) => {
           if (!postId) return;
-          await onDeleteSingle(postId);
+          await onDeleteSingle(postId);  // 复用你已有的删除逻辑
         })}
       />
+
+      {/* 别人帖子但你是组长：权限说明 + 确认 */}
+      <ConfirmModal
+        isOpen={confirmOtherDelete.open}
+        message={confirmOtherDelete.message}
+        onCancel={confirmOtherDelete.cancel}
+        onConfirm={confirmOtherDelete.confirm(async (postId) => {
+          if (!postId) return;
+          await onDeleteSingle(postId);  // 同样复用删除逻辑
+        })}
+      />
+
 
       {/* 新建 PostModal（委托 ctrl.onCreatePost） */}
       {isPostModalOpen && (
