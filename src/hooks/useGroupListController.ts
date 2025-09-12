@@ -4,10 +4,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import {
   createGroup,
-  fetchAvailableGroups,
+  fetchVisibleGroups,
+  searchVisibleGroups,
   fetchAllGroups,
   fetchUserGroups,
-  searchGroups,
+  fetchUserSubscribedGroups,
   updateGroup as updateGroupThunk,
   deleteGroup as deleteGroupThunk,
   joinGroup,
@@ -21,20 +22,21 @@ import { mapApiErrorToFields } from "@/app/ultility";
 
 /** 控制器模式：决定数据从哪里来 */
 export type GroupListMode =
-  | "availableWithSearch"  // 有 q 参数时走 search，否则拉 available
-  | "user"                 // 用户订阅的群组
-  | "all"                  // 全部群组
-  | "searchOnly";          // 只根据 q 搜索
+  | "visibleWithSearch"
+  | "user"
+  | "subscribed"
+  | "all"
+  | "searchOnly";
 
 export type UseGroupListControllerOptions = {
   mode?: GroupListMode;
-  pageSize?: number;        // 默认 9
-  basePath?: string;        // 默认 "/groups"
+  pageSize?: number;
+  basePath?: string;
 };
 
 export function useGroupListController(opts: UseGroupListControllerOptions = {}) {
   const {
-    mode = "availableWithSearch",
+    mode = "visibleWithSearch",
     pageSize = 9,
     basePath = "/groups",
   } = opts;
@@ -47,13 +49,17 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
   const user = useAppSelector((s) => s.auth.user);
   const canCreate = !!user?.admin;
 
-  const availableGroups = useAppSelector((s) => s.groups.availableGroups);
-  const userGroups = useAppSelector((s) => s.groups.userGroups);
-  const searchResults = useAppSelector((s) => s.groups.searchResults);
+  const visibleGroups = useAppSelector((s) => s.groups.visibleGroups);
+  const visibleGroupsPagination = useAppSelector((s) => s.groups.visibleGroupsPagination);
+  const visibleSearchResults = useAppSelector((s) => s.groups.visibleSearchResults);
+  const visibleSearchPagination = useAppSelector((s) => s.groups.visibleSearchPagination);
 
-  const availablePagination = useAppSelector((s) => s.groups.availableGroupsPagination);
+
+  const userGroups = useAppSelector((s) => s.groups.userGroups);
+  const subscribedGroups = useAppSelector((s) => s.groups.subscribedGroups);
+
   const userPagination = useAppSelector((s) => s.groups.userGroupsPagination);
-  const searchPagination = useAppSelector((s) => s.groups.searchPagination);
+  const subscribedPagination = useAppSelector((s) => s.groups.subscribedGroupsPagination);
   const searchQuery = useAppSelector((s) => s.groups.searchQuery);
 
   // ===== 本地 UI 状态
@@ -76,29 +82,36 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
     return Number.isFinite(p) && p > 0 ? p : 1;
   }, [searchParams]);
 
-  // 输入框双向绑定
+  // 输入框双向绑定（仅搜索型模式保留输入）
   const [qInput, setQInput] = useState("");
-  useEffect(() => setQInput(mode === "availableWithSearch" || mode === "searchOnly" ? (searchQuery || qParam) : ""), [searchQuery, qParam, mode]);
+  useEffect(() => {
+    const shouldBind = mode === "visibleWithSearch" || mode === "searchOnly";
+    setQInput(shouldBind ? (searchQuery || qParam) : "");
+  }, [searchQuery, qParam, mode]);
 
   // ===== 数据加载
   const load = useCallback(async () => {
     setListLoading(true);
     try {
-      if (mode === "availableWithSearch") {
+      if (mode === "visibleWithSearch") {
         if (qParam) {
           dispatch(setSearchQueryAction(qParam));
-          await dispatch(searchGroups({ q: qParam, page: currentPage, per_page: pageSize }));
+          await dispatch(searchVisibleGroups({ q: qParam, page: currentPage, per_page: pageSize }));
         } else {
           dispatch(clearSearchAction());
-          await dispatch(fetchAvailableGroups({ page: currentPage, per_page: pageSize }));
+          await dispatch(fetchVisibleGroups({ page: currentPage, per_page: pageSize }));
         }
       } else if (mode === "user") {
+        // 我创建的
         await dispatch(fetchUserGroups({ page: currentPage, per_page: pageSize }));
+      } else if (mode === "subscribed") {
+        // 我订阅的
+        await dispatch(fetchUserSubscribedGroups({ page: currentPage, per_page: pageSize }));
       } else if (mode === "all") {
         await dispatch(fetchAllGroups({ page: currentPage, per_page: pageSize }));
       } else { // searchOnly
         const q = qParam || searchQuery;
-        await dispatch(searchGroups({ q: q || "", page: currentPage, per_page: pageSize }));
+        await dispatch(searchVisibleGroups({ q: q || "", page: currentPage, per_page: pageSize }));
       }
     } finally {
       setListLoading(false);
@@ -109,18 +122,20 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
 
   // ===== 选择当前展示的 rows + pagination
   const rows: GroupApi[] = useMemo(() => {
-    if (mode === "availableWithSearch") return qParam ? searchResults : availableGroups;
-    if (mode === "user") return userGroups;
-    if (mode === "all") return availableGroups; // 这里也可维护一个 allGroups 列表；若已在 slice 中区分，则替换为 s.groups.allGroups
-    return searchResults; // searchOnly
-  }, [mode, qParam, availableGroups, userGroups, searchResults]);
+    if (mode === "visibleWithSearch") return qParam ? visibleSearchResults : visibleGroups;
+    if (mode === "user") return userGroups;        // 我创建的
+    if (mode === "subscribed") return subscribedGroups;  // 我订阅的
+    if (mode === "all") return visibleGroups;   // 或单独维护 allGroups
+    return visibleSearchResults; // searchOnly
+  }, [mode, qParam, visibleGroups, userGroups, subscribedGroups, visibleSearchResults]);
 
   const pagination: GroupListPaginationApi | null = useMemo(() => {
-    if (mode === "availableWithSearch") return qParam ? searchPagination : availablePagination;
+    if (mode === "visibleWithSearch") return qParam ? visibleSearchPagination : visibleGroupsPagination;
     if (mode === "user") return userPagination;
-    if (mode === "all") return availablePagination; // 同上说明
-    return searchPagination;
-  }, [mode, qParam, availablePagination, userPagination, searchPagination]);
+    if (mode === "subscribed") return subscribedPagination;
+    if (mode === "all") return visibleGroupsPagination; // 或 allGroupsPagination
+    return visibleSearchPagination;
+  }, [mode, qParam, visibleGroupsPagination, userPagination, subscribedPagination, visibleSearchPagination]);
 
   const totalPages = useMemo(() => {
     if (typeof (pagination as any)?.pages === "number") {
@@ -145,30 +160,31 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
 
   // 仅刷新数据（不动 URL）
   const refreshPage = useCallback(async (page: number) => {
-    if (mode === "availableWithSearch") {
+    if (mode === "visibleWithSearch") {
       if (qParam) {
-        await dispatch(searchGroups({ q: qParam, page, per_page: pageSize }));
+        await dispatch(searchVisibleGroups({ q: qParam, page, per_page: pageSize }));
       } else {
-        await dispatch(fetchAvailableGroups({ page, per_page: pageSize }));
+        await dispatch(fetchVisibleGroups({ page, per_page: pageSize }));
       }
     } else if (mode === "user") {
-      await dispatch(fetchUserGroups({ page, per_page: pageSize }));
+      await dispatch(fetchUserGroups({ page, per_page: pageSize }));                // 我创建的
+    } else if (mode === "subscribed") {
+      await dispatch(fetchUserSubscribedGroups({ page, per_page: pageSize }));      // 我订阅的
     } else if (mode === "all") {
       await dispatch(fetchAllGroups({ page, per_page: pageSize }));
     } else {
       const q = qParam || searchQuery || "";
-      await dispatch(searchGroups({ q, page, per_page: pageSize }));
+      await dispatch(searchVisibleGroups({ q, page, per_page: pageSize }));
     }
   }, [dispatch, mode, qParam, searchQuery, pageSize]);
 
-  // ===== 搜索
+  // ===== 搜索（只对 available/searchOnly 有意义）
   const submitSearch = useCallback((e?: React.FormEvent<HTMLFormElement>) => {
     e?.preventDefault?.();
     const params = new URLSearchParams(searchParams.toString());
     const val = qInput.trim();
     if (val) params.set("q", val);
     else params.delete("q");
-    // 搜索默认回到 page=1
     params.delete("page");
     router.push(`${basePath}${params.toString() ? `?${params}` : ""}`);
   }, [qInput, searchParams, router, basePath]);
@@ -238,7 +254,7 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
 
       if (createGroup.fulfilled.match(action)) {
         // 成功后刷新回第一页
-        if (mode === "availableWithSearch" && qParam) {
+        if (mode === "visibleWithSearch" && qParam) {
           dispatch(clearSearchAction());
           router.push(`${basePath}?page=1`);
         } else if (currentPage !== 1) {
