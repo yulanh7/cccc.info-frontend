@@ -23,6 +23,7 @@ type Props = {
   onDeleteGroup: () => void;
   formatDate: (timestamp: string, showTime?: boolean) => string;
   canManageGroup: boolean;
+  canShowCreateFab: boolean;
   /** 选择模式（由父组件控制） */
   selectMode: boolean;
   selectedCount: number;
@@ -41,7 +42,8 @@ export default function GroupInfoBar({
   selectMode,
   selectedCount,
   onBulkDeleteSelected,
-  canManageGroup = false
+  canManageGroup = false,
+  canShowCreateFab = false,
 }: Props) {
 
   return (
@@ -176,13 +178,15 @@ export default function GroupInfoBar({
                 </Button>
               )}
 
-              <Button
-                onClick={onNewPost}
-                variant="primary"
-                leftIcon={<PlusIcon className="h-5 w-5" />}
-              >
-                New Post
-              </Button>
+              {canShowCreateFab && (
+                <Button
+                  onClick={onNewPost}
+                  variant="primary"
+                  leftIcon={<PlusIcon className="h-5 w-5" />}
+                >
+                  New Post
+                </Button>
+              )}
             </section>
           </div>
         </div>

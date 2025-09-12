@@ -239,6 +239,12 @@ function GroupDetailPageInner() {
   const buildHref = (p: number) => `/groups/${groupId}?page=${p}`;
 
   const canManageGroup = safeGroup ? canEditGroup(safeGroup) : false;
+  const isPrivateGroup =
+    !!(safeGroup && ((safeGroup as any).isPrivate ?? (safeGroup as any).is_private));
+
+  // 只有当：不是私有  或  （是私有 且 你可管理） 时才显示新增按钮
+  const canShowCreateFab =
+    !pageLoading && !!safeGroup && (!isPrivateGroup || canManageGroup);
   return (
     <>
       <LoadingOverlay show={pageLoading} text="Loading group…" />
@@ -260,6 +266,7 @@ function GroupDetailPageInner() {
           onNewPost={() => setIsPostModalOpen(true)}
           onEditGroup={handleEditGroup}
           canManageGroup={canManageGroup}
+          canShowCreateFab={canShowCreateFab}
           onDeleteGroup={() => confirmGroupDelete.ask()}
           selectMode={selectMode}
           selectedCount={selectedIds.size}
@@ -409,7 +416,7 @@ function GroupDetailPageInner() {
       )}
 
       {/* 移动端新增按钮（保持你的 UI） */}
-      {!pageLoading && (
+      {!pageLoading && canShowCreateFab && (
         <button
           onClick={() => setIsPostModalOpen(true)}
           className="fixed md:hidden bottom-20 z-10 right-10 bg-yellow p-2 rounded-[50%]"
