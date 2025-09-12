@@ -22,7 +22,7 @@ export default function PostInfoBar({
   formatDate,
 }: Props) {
   return (
-    <section className="mb-4 md:mb-6 bg-page-header-bg p-4 md:p-6 mt-15 md:mt-1">
+    <section className="mb-4 md:mb-6 bg-page-header-bg p-4 md:p-6 mt-0 md:mt-1">
       <div className="container mx-auto">
         <div className="flex items-start justify-between gap-3">
           <div>

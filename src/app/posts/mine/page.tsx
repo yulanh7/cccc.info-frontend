@@ -102,7 +102,7 @@ function MyPostsPageInner() {
         showLogo={true}
       />
       <PageTitle title="My Posts" showPageTitle={true} />
-      <div className="container mx-auto md:p-6 p-2 mt-18 md:mt-16">
+      <div className="container mx-auto md:p-6 p-2 mt-1 md:mt-16">
         <div className="flex items-center justify-end gap-2 mb-2 ">
           <div className="text-sm text-dark-gray">
             {ctrl.selectMode ? `${ctrl.selectedIds.size} selected` : " "}

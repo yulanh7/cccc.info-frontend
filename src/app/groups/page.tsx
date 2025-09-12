@@ -117,7 +117,7 @@ function GroupsPageInner() {
         />
       )}
       {/* Tabs */}
-      <div className="mx-auto  w-full lg:container px-4 mt-18 flex justify-center">
+      <div className="mx-auto  w-full lg:container px-4 mt-2 md:mt-18 flex justify-center">
         <div
           role="tablist"
           className="inline-flex rounded-2xl border border-border overflow-hidden"

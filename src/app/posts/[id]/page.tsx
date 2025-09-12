@@ -33,7 +33,6 @@ import IconButton from "@/components/ui/IconButton";
 import YouTubeList from "@/components/ui/YouTubeList";
 import { uploadAllFiles } from "@/app/ultility";
 import CommentsSection from "@/components/posts/CommentsSection";
-
 import type { UserProps } from "@/app/types";
 import type {
   PostDetailData,
@@ -288,12 +287,21 @@ function PostDetailPageInner() {
   return (
     <>
       <LoadingOverlay show={pageLoading} text="Loading post…" />
-      <div className="container mx-auto px-4 mt-16">
 
-        {pageError && <div className="text-red-600 mt-20">Failed to load post: {String(pageError)}</div>}
-        {!pageLoading && post && (
-          <>
-            {/* 顶部横幅：视频优先，否则背景图 */}
+      {pageError && <div className="text-red-600 mt-20">Failed to load post: {String(pageError)}</div>}
+      {!pageLoading && post && (
+        <>
+          <CustomHeader
+            item={{ id: post.id, author: post.author?.first_name }}
+            showEdit={canManage}
+            showDelete={canManage}
+            onDelete={() => handleDelete(post.id)}
+            onEdit={handleEditOpen}
+            showAdd={false}
+            pageTitle={post.title}
+          />
+          {/* 顶部横幅：视频优先，否则背景图 */}
+          <div className="container mx-auto px-4 mt-1">
             <div>
               {videoUrls.length > 0 ? (
                 <YouTubeList
@@ -301,7 +309,7 @@ function PostDetailPageInner() {
                   iframeClassName="w-full h-[200px] md:h-[400px] rounded-sm"
                 />
               ) : (
-                <div className="w-full min-h-30 md:min-h-60 bg-[url('/images/bg-for-homepage.png')] bg-cover bg-center rounded-t-xs md:rounded-t-sm flex items-center justify-center">
+                <div className="w-full min-h-20 md:min-h-30 bg-[url('/images/bg-for-homepage.png')] bg-cover bg-center rounded-t-xs md:rounded-t-sm flex items-center justify-center">
                   <h2 className="text-dark-gray text-xl md:text-5xl font-'Apple Color Emoji' font-semibold text-center px-4">
                     {post.title}
                   </h2>
@@ -309,16 +317,8 @@ function PostDetailPageInner() {
               )}
             </div>
 
-            <CustomHeader
-              item={{ id: post.id, author: post.author?.first_name }}
-              showEdit={canManage}
-              showDelete={canManage}
-              onDelete={() => handleDelete(post.id)}
-              onEdit={handleEditOpen}
-              showAdd={false}
-              pageTitle={post.title}
-            />
-            <div className="flex items-center justify-between gap-2">
+
+            <div className="flex items-center justify-between gap-2 mt-3">
               <h1 className="text-2xl mb-2">{post.title}</h1>
 
               <div className="hidden md:flex items-center gap-2">
@@ -549,9 +549,11 @@ function PostDetailPageInner() {
                 </div>
               </div>
             )}
-          </>
-        )}
-      </div>
+          </div>
+        </>
+
+      )}
+
     </>
   );
 }

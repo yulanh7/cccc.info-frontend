@@ -125,7 +125,7 @@ export default function ProfilePage() {
       <PageTitle title="My Profile" showPageTitle={true} />
       <LoadingOverlay show={pageLoading} text="Loading profile…" />
 
-      <div className="max-w-2xl mx-auto px-4 py-8 mt-16">
+      <div className="max-w-2xl mx-auto px-4 py-8 mt-1 md:mt-16">
 
         {/* 基本资料 */}
         <section className="bg-white/5 rounded-2xl overflow-hidden shadow-sm mb-8 border border-white/10">

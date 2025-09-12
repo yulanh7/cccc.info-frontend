@@ -89,7 +89,7 @@ function MyGroupsPageInner() {
         showLogo={true}
       />
       <PageTitle title="My Groups" showPageTitle />
-      <div className="mx-auto w-full p-4 min-h-screen lg:container mt-16">
+      <div className="mx-auto w-full p-4 min-h-screen lg:container mt-0 md:mt-16">
         <GroupListView
           // title="My Groups"
           rows={filteredRows}

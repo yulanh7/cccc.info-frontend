@@ -58,7 +58,7 @@ export default function PostListSection({
   emptyText = "No posts yet.",
 }: Props) {
   return (
-    <section className={`relative mt-4 ${className}`}>
+    <section className={`relative ${className}`}>
       {/* 首次骨架 */}
       {initialPostsLoading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
