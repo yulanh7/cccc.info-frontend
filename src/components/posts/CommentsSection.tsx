@@ -405,12 +405,13 @@ function CommentComposer({
             aria-describedby={helpId}
             ref={textareaRef}
             className={clsx(
-              "flex-1 resize-none rounded-md border border-border bg-white px-3 py-2",
+              "flex-1 min-w-0 rounded-md border border-border bg-white px-3 py-2",
               "focus:ring-2 focus:ring-dark-green/30",
               "max-h-40 overflow-y-auto",
-              "text-base md:text-sm",                      /* CHANGED: iOS 防缩放，移动端≥16px */
+              "text-base md:text-sm",
               isOver ? "border-red-400 focus:ring-red-300" : ""
             )}
+
             rows={expanded ? 2 : 1}
             placeholder={replyingToName ? "Write a reply…" : "Write a comment…"}
             value={value}
@@ -424,8 +425,8 @@ function CommentComposer({
           {/* 第二行：字数 + 按钮 */}
           <div
             className={clsx(
-              "flex items-center gap-2 justify-end w-full", /* CHANGED: 右对齐且占满行宽 */
-              expanded ? "mt-1" : ""
+              "flex items-center gap-2",
+              expanded ? "justify-end w-full mt-1" : "shrink-0" // ← 关键改动
             )}
           >
             <span
