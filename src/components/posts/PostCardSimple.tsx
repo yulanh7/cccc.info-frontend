@@ -132,6 +132,7 @@ export default function PostCardSimple({
     <div className="card relative cursor-pointer border border-border">
       <div className="aspect-w-16 aspect-h-9 mb-1">
         {thumbnail ? (
+          // 正常显示缩略图
           <div className="relative">
             <img
               src={thumbnail}
@@ -143,6 +144,11 @@ export default function PostCardSimple({
                 <PlayIcon className="h-3 w-3 text-white" />
               </div>
             </div>
+          </div>
+        ) : videos && videos.length > 0 ? (
+          // 这里提示链接错误
+          <div className="flex items-center justify-center w-full h-25 md:h-30 bg-gray-100 text-red-500 rounded-t-xs md:rounded-t-sm">
+            Unable to parse this YouTube link
           </div>
         ) : imageUrl ? (
           <div className="relative">
@@ -184,6 +190,7 @@ export default function PostCardSimple({
                       aria-label="Select post"
                       size="sm"
                       variant={isSelected ? "primary" : "outline"}
+                      tone={isSelected ? "default" : "brand"}
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();

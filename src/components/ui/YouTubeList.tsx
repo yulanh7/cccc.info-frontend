@@ -9,22 +9,43 @@ type Props = {
   useNoCookie?: boolean;            // 需要用 youtube-nocookie 时置 true
 };
 
-function extractYouTubeId(url: string): string | null {
+function extractYouTubeId(input: string): string | null {
   try {
-    if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
-    const u = new URL(url);
+    // 1) 已经是 11 位 ID
+    if (/^[a-zA-Z0-9_-]{11}$/.test(input)) return input;
+
+    const u = new URL(input);
+
+    // 2) youtu.be 短链
     if (u.hostname.includes("youtu.be")) {
       const id = u.pathname.split("/").filter(Boolean)[0];
       return id && id.length === 11 ? id : null;
     }
+
+    // 3) 标准 watch
     if (u.searchParams.has("v")) {
       const id = u.searchParams.get("v")!;
       return id && id.length === 11 ? id : null;
     }
+
+    // 4) /embed/<id>
     if (u.pathname.includes("/embed/")) {
-      const id = u.pathname.split("/embed/")[1]?.split("/")[0];
+      const id = u.pathname.split("/embed/")[1]?.split(/[/?#]/)[0];
       return id && id.length === 11 ? id : null;
     }
+
+    // 5) /live/<id>
+    if (u.pathname.includes("/live/")) {
+      const id = u.pathname.split("/live/")[1]?.split(/[/?#]/)[0];
+      return id && id.length === 11 ? id : null;
+    }
+
+    // 6) /shorts/<id>
+    if (u.pathname.includes("/shorts/")) {
+      const id = u.pathname.split("/shorts/")[1]?.split(/[/?#]/)[0];
+      return id && id.length === 11 ? id : null;
+    }
+
     return null;
   } catch {
     return null;
@@ -37,16 +58,21 @@ export default function YouTubeList({
   iframeClassName = "w-full h-[200px] md:h-[400px] rounded-sm",
   useNoCookie = false,
 }: Props) {
-  const videoIds = useMemo(
-    () => videos.map(extractYouTubeId).filter((x): x is string => !!x),
+  // 同时保留原始输入和解析结果，便于对错误项给出提示
+  const parsedVideos = useMemo(
+    () =>
+      videos.map((v) => ({
+        raw: v,
+        id: extractYouTubeId(v),
+      })),
     [videos]
   );
 
-  // 保存所有 iframe 的引用
+  // 保存所有 iframe 的引用（与 parsedVideos 的索引对齐）
   const iframeRefs = useRef<(HTMLIFrameElement | null)[]>([]);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
-  // 当前页面的 origin（会自动是 http://172.238.14.96 或 http://localhost:3000 或以后你的域名）
+  // 当前页面的 origin（会自动是 http://localhost:3000 或你的域名）
   const pageOrigin = typeof window !== "undefined" ? window.location.origin : "";
 
   // YouTube 的目标源（决定 postMessage 的 targetOrigin）
@@ -78,21 +104,34 @@ export default function YouTubeList({
     setActiveIndex(i);
   };
 
-  // 自适应列数
+  // 自适应列数（按传入数量来排）
   let videoCols = "grid-cols-1";
-  if (videoIds.length === 2) videoCols = "grid-cols-1 md:grid-cols-2";
-  if (videoIds.length > 2) videoCols = "grid-cols-1 md:grid-cols-2 lg:grid-cols-3";
+  if (parsedVideos.length === 2) videoCols = "grid-cols-1 md:grid-cols-2";
+  if (parsedVideos.length > 2) videoCols = "grid-cols-1 md:grid-cols-2 lg:grid-cols-3";
 
   return (
     <div className={`${className ?? ""} grid ${videoCols} gap-4`}>
-      {videoIds.map((id, i) => {
-        // 用 URL API 构建 src，避免手写拼接错误
+      {parsedVideos.map((item, i) => {
+        if (!item.id) {
+          // ❌ 解析失败：给出提示卡片
+          return (
+            <div
+              key={i}
+              className="flex items-center justify-center rounded-sm bg-gray-100 text-red-500 p-4 text-sm"
+              title={typeof item.raw === "string" ? item.raw : "Invalid YouTube URL"}
+            >
+              Unable to parse link: {String(item.raw)}
+            </div>
+          );
+        }
+
+        // ✅ 正常渲染 iframe
         const base = useNoCookie
-          ? `https://www.youtube-nocookie.com/embed/${id}`
-          : `https://www.youtube.com/embed/${id}`;
+          ? `https://www.youtube-nocookie.com/embed/${item.id}`
+          : `https://www.youtube.com/embed/${item.id}`;
         const url = new URL(base);
         url.searchParams.set("enablejsapi", "1");     // 必须，允许 JS 控制
-        url.searchParams.set("origin", pageOrigin);    // 必须，且要与页面完全一致（含端口）
+        url.searchParams.set("origin", pageOrigin);   // 必须，且要与页面完全一致（含端口）
         url.searchParams.set("rel", "0");
         url.searchParams.set("modestbranding", "1");
         url.searchParams.set("playsinline", "1");
@@ -110,7 +149,7 @@ export default function YouTubeList({
               ref={(el) => { iframeRefs.current[i] = el; }}
               className={iframeClassName}
               src={url.toString()}
-              title={`YouTube video ${id}`}
+              title={`YouTube video ${item.id}`}
               // 允许自动播放（因有用户点击，一般可行），以及其他常见权限
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowFullScreen

@@ -66,18 +66,65 @@ function toDate(input: string | number | Date): Date {
   return new Date(NaN);
 }
 
-// Keep your existing helper unchanged
 export function getYouTubeThumbnail(
   url: string,
   quality: "default" | "mqdefault" | "hqdefault" | "maxresdefault" = "hqdefault"
 ) {
-  const match = url.match(
-    /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
-  );
-  const videoId = match?.[1];
-  if (!videoId) return null;
-  return `https://img.youtube.com/vi/${videoId}/${quality}.jpg`;
+  // 1) 如果直接传 11 位 ID
+  if (/^[a-zA-Z0-9_-]{11}$/.test(url)) {
+    return `https://img.youtube.com/vi/${url}/${quality}.jpg`;
+  }
+
+  // 2) 先尝试用 URL 解析器拿 ID（更稳健，能容忍 ?si= 等多余参数）
+  let id: string | null = null;
+  try {
+    const u = new URL(url);
+
+    // youtu.be/<id>
+    if (u.hostname.includes("youtu.be")) {
+      const maybe = u.pathname.split("/").filter(Boolean)[0];
+      if (maybe && maybe.length === 11) id = maybe;
+    }
+
+    // ?v=<id>
+    if (!id && u.searchParams.has("v")) {
+      const maybe = u.searchParams.get("v")!;
+      if (maybe && maybe.length === 11) id = maybe;
+    }
+
+    // /embed/<id>
+    if (!id && u.pathname.includes("/embed/")) {
+      const maybe = u.pathname.split("/embed/")[1]?.split(/[/?#]/)[0];
+      if (maybe && maybe.length === 11) id = maybe;
+    }
+
+    // /live/<id>
+    if (!id && u.pathname.includes("/live/")) {
+      const maybe = u.pathname.split("/live/")[1]?.split(/[/?#]/)[0];
+      if (maybe && maybe.length === 11) id = maybe;
+    }
+
+    // /shorts/<id>
+    if (!id && u.pathname.includes("/shorts/")) {
+      const maybe = u.pathname.split("/shorts/")[1]?.split(/[/?#]/)[0];
+      if (maybe && maybe.length === 11) id = maybe;
+    }
+  } catch {
+    // 忽略，回退到正则
+  }
+
+  // 3) 兜底：用一个覆盖更全的正则（含 live/ 与 shorts/）
+  if (!id) {
+    const match = url.match(
+      /(?:youtube\.com\/(?:(?:watch\?[^#?]*?v=)|embed\/|shorts\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+    );
+    id = match?.[1] ?? null;
+  }
+
+  if (!id) return null;
+  return `https://img.youtube.com/vi/${id}/${quality}.jpg`;
 }
+
 
 export function ellipsize(
   input: string | null | undefined,
