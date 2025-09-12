@@ -63,7 +63,7 @@ export default function GroupInfoBar({
                 )}
                 {group.isPrivate && (
                   <div className="flex items-center gap-1 text-white">
-                    <LockClosedIcon className="h-4 w-4" />
+                    <LockClosedIcon className="h-4 w-4 text-dark-greed" />
                     <span className="text-[11px]">Private</span>
                   </div>
                 )}

@@ -132,7 +132,7 @@ export default function GroupListView({
                 >
                   {group.isPrivate && (
                     <div className="absolute left-2 top-2 flex items-center gap-1 text-dark-gray/80">
-                      <LockClosedIcon className="h-4 w-4" />
+                      <LockClosedIcon className="h-4 w-4 text-dark-green" />
                       <span className="text-[11px]">Private</span>
                     </div>
                   )}
