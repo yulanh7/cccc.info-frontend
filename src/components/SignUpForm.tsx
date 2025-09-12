@@ -25,7 +25,7 @@ export default function SignUpForm() {
     if (isLoading) return;
 
     if (password !== confirmPassword) {
-      alert('密码不匹配');
+      alert('Passwords don’t match.');
       return;
     }
 

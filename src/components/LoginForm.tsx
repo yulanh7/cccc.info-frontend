@@ -39,7 +39,7 @@ export default function LoginForm() {
       await dispatch(loginThunk(credentials)).unwrap();
       router.push('/');
     } catch (err: any) {
-      setError(err || '登录失败，请检查您的邮箱或密码');
+      setError(err || 'Incorrect email or password.');
     } finally {
       setIsLoading(false);
     }
@@ -87,11 +87,11 @@ export default function LoginForm() {
         size="md"
         fullWidth
         loading={isLoading}
-        loadingText="登录中..."
+        loadingText="Logging in..."
         blockWhileLoading
-        aria-label="登录"
+        aria-label="log in"
       >
-        登录
+        Log in
       </Button>
     </form>
   );
