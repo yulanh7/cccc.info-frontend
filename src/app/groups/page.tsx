@@ -1,10 +1,9 @@
 "use client";
 import { Suspense } from "react";
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import PageTitle from "@/components/layout/PageTitle";
-import MobileSearchHeader from "@/components/layout/MobileSearchHeader";
-import CustomHeader from "@/components/layout/CustomHeader";
 import SearchBar from "@/components/SearchBar";
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
 import GroupModal from "@/components/groups/GroupModal";
@@ -14,9 +13,8 @@ import { formatDate } from "@/app/ultility";
 import { useConfirm } from "@/hooks/useConfirm";
 import { useGroupListController } from "@/hooks/useGroupListController";
 import { GROUPS_PER_PAGE } from "@/app/constants";
+import { MagnifyingGlassIcon, XMarkIcon, ChevronLeftIcon } from "@heroicons/react/24/outline";
 
-
-// ⬅️ 外层只负责提供 Suspense 边界
 export default function GroupsPage() {
   return (
     <Suspense fallback={<LoadingOverlay show text="Loading groups…" />}>
@@ -25,43 +23,40 @@ export default function GroupsPage() {
   );
 }
 
-// ⬅️ 把原来所有逻辑搬进来：在这个内部组件里调用 hook
 function GroupsPageInner() {
-
-
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // 读取 URL 的 tab，默认 all
+  // tab
   const tab = useMemo(() => {
     const t = (searchParams.get("tab") || "all").toLowerCase();
     return t === "subscribed" ? "subscribed" : "all";
   }, [searchParams]);
 
-  // 根据 tab 选择 controller 的 mode
+  // controller mode
   const mode = tab === "subscribed" ? "subscribed" : "visibleWithSearch";
 
   const {
-    // 数据
+    // data
     rows,
     listLoading,
     pageLoading,
     currentPage,
     totalPages,
-    // 搜索相关
+    // search
     qInput,
     setQInput,
     searchQuery,
     submitSearch,
     clearSearch,
-    // 分页/刷新
+    // paging
     onPageChange,
-    // 权限 & 操作
+    // perms & actions
     canCreate,
     canEditGroup,
     isUserSubscribed,
     toggleSubscription,
-    // 新建/编辑 Modal
+    // modal
     isModalOpen,
     isNew,
     selectedGroup,
@@ -71,9 +66,9 @@ function GroupsPageInner() {
     openEdit,
     closeModal,
     saveGroup,
-    // 删除
+    // delete
     deleteGroup,
-    // 状态文案
+    // states
     saving,
     deleting,
     toggling,
@@ -94,34 +89,152 @@ function GroupsPageInner() {
     router.push(`/groups?${params.toString()}`);
   };
 
+  // --- Mobile search header state ---
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const mobileInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (mobileSearchOpen) mobileInputRef.current?.focus();
+  }, [mobileSearchOpen]);
+
   return (
     <>
       <LoadingOverlay show={pageLoading} text="Loading groups…" />
-      <PageTitle title="Groups" showPageTitle />
 
-      {/* Mobile 顶部搜索：仅 all tab 显示 */}
-      {tab === "all" && (
-        <MobileSearchHeader
-          value={qInput}
-          onChange={setQInput}
-          onSubmit={submitSearch}
-          onClear={clearSearch}
-          placeholder="Search groups…"
-        />
-      )}
+      {/* Desktop page title */}
+      <div className="hidden md:block">
+        <PageTitle title="Groups" showPageTitle />
+      </div>
 
-      {tab === "subscribed" && (
-        <CustomHeader
-          pageTitle="Groups"
-          showLogo={true}
-        />
-      )}
-      {/* Tabs */}
-      <div className="mx-auto  w-full lg:container px-4 mt-2 md:mt-18 flex justify-center">
-        <div
-          role="tablist"
-          className="inline-flex rounded-2xl border border-border overflow-hidden"
-        >
+      {/* ===== MOBILE HEADER (inline, no external components) ===== */}
+      <div className="md:hidden sticky top-0 z-40 bg-bg/90 backdrop-blur border-b-1 border-border">
+        <div className="relative h-14 flex items-center justify-between px-3">
+          {/* Left: Logo (常态) / Back (搜索态)  */}
+          {!mobileSearchOpen ? (
+            <button
+              className="flex items-center gap-2"
+              onClick={() => router.push("/")}
+              aria-label="Home"
+            >
+              <Image
+                src="/images/logo.png"
+                alt="Logo"
+                width={28}
+                height={28}
+                className="h-7 w-7"
+                priority
+              />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setMobileSearchOpen(false)}
+              aria-label="Cancel search"
+              className="p-2 -ml-1"
+            >
+              <ChevronLeftIcon className="h-6 w-6 text-dark-gray" />
+            </button>
+          )}
+
+          {/* Center: Tabs（始终可见，居中） */}
+          <div className="absolute left-1/2 -translate-x-1/2">
+            <div
+              role="tablist"
+              className="inline-flex rounded-sm border border-border overflow-hidden"
+            >
+              {[
+                { key: "all", label: "All" },
+                { key: "subscribed", label: "Subscribed" },
+              ].map(({ key, label }) => {
+                const active = tab === key;
+                return (
+                  <button
+                    key={key}
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => switchTab(key as "all" | "subscribed")}
+                    className={[
+                      "px-3 py-1.5 text-sm transition-colors outline-none",
+                      active
+                        ? "bg-yellow-300 text-dark font-medium"
+                        : "bg-bg text-dark-gray hover:bg-yellow-100 hover:text-dark",
+                    ].join(" ")}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 搜索态覆盖层（保持在 header 内部，提交后也不关闭） */}
+          {mobileSearchOpen && (
+            <div className="z-10 bg-white flex-1">
+              <form
+                id="mobile-search-form"
+                onSubmit={(e) => {
+                  // 只提交，不关闭；用户必须点左侧返回键才退出搜索模式
+                  submitSearch(e);
+                }}
+                className="h-10 relative"
+              >
+                <input
+                  ref={mobileInputRef}
+                  name="q"
+                  value={qInput}
+                  onChange={(e) => setQInput(e.target.value)}
+                  placeholder="Search all groups…"
+                  className="w-full py-2 pl-2 pr-7 border border-border rounded-sm"
+                  aria-label="Search groups"
+                />
+                {qInput && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearSearch();
+                      mobileInputRef.current?.focus();
+                    }}
+                    className="absolute right-1 top-2.5 text-gray-400 hover:text-dark-gray"
+                    aria-label="Clear search"
+                  >
+                    <XMarkIcon className="h-5 w-5" />
+                  </button>
+                )}
+
+              </form>
+            </div>
+          )}
+
+          {/* Right: 常态是搜索图标；搜索态变为“Search”按钮 */}
+
+          {/* Right side: only show on "all" tab */}
+          {tab === "all" && (
+            !mobileSearchOpen ? (
+              <button
+                className="p-2 -mr-1"
+                aria-label="Open search"
+                onClick={() => setMobileSearchOpen(true)}
+              >
+                <MagnifyingGlassIcon className="h-6 w-6 text-dark-gray" />
+              </button>
+            ) : (
+              <button
+                form="mobile-search-form"
+                type="submit"
+                className="text-sm px-2 py-2 font-medium"
+                aria-label="Submit search"
+              >
+                Search
+              </button>
+            )
+          )}
+
+        </div>
+      </div>
+      {/* ===== END MOBILE HEADER ===== */}
+
+      {/* Desktop tabs */}
+      <div className="mx-auto w-full lg:container px-4 mt-2 md:mt-18 hidden md:flex justify-center">
+        <div role="tablist" className="inline-flex rounded-sm border border-border overflow-hidden">
           {[
             { key: "all", label: "All Groups" },
             { key: "subscribed", label: "My Subscribed" },
@@ -136,8 +249,8 @@ function GroupsPageInner() {
                 className={[
                   "px-4 py-2 text-sm transition-colors outline-none",
                   active
-                    ? "bg-yellow-300 text-dark font-medium" // 激活：黄色背景
-                    : "bg-bg text-dark-gray hover:bg-yellow-100 hover:text-dark" // 未激活：悬浮微黄
+                    ? "bg-yellow-300 text-dark font-medium"
+                    : "bg-bg text-dark-gray hover:bg-yellow-100 hover:text-dark",
                 ].join(" ")}
               >
                 {label}
@@ -146,8 +259,9 @@ function GroupsPageInner() {
           })}
         </div>
       </div>
+
       <div className="mx-auto w-full p-4 min-h-screen lg:container">
-        {/* 桌面搜索条：仅 all tab 显示 */}
+        {/* Desktop search bar (unchanged logic; your SearchBar component stays the same) */}
         {tab === "all" && (
           <div className="hidden md:block my-6">
             <SearchBar
@@ -190,9 +304,7 @@ function GroupsPageInner() {
         />
       </div>
 
-
-
-      {/* 新建/编辑弹窗 */}
+      {/* New/Edit Modal */}
       {isModalOpen && (
         <GroupModal
           group={selectedGroup}
@@ -204,7 +316,7 @@ function GroupsPageInner() {
         />
       )}
 
-      {/* 删除确认弹窗 */}
+      {/* Delete Confirm Modal (fixed id typo) */}
       <ConfirmModal
         isOpen={confirmGroupDelete.open}
         message={confirmGroupDelete.message}
