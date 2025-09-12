@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { XMarkIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
 import Button from "@/components/ui/Button";
 import SaveConfirmModal from "../SaveConfirmModal";
 import type { PostFileApi } from "@/app/types";
@@ -487,7 +487,7 @@ export default function PostModal({
                         onClick={() => removeLocalImage(i)}
                         title="Remove file"
                       >
-                        <TrashIcon className="h-4 w-4" />
+                        Remove
                       </button>
                     </li>
                   ))}
@@ -561,7 +561,7 @@ export default function PostModal({
                         onClick={() => removeLocalDoc(i)}
                         title="Remove file"
                       >
-                        <TrashIcon className="h-4 w-4" />
+                        Remove
                       </button>
                     </li>
                   ))}
