@@ -137,6 +137,7 @@ export default function ProfilePage() {
                 </div>
                 <div>
                   <div className="text-lg font-medium text-white">{user?.firstName}</div>
+                  <div className="text-sm text-white">ID: {user?.id}</div>
                   <div className="text-sm text-white">{user?.email}</div>
                 </div>
               </div>
