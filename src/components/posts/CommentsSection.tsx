@@ -341,7 +341,6 @@ function ChildCommentItem({
 }
 
 /* ======================= 底部固定输入框 ======================= */
-
 function CommentComposer({
   value,
   onChange,
@@ -355,6 +354,23 @@ function CommentComposer({
   onCancel: () => void;
   replyingToName: string | null;
 }) {
+  const textareaId = React.useId();
+  const helpId = `${textareaId}-help`;
+
+  const MAX_LEN = 200;
+  const [focused, setFocused] = React.useState(false);
+  const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
+
+  const textLen = value.length;                 // 实际字数
+  const trimmedLen = value.trim().length;       // 有效字数（控制是否可发送）
+  const isOver = textLen > MAX_LEN;
+  const canSend = trimmedLen > 0 && !isOver;
+
+  // 自动增高
+
+
+  const expanded = focused || !!value.trim() || !!replyingToName;
+
   return (
     <div className="fixed left-0 right-0 md:bottom-0 bottom-[66px] z-10 border-t border-border bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70">
       <div className="mx-auto max-w-4xl px-3 py-2">
@@ -362,34 +378,74 @@ function CommentComposer({
         {replyingToName && (
           <div className="mb-1 text-[12px] text-gray-600">
             Replying to <span className="font-medium">{replyingToName}</span>{" "}
-            <button className="ml-2 text-gray-400 hover:text-gray-600 underline" onClick={onCancel}>
+            <button
+              className="ml-2 text-gray-400 hover:text-gray-600 underline"
+              onClick={() => {
+                onCancel();
+                setFocused(false);
+              }}
+            >
               cancel
             </button>
           </div>
         )}
 
-        <div className="flex items-end gap-2">
+        <div className={clsx("flex gap-2", expanded ? "flex-col" : "items-end")}>
           <textarea
+            id={textareaId}
+            name="comment"
+            aria-describedby={helpId}
+            ref={textareaRef}
             className={clsx(
               "flex-1 resize-none rounded-md border border-border bg-white px-3 py-2 text-sm outline-none",
-              "focus:ring-2 focus:ring-dark-green/30"
+              "focus:ring-2 focus:ring-dark-green/30",
+              "max-h-40 overflow-y-auto",
+              isOver ? "border-red-400 focus:ring-red-300" : ""
             )}
-            rows={1}
+            rows={expanded ? 2 : 1}
             placeholder={replyingToName ? "Write a reply…" : "Write a comment…"}
             value={value}
-            onChange={(e) => onChange(e.target.value)}
+            onFocus={() => {
+              setFocused(true);
+            }}
+            onBlur={() => {
+              if (!value.trim() && !replyingToName) setFocused(false);
+            }}
+            onChange={(e) => {
+              onChange(e.target.value);
+            }}
           />
-          <div className="flex items-center gap-2">
+
+          {/* 第二行：字数 + 按钮 */}
+          <div className={clsx("flex items-center gap-2", expanded ? "self-end mt-1" : "")}>
+            <span
+              className={clsx(
+                "text-[12px]",
+                isOver ? "text-red-600" : textLen >= MAX_LEN - 20 ? "text-amber-600" : "text-gray-500"
+              )}
+              aria-live="polite"
+            >
+              {textLen}/{MAX_LEN}
+            </span>
+
             <button
               className="text-sm rounded-md border border-border bg-white px-3 py-2 hover:bg-gray-50"
-              onClick={onCancel}
+              onClick={() => {
+                onCancel();
+                setFocused(false);
+              }}
             >
               Cancel
             </button>
             <button
               className="text-sm rounded-md bg-dark-green text-white px-3 py-2 hover:bg-green-700 disabled:opacity-50"
-              onClick={onSend}
-              disabled={!value.trim()}
+              onClick={() => {
+                if (!canSend) return; // 保险：超限/空内容不发送
+                onSend();
+                setFocused(false);
+              }}
+              disabled={!canSend}
+              title={isOver ? "Comment is too long" : undefined}
             >
               Send
             </button>
@@ -399,3 +455,5 @@ function CommentComposer({
     </div>
   );
 }
+
+
