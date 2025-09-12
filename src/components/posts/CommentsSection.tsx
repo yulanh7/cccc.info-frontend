@@ -361,19 +361,27 @@ function CommentComposer({
   const [focused, setFocused] = React.useState(false);
   const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
 
-  const textLen = value.length;                 // 实际字数
-  const trimmedLen = value.trim().length;       // 有效字数（控制是否可发送）
+  const textLen = value.length;
+  const trimmedLen = value.trim().length;
   const isOver = textLen > MAX_LEN;
   const canSend = trimmedLen > 0 && !isOver;
-
-  // 自动增高
-
 
   const expanded = focused || !!value.trim() || !!replyingToName;
 
   return (
-    <div className="fixed left-0 right-0 md:bottom-0 bottom-[66px] z-10 border-t border-border bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70">
-      <div className="mx-auto max-w-4xl px-3 py-2">
+    <div
+      className="
+        fixed left-0 right-0 md:bottom-0 bottom-[66px] z-10
+        border-t border-border
+        bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70
+      "
+    >
+      <div
+        className="
+          mx-auto max-w-4xl px-3 py-2
+          pb-[calc(env(safe-area-inset-bottom)+8px)]   /* CHANGED: 安全区内边距 */
+        "
+      >
         {/* 正在回复谁 */}
         {replyingToName && (
           <div className="mb-1 text-[12px] text-gray-600">
@@ -397,27 +405,29 @@ function CommentComposer({
             aria-describedby={helpId}
             ref={textareaRef}
             className={clsx(
-              "flex-1 resize-none rounded-md border border-border bg-white px-3 py-2 text-sm outline-none",
+              "flex-1 resize-none rounded-md border border-border bg-white px-3 py-2",
               "focus:ring-2 focus:ring-dark-green/30",
               "max-h-40 overflow-y-auto",
+              "text-base md:text-sm",                      /* CHANGED: iOS 防缩放，移动端≥16px */
               isOver ? "border-red-400 focus:ring-red-300" : ""
             )}
             rows={expanded ? 2 : 1}
             placeholder={replyingToName ? "Write a reply…" : "Write a comment…"}
             value={value}
-            onFocus={() => {
-              setFocused(true);
-            }}
+            onFocus={() => setFocused(true)}
             onBlur={() => {
               if (!value.trim() && !replyingToName) setFocused(false);
             }}
-            onChange={(e) => {
-              onChange(e.target.value);
-            }}
+            onChange={(e) => onChange(e.target.value)}
           />
 
           {/* 第二行：字数 + 按钮 */}
-          <div className={clsx("flex items-center gap-2", expanded ? "self-end mt-1" : "")}>
+          <div
+            className={clsx(
+              "flex items-center gap-2 justify-end w-full", /* CHANGED: 右对齐且占满行宽 */
+              expanded ? "mt-1" : ""
+            )}
+          >
             <span
               className={clsx(
                 "text-[12px]",
@@ -440,7 +450,7 @@ function CommentComposer({
             <button
               className="text-sm rounded-md bg-dark-green text-white px-3 py-2 hover:bg-green-700 disabled:opacity-50"
               onClick={() => {
-                if (!canSend) return; // 保险：超限/空内容不发送
+                if (!canSend) return;
                 onSend();
                 setFocused(false);
               }}
