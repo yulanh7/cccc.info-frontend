@@ -1,6 +1,7 @@
 "use client";
 import { Suspense } from "react";
 import React, { useMemo } from "react";
+import Link from 'next/link';
 import { useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
@@ -16,6 +17,7 @@ import { canEditPostList } from "@/app/types";
 import Button from "@/components/ui/Button";
 import { POSTS_PER_PAGE } from "@/app/constants";
 import CustomHeader from "@/components/layout/CustomHeader";
+import { InformationCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 function useSourceListState(sourceKey: string) {
   const feed = useAppSelector((s) => (s as any).posts?.lists?.[sourceKey]);
@@ -94,6 +96,10 @@ function MyPostsPageInner() {
 
   const pageLoading = !mounted;
 
+  const [showHint, setShowHint] = React.useState(true);
+  const hideHint = () => setShowHint(false);
+
+
   return (
     <>
       <LoadingOverlay show={pageLoading} text="Loading my posts…" />
@@ -103,57 +109,116 @@ function MyPostsPageInner() {
       />
       <PageTitle title="My Posts" showPageTitle={true} />
       <div className="container mx-auto md:p-6 p-2 mt-1 md:mt-16">
-        <div className="flex items-center justify-end gap-2 mb-2 ">
-          <div className="text-sm text-dark-gray">
-            {ctrl.selectMode ? `${ctrl.selectedIds.size} selected` : " "}
-          </div>
-          <Button
-            variant={ctrl.selectMode ? "secondary" : "primary"}
-            onClick={ctrl.toggleSelectMode}
-            active={ctrl.selectMode}
-            aria-pressed={ctrl.selectMode}
-            title={ctrl.selectMode ? "Exit select mode" : "Enter select mode"}
+        {rows.length > 0 && showHint && (
+          <div
+            className="mb-3 flex items-center justify-between gap-3 rounded-md border border-border bg-white px-3 py-2 text-sm shadow-sm"
+            role="note"
+            aria-live="polite"
           >
-            {ctrl.selectMode ? "Exit Select" : "Select Posts"}
-          </Button>
-          {ctrl.selectMode && ctrl.selectedIds.size > 0 && (
-            <Button
-              variant="danger"
-              // variant="outline" tone="danger"
-              onClick={() => {
-                const ids = Array.from(ctrl.selectedIds);
-                confirmBulkDelete.ask(
-                  ids,
-                  `Delete ${ids.length} selected post${ids.length > 1 ? "s" : ""}?`
-                );
-              }}
-              disabled={ctrl.selectedIds.size === 0}
-              title={ctrl.selectedIds.size === 0 ? "Select posts to enable" : "Delete selected posts"}
+            <div className="flex items-center gap-2">
+              <InformationCircleIcon className="h-4 w-4" aria-hidden="true" />
+              <span className="text-dark-gray">
+                You can only create posts inside groups. Go to your{" "}
+                <Link href="/groups?tab=subscribed" className="underline hover:no-underline">
+                  Subscribed
+                </Link>{" "}
+                tab to start a new post.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={hideHint}
+              aria-label="Dismiss reminder"
+              className="p-1 -m-1 rounded hover:bg-gray-50"
             >
-              Delete Selected
+              <XMarkIcon className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+        )}
+
+        {rows.length > 0 && (
+          <div className="flex items-center justify-end gap-2 mb-2 ">
+            <div className="text-sm text-dark-gray">
+              {ctrl.selectMode ? `${ctrl.selectedIds.size} selected` : " "}
+            </div>
+            <Button
+              variant={ctrl.selectMode ? "secondary" : "primary"}
+              onClick={ctrl.toggleSelectMode}
+              active={ctrl.selectMode}
+              aria-pressed={ctrl.selectMode}
+              title={ctrl.selectMode ? "Exit select mode" : "Enter select mode"}
+            >
+              {ctrl.selectMode ? "Exit Select" : "Select Posts"}
             </Button>
+            {ctrl.selectMode && ctrl.selectedIds.size > 0 && (
+              <Button
+                variant="danger"
+                // variant="outline" tone="danger"
+                onClick={() => {
+                  const ids = Array.from(ctrl.selectedIds);
+                  confirmBulkDelete.ask(
+                    ids,
+                    `Delete ${ids.length} selected post${ids.length > 1 ? "s" : ""}?`
+                  );
+                }}
+                disabled={ctrl.selectedIds.size === 0}
+                title={ctrl.selectedIds.size === 0 ? "Select posts to enable" : "Delete selected posts"}
+              >
+                Delete Selected
+              </Button>
 
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
-        <PostListSection
-          rows={rows}
-          totalPages={totalPages}
-          currentPage={currentPage}
-          formatDate={formatDate}
-          initialPostsLoading={ctrl.initialPostsLoading}
-          showUpdatingTip={ctrl.showUpdatingTip}
-          uploadingPercent={ctrl.uploadingPercent}
-          listLoading={postsStatus === "loading"}
-          deleting={postsStatus === "loading" && rows.length > 0}
-          selectMode={ctrl.selectMode}
-          selectedIds={ctrl.selectedIds}
-          onToggleSelect={ctrl.toggleSelect}
-          canEdit={ctrl.canEdit}
-          onEditSingle={(id) => ctrl.goEdit(id)}
-          onDeleteSingle={(postId) => confirmSingleDelete.ask(postId)}
-          buildHref={buildHref}
-        />
+        {rows.length === 0 && postsStatus !== 'loading' ? (
+          <div
+            className="rounded-2xl border border-border bg-white p-6 md:p-10 text-center shadow-sm max-w-[600px] mx-auto"
+            role="status"
+            aria-live="polite"
+          >
+            <h2 className="text-xl md:text-2xl font-semibold mb-2">
+              No posts yet
+            </h2>
+            <p className="text-dark-gray mb-6">
+              To create a post, please go to a group you’ve subscribed to and post there.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+              <Link href="/groups?tab=subscribed" className="contents">
+                <Button variant="primary" title="Go to Subscribed groups" className="w-40">
+                  Go to Subscribed
+                </Button>
+              </Link>
+              <Link href="/groups" className="contents">
+                <Button variant="secondary" title="Browse all groups " className="w-40">
+                  Browse Groups
+                </Button>
+              </Link>
+            </div>
+
+          </div>
+        ) : (
+
+          <PostListSection
+            rows={rows}
+            totalPages={totalPages}
+            currentPage={currentPage}
+            formatDate={formatDate}
+            initialPostsLoading={ctrl.initialPostsLoading}
+            showUpdatingTip={ctrl.showUpdatingTip}
+            uploadingPercent={ctrl.uploadingPercent}
+            listLoading={postsStatus === "loading"}
+            deleting={postsStatus === "loading" && rows.length > 0}
+            selectMode={ctrl.selectMode}
+            selectedIds={ctrl.selectedIds}
+            emptyText={''}
+            onToggleSelect={ctrl.toggleSelect}
+            canEdit={ctrl.canEdit}
+            onEditSingle={(id) => ctrl.goEdit(id)}
+            onDeleteSingle={(postId) => confirmSingleDelete.ask(postId)}
+            buildHref={buildHref}
+          />)}
       </div>
       {/* 批量删帖确认 */}
       {/* @ts-ignore */}
