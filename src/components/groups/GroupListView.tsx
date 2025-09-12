@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { PencilSquareIcon, TrashIcon, CalendarIcon, LockClosedIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { PencilSquareIcon, TrashIcon, CalendarIcon, LockClosedIcon, LockOpenIcon, PlusIcon } from "@heroicons/react/24/outline";
 import CardSkeleton from "@/components/feedback/CardSkeleton";
 import type { GroupApi } from "@/app/types";
 import Pagination from "@/components/ui/Pagination";
@@ -130,49 +130,58 @@ export default function GroupListView({
                   "
                   aria-label={`Open group ${group.name}`}
                 >
-                  {group.isPrivate && (
-                    <div className="absolute left-2 top-2 flex items-center gap-1 text-dark-gray/80">
-                      <LockClosedIcon className="h-4 w-4 text-dark-green" />
-                      <span className="text-[11px]">Private</span>
-                    </div>
-                  )}
 
-                  {/* 顶部右侧操作（阻止冒泡） */}
-                  {canEdit?.(group) && (
-                    <div className="flex justify-end space-x-2 border-b-1 border-border mb-4">
-                      {onEdit && (
-                        <div onClick={(e) => e.stopPropagation()}>
-                          <IconButton
-                            title="Edit group"
-                            aria-label="Edit group"
-                            rounded="full"
-                            variant="ghost"
-                            size="sm"
-                            disabled={saving || deleting}
-                            onClick={() => onEdit(group)}
-                          >
-                            <PencilSquareIcon className="h-5 w-5" />
-                          </IconButton>
-                        </div>
-                      )}
-                      {onDelete && (
-                        <div onClick={(e) => e.stopPropagation()}>
-                          <IconButton
-                            title="Delete group"
-                            aria-label="Delete group"
-                            rounded="full"
-                            variant="ghost"
-                            size="sm"
-                            disabled={saving || deleting}
-                            onClick={() => onDelete(group.id)}
-                          >
-                            <TrashIcon className="h-5 w-5" />
-                          </IconButton>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <div className="flex justify-between align-middle space-x-2 border-b-1 border-border mb-4 pb-1">
 
+                    {group.isPrivate ? (
+                      <div className="flex items-center gap-1 text-dark-gray/80">
+                        <LockClosedIcon className="h-4 w-4 text-red" />
+                        <span className="text-[11px]">Private</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 text-dark-gray/80">
+                        <LockOpenIcon className="h-4 w-4 text-dark-green" />
+                        <span className="text-[11px]">Public</span>
+                      </div>
+
+                    )}
+
+                    {/* 顶部右侧操作（阻止冒泡） */}
+                    {canEdit?.(group) && (
+                      <div className="flex justify-end space-x-2">
+                        {onEdit && (
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <IconButton
+                              title="Edit group"
+                              aria-label="Edit group"
+                              rounded="full"
+                              variant="ghost"
+                              size="sm"
+                              disabled={saving || deleting}
+                              onClick={() => onEdit(group)}
+                            >
+                              <PencilSquareIcon className="h-5 w-5" />
+                            </IconButton>
+                          </div>
+                        )}
+                        {onDelete && (
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <IconButton
+                              title="Delete group"
+                              aria-label="Delete group"
+                              rounded="full"
+                              variant="ghost"
+                              size="sm"
+                              disabled={saving || deleting}
+                              onClick={() => onDelete(group.id)}
+                            >
+                              <TrashIcon className="h-5 w-5" />
+                            </IconButton>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                   {/* 标题 & 时间 */}
                   <h2 className="text-lg font-semibold text-dark-gray mb-1">
                     {group.name}

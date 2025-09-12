@@ -7,7 +7,7 @@ import {
   TrashIcon,
   CalendarIcon,
   UserPlusIcon,
-  CheckCircleIcon,
+  LockOpenIcon,
   LockClosedIcon
 } from "@heroicons/react/24/outline";
 import Button from "@/components/ui/Button";
@@ -52,7 +52,7 @@ export default function GroupInfoBar({
           <div className="flex items-start justify-between gap-3">
             <div>
               {/* 标题 + Owner 徽标（如果可管理） */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-4">
                 <h2 className="text-white md:text-lg font-semibold">
                   {group.name}
                 </h2>
@@ -61,11 +61,17 @@ export default function GroupInfoBar({
                     Owner
                   </span>
                 )}
-                {group.isPrivate && (
+                {group.isPrivate ? (
                   <div className="flex items-center gap-1 text-white">
-                    <LockClosedIcon className="h-4 w-4 text-dark-greed" />
+                    <LockClosedIcon className="h-4 w-4 text-red" />
                     <span className="text-[11px]">Private</span>
                   </div>
+                ) : (
+                  <div className="flex items-center gap-1 text-white">
+                    <LockOpenIcon className="h-4 w-4 text-green" />
+                    <span className="text-[11px]">Public</span>
+                  </div>
+
                 )}
               </div>
 

@@ -4,6 +4,7 @@ import React, { useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import PageTitle from "@/components/layout/PageTitle";
 import MobileSearchHeader from "@/components/layout/MobileSearchHeader";
+import CustomHeader from "@/components/layout/CustomHeader";
 import SearchBar from "@/components/SearchBar";
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
 import GroupModal from "@/components/groups/GroupModal";
@@ -98,8 +99,6 @@ function GroupsPageInner() {
       <LoadingOverlay show={pageLoading} text="Loading groups…" />
       <PageTitle title="Groups" showPageTitle />
 
-
-
       {/* Mobile 顶部搜索：仅 all tab 显示 */}
       {tab === "all" && (
         <MobileSearchHeader
@@ -111,6 +110,12 @@ function GroupsPageInner() {
         />
       )}
 
+      {tab === "subscribed" && (
+        <CustomHeader
+          pageTitle="Groups"
+          showLogo={true}
+        />
+      )}
       {/* Tabs */}
       <div className="mx-auto  w-full lg:container px-4 mt-18 flex justify-center">
         <div

@@ -52,7 +52,8 @@ export default function CustomHeader({
 
   return (
     <>
-      <header className="fixed md:hidden top-0 left-1/2 -translate-x-1/2 z-10 w-full max-w-[769px] flex items-center justify-between p-4 border-b border-b-border bg-bg">
+      <header className="sticky top-0 z-10 flex items-center justify-between gap-2 bg-bg border-b border-border px-3 py-2 md:hidden">
+
         <div className="flex items-center space-x-2">
           {showLogo && <Logo isScrolled={false} />}
 
