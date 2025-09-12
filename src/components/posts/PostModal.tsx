@@ -5,6 +5,7 @@ import { XMarkIcon, PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Button from "@/components/ui/Button";
 import SaveConfirmModal from "../SaveConfirmModal";
 import type { PostFileApi } from "@/app/types";
+import { compressImageFile } from "@/app/ultility/imageCompression";
 
 const IMAGE_ACCEPT = ".png,.jpg,.jpeg,.gif,.bmp,.webp";
 const DOC_ACCEPT = ".doc,.docx,.pdf";
@@ -29,7 +30,6 @@ type PostModalProps = {
 };
 
 const MAX_TITLE = 100;
-const MAX_DESC = 300;
 
 // —— 简单的 MIME 判断（与文件 API 对齐）
 const isImageMime = (mime?: string) => !!mime && /^image\//i.test(mime);
@@ -138,31 +138,54 @@ export default function PostModal({
     setFileIds((prev) => prev.filter((x) => x !== id));
   };
 
-  const MAX_IMAGE_MB = 3;
+  const TARGET_IMAGE_BYTES = 700 * 1024; // 目标：单图 ≤ 700KB
+  const MAX_INPUT_IMAGE_BYTES = 25 * 1024 * 1024; // 拦截极端大图
+  const MAX_LONG_EDGE = 1920; // 最长边 1920px 足够用在“帖子详情”
   const MAX_DOC_MB = 40;
-  const MAX_IMAGE_FILE_SIZE = MAX_IMAGE_MB * 1024 * 1024;
   const MAX_DOC_FILE_SIZE = MAX_DOC_MB * 1024 * 1024;
   const formatMB = (bytes: number) => (bytes / (1024 * 1024)).toFixed(1) + " MB";
 
 
-  const onPickImages: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+  const onPickImages: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
     const files = e.target.files;
     if (!files || !files.length) return;
 
     const picked = Array.from(files);
-    const tooBig = picked.filter((f) => f.size > MAX_IMAGE_FILE_SIZE);
-    const ok = picked.filter((f) => f.size <= MAX_IMAGE_FILE_SIZE);
 
-    if (tooBig.length) {
+    // (1) 极端大图直接拒绝，避免内存/卡顿
+    const tooHuge = picked.filter((f) => f.size > MAX_INPUT_IMAGE_BYTES);
+    if (tooHuge.length) {
       alert(
-        `These images exceed ${MAX_IMAGE_MB}MB and were skipped:\n` +
-        tooBig.map((f) => `• ${f.name} (${formatMB(f.size)})`).join("\n")
+        `These images are too large (>${formatMB(MAX_INPUT_IMAGE_BYTES)} each) and were skipped:\n` +
+        tooHuge.map((f) => `• ${f.name} (${formatMB(f.size)})`).join("\n")
       );
     }
+    const candidates = picked.filter((f) => f.size <= MAX_INPUT_IMAGE_BYTES);
 
+    // (2) 顺序压缩（避免并发占内存）
+    const processed: File[] = [];
+    for (const f of candidates) {
+      try {
+        // 动图 GIF 直接原样；其他类型统一压缩到目标体积/尺寸
+        const out = await compressImageFile(f, {
+          targetBytes: TARGET_IMAGE_BYTES,
+          maxLongEdge: MAX_LONG_EDGE,
+          // 可选：强制 webp 输出（已在函数里兜底）
+          mime: "image/webp",
+        });
+        processed.push(out);
+      } catch (err) {
+        console.error("Compress failed:", err);
+        // 压缩失败就用原图，但最好提示
+        processed.push(f);
+      }
+    }
+
+    // (3) 去重（按 name+size 简单去重）
     const existing = new Map(localImages.map((f) => [`${f.name}-${f.size}`, true]));
-    const deduped = ok.filter((f) => !existing.has(`${f.name}-${f.size}`));
+    const deduped = processed.filter((f) => !existing.has(`${f.name}-${f.size}`));
     setLocalImages((prev) => [...prev, ...deduped]);
+
     e.currentTarget.value = "";
   };
 
@@ -287,14 +310,24 @@ export default function PostModal({
 
   const handleSave = async () => {
     if (!validate()) return;
+
+    // 兜底再压（可选）
+    const processedImages: File[] = [];
+    for (const f of localImages) {
+      processedImages.push(
+        await compressImageFile(f, { targetBytes: TARGET_IMAGE_BYTES, maxLongEdge: MAX_LONG_EDGE })
+      );
+    }
+
     const cleaned: FormModel = {
       title: title.trim(),
       description: description.replace(/\s+$/, ""),
-      content,  // ← content
+      content,
       videos,
       fileIds,
-      localFiles: [...localImages, ...localDocs],
+      localFiles: [...processedImages, ...localDocs], // 用压后的
     };
+
     await onSave(cleaned);
     initialStateRef.current = serializeState();
   };
@@ -436,9 +469,7 @@ export default function PostModal({
                 onChange={onPickImages}
                 className="block w-full text-sm text-dark-gray file:mr-3 file:py-2 file:px-3 file:rounded-sm file:border-0 file:text-sm file:font-medium file:bg-gray-100 hover:file:bg-gray-200"
               />
-              <p id="image-size-hint" className="mt-1 text-xs text-dark-gray">
-                * Each image ≤ {MAX_IMAGE_MB} MB.
-              </p>
+
 
               {localImages.length > 0 && (
                 <ul className="mt-2 grid grid-cols-4 md:grid-cols-8 gap-2">
