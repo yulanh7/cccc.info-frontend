@@ -304,7 +304,7 @@ export default function PostModal({
       {/* 点击遮罩也触发关闭确认 */}
       <div className="absolute inset-0" onClick={handleCloseClick} aria-hidden />
       <div
-        className="bg-white w-full md:max-w-3xl rounded-md shadow-lg relative
+        className="bg-white w-[95vw] md:max-w-3xl rounded-md shadow-lg relative
              flex flex-col max-h-[min(90vh,800px)]"   // 关键：限制整体高度
         onClick={(e) => e.stopPropagation()}
       >

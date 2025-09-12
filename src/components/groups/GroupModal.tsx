@@ -204,7 +204,7 @@ export default function GroupEditModal({
     <div className="fixed inset-0 min-h-screen bg-gray bg-opacity-50 flex items-center justify-center z-20 overflow-y-auto">
       <div className="absolute inset-0" onClick={handleCloseClick} aria-hidden />
       <div
-        className="bg-white p-6 rounded-sm shadow-lg w-full relative"
+        className="bg-white p-6 rounded-sm shadow-lg w-[95vw] md:max-w-3xl relative"
         onClick={(e) => e.stopPropagation()}
       >
         <button
