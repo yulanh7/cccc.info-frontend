@@ -11,6 +11,9 @@ import PageTitle from '@/components/layout/PageTitle';
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
 import CustomHeader from "@/components/layout/CustomHeader";
 
+const MIN_FIRST = 2;
+const MAX_FIRST = 30;
+
 export default function ProfilePage() {
   const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.auth.user);
@@ -19,7 +22,6 @@ export default function ProfilePage() {
   const passwordError = useAppSelector((s) => s.auth.passwordError);
   const savingProfile = useAppSelector((s) => s.auth.savingProfile);
   const [isEditing, setIsEditing] = useState(false);
-
 
   const [mounted, setMounted] = React.useState(false);
   useEffect(() => setMounted(true), []);
@@ -30,44 +32,64 @@ export default function ProfilePage() {
     dispatch(fetchProfileThunk());
   }, [dispatch]);
 
-  // 基本资料
+  // —— 基本资料（名字）——
   const [firstName, setFirstName] = useState('');
   useEffect(() => setFirstName(user?.firstName ?? ''), [user]);
 
+  // 只在交互后显示校验
+  const [touchedFirst, setTouchedFirst] = useState(false);
+  // 点击保存后，如果为空则提示必填
+  const [submittedProfile, setSubmittedProfile] = useState(false);
 
-
+  // 服务器/业务级错误（例如与原名相同）
+  const [nameErr, setNameErr] = useState<string | null>(null);
   const [profileMsg, setProfileMsg] = useState<string | null>(null);
 
   const prevFirstName = (user?.firstName ?? '').trim();
-  const [nameErr, setNameErr] = useState<string | null>(null);
 
-  function validateFirstName(name: string) {
-    const n = name.trim();
-    if (n.length < 2) return 'Name must be at least 2 characters.';
-    if (prevFirstName && n === prevFirstName) return 'New name must be different from current name.';
+  // 规范化 + 安全计数（支持多字节）
+  const nameTrimmed = useMemo(() => firstName.trim(), [firstName]);
+  const nameLen = useMemo(() => [...nameTrimmed].length, [nameTrimmed]);
+  const lengthInvalid = nameLen > 0 && (nameLen < MIN_FIRST || nameLen > MAX_FIRST);
+  const sameAsPrev = nameTrimmed === prevFirstName;
+
+  // 仅在“已触碰”时展示长度错误；提交且为空时展示必填
+  const showEmptyError = submittedProfile && nameLen === 0;
+  const showLengthError = touchedFirst && lengthInvalid;
+  const showServerError = Boolean(nameErr);
+
+  function validateFirstNameForSubmit() {
+    if (nameLen === 0) return 'Name is required.';
+    if (lengthInvalid) return `Name must be ${MIN_FIRST}–${MAX_FIRST} characters.`;
+    if (prevFirstName && sameAsPrev) return 'New name must be different from current name.';
     return null;
   }
 
-
   const onSaveProfile = async () => {
+    setSubmittedProfile(true);
     setProfileMsg(null);
-    const err = validateFirstName(firstName);
+    setNameErr(null);
+
+    const err = validateFirstNameForSubmit();
     if (err) {
       setNameErr(err);
       return;
     }
-    setNameErr(null);
+
     try {
-      await dispatch(saveProfileNameThunk({ firstName })).unwrap();
+      await dispatch(
+        saveProfileNameThunk({
+          firstName: nameTrimmed.replace(/\s+/g, ' ') // 合并多空格
+        })
+      ).unwrap();
       setProfileMsg('Profile updated successfully.');
       setIsEditing(false);
     } catch (e: any) {
-      setProfileMsg(e?.message || 'Update failed.');
+      setNameErr(e?.message || 'Update failed.');
     }
-
   };
 
-  // 修改密码
+  // —— 修改密码（原样保留）——
   const [oldPwd, setOldPwd] = useState('');
   const [newPwd, setNewPwd] = useState('');
   const [confirmPwd, setConfirmPwd] = useState('');
@@ -102,26 +124,24 @@ export default function ProfilePage() {
 
   const inputBase =
     "w-full rounded-xl bg-transparent px-3 py-2 outline-none placeholder:text-foreground/50 transition-colors";
-
-  // 两种状态样式
   const inputReadonly =
-    "border border-gray/25 border-dashed text-foreground/80 caret-transparent " +
-    "focus:ring-0 cursor-default";
-
+    "border border-gray/25 border-dashed text-foreground/80 caret-transparent focus:ring-0 cursor-default";
   const inputEditing =
-    "border border-dark-green/50 bg-white/5 " +
-    "focus:ring-2 focus:ring-dark-green/40 focus:border-dark-green/50";
-
+    "border border-dark-green/50 bg-white/5 focus:ring-2 focus:ring-dark-green/40 focus:border-dark-green/50";
   const inputError =
-    "border border-red/50 bg-white/5 " +
-    "focus:ring-2 focus:ring-dark-green/40 focus:border-dark-green/50";
+    "border border-red/50 bg-white/5 focus:ring-2 focus:ring-dark-green/40 focus:border-dark-green/50";
+
+  // Save 按钮可用性
+  const canSubmitProfile =
+    isEditing &&
+    nameLen > 0 &&
+    !lengthInvalid &&
+    !sameAsPrev &&
+    !savingProfile;
 
   return (
     <>
-      <CustomHeader
-        pageTitle="My Profile"
-        showLogo={true}
-      />
+      <CustomHeader pageTitle="My Profile" showLogo={true} />
       <PageTitle title="My Profile" showPageTitle={true} />
       <LoadingOverlay show={pageLoading} text="Loading profile…" />
 
@@ -133,7 +153,7 @@ export default function ProfilePage() {
             <div className="flex justify-between gap-4">
               <div className='flex  items-center gap-4'>
                 <div className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-yellow/60 text-white text-2lg font-bold">
-                  {user?.firstName[0]}
+                  {user?.firstName?.[0]}
                 </div>
                 <div>
                   <div className="text-lg font-medium text-white">{user?.firstName}</div>
@@ -142,20 +162,17 @@ export default function ProfilePage() {
                 </div>
               </div>
               <div className='flex flex-col items-between gap-8'>
-
                 {isAdmin(user) && (
                   <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-green px-3 py-1 text-xs text-green">
                     <ShieldCheckIcon className="h-4 w-4" />
                     Admin
                   </span>
                 )}
-
               </div>
             </div>
           </div>
 
           <div className="space-y-4 p-6">
-
             <div>
               <label htmlFor="firstName" className="block text-sm mb-1">First name</label>
               <input
@@ -163,23 +180,52 @@ export default function ProfilePage() {
                 readOnly={!isEditing}
                 value={firstName}
                 onChange={(e) => {
+                  if (!touchedFirst) setTouchedFirst(true);
                   setFirstName(e.target.value);
                   if (nameErr) setNameErr(null);
+                  if (profileMsg) setProfileMsg(null);
                 }}
+                onBlur={() => setTouchedFirst(true)}
                 placeholder="Your first name"
-                className={`${inputBase} ${nameErr ? inputError : (isEditing ? inputEditing : inputReadonly)}`}
+                aria-invalid={showEmptyError || showLengthError || showServerError}
+                aria-describedby="firstName-help"
+                className={`${inputBase} ${(showEmptyError || showLengthError || showServerError)
+                  ? inputError
+                  : (isEditing ? inputEditing : inputReadonly)
+                  }`}
               />
 
-              {/* 错误提示（只在保存失败时出现） */}
-              {nameErr && <p className="mt-1 text-sm text-red-500">{nameErr}</p>}
+              {/* 计数器（仅在触碰后以长度越界变红；初始不红） */}
+              <div
+                id="firstName-help"
+                className={`text-xs mt-1 ${showLengthError ? 'text-red-500' : 'text-dark-gray'}`}
+              >
+                {nameLen}/{MAX_FIRST} (min {MIN_FIRST})
+              </div>
+
+              {/* 错误提示：提交空、长度越界、或服务端/业务错误（如与原名相同） */}
+              {showEmptyError && <p className="mt-1 text-sm text-red-500">Name is required.</p>}
+              {showLengthError && (
+                <p className="mt-1 text-sm text-red-500">
+                  Name must be {MIN_FIRST}–{MAX_FIRST} characters.
+                </p>
+              )}
+              {showServerError && <p className="mt-1 text-sm text-red-500">{nameErr}</p>}
             </div>
+
             <div className="mt-2 flex justify-end gap-2">
               {!isEditing ? (
                 <Button
                   variant="outline"
                   size="md"
                   leftIcon={<PencilSquareIcon className="h-5 w-5" />}
-                  onClick={() => setIsEditing(true)}
+                  onClick={() => {
+                    setIsEditing(true);
+                    setTouchedFirst(false);
+                    setSubmittedProfile(false);
+                    setNameErr(null);
+                    setProfileMsg(null);
+                  }}
                   title="Edit profile"
                 >
                   Edit
@@ -194,7 +240,7 @@ export default function ProfilePage() {
                     loading={savingProfile}
                     loadingText="Saving..."
                     leftIcon={<CheckIcon className="h-5 w-5" />}
-                    // disabled={!canSubmitProfile}
+                    disabled={!canSubmitProfile}
                     title="Save profile"
                   >
                     Save
@@ -205,6 +251,8 @@ export default function ProfilePage() {
                     onClick={() => {
                       setFirstName(user?.firstName || '');
                       setIsEditing(false);
+                      setTouchedFirst(false);
+                      setSubmittedProfile(false);
                       setNameErr(null);
                       setProfileMsg(null);
                     }}
@@ -221,7 +269,7 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* 修改密码 */}
+        {/* 修改密码（原样） */}
         <section className="bg-white/5 rounded-2xl p-6 shadow-sm border border-white/10">
           <h2 className="text-lg font-medium mb-4">Change Password</h2>
           <div className="space-y-4">
@@ -296,7 +344,6 @@ export default function ProfilePage() {
                     if (pwdErrMsg) setPwdErrMsg(null);
                     if (profileMsg) setProfileMsg(null);
                   }}
-
                   onFocus={() => {
                     if (pwdErrMsg) setPwdErrMsg(null);
                     if (profileMsg) setProfileMsg(null);
