@@ -18,11 +18,11 @@ export default function PageTitle({ title, showPageTitle }: { title?: string; sh
         {title}
 
       </div>
-      <div className="absolute z-2 -bottom-1.5 left-1/2 transform -translate-x-1/2 w-6 h-6">
+      {/* <div className="absolute z-2 -bottom-1.5 left-1/2 transform -translate-x-1/2 w-6 h-6">
         <span className="absolute  top-0 left-1/2 w-1 h-10 bg-white transform -translate-x-1/2" />
         <span className="absolute top-1/2 left-0 w-6 h-1 bg-white transform -translate-y-1/2" />
-      </div>
-      <div className="waterdrop-shape" />
+      </div> */}
+      {/* <div className="waterdrop-shape" /> */}
     </div>
   );
 }
