@@ -158,11 +158,18 @@ export const saveProfileNameThunk = createAsyncThunk<
   try {
     const res = await apiRequest('PUT', USER_ENDPOINTS.PROFILE, { firstName });
     if (!res?.success) throw new Error(res?.message || 'Update profile failed');
+
+    const current = getUser();
+    if (current) {
+      persistUser({ ...current, firstName });
+    }
+
     return { firstName };
   } catch (err: any) {
     return rejectWithValue(err?.message || 'Update profile failed');
   }
 });
+
 
 export const changePasswordThunk = createAsyncThunk<
   void,
@@ -270,7 +277,7 @@ const authSlice = createSlice({
         state.profileStatus = 'succeeded';
         state.profileError = null;
         if (state.user) {
-          state.user.firstName = action.payload.firstName;
+          state.user = { ...state.user, firstName: action.payload.firstName };
         }
       })
       .addCase(saveProfileNameThunk.rejected, (state, action) => {
