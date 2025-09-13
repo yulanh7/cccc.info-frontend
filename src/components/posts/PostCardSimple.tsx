@@ -7,11 +7,9 @@ import {
   CheckIcon, TrashIcon, PencilSquareIcon, UsersIcon
 } from "@heroicons/react/24/outline";
 import IconButton from "@/components/ui/IconButton";
-import { HandThumbUpIcon as HandThumbUpSolid, PlayIcon } from "@heroicons/react/24/solid";
+import { HandThumbUpIcon as HandThumbUpSolid, PlayIcon, } from "@heroicons/react/24/solid";
 import { ellipsize } from '@/app/ultility';
 import { getYouTubeThumbnail } from '@/app/ultility';
-
-// 新增：redux hooks & actions/selectors
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import { likePost, unlikePost, setLikeCount, setLikedByMe, selectLikeCount, selectLikedByMe } from "@/app/features/posts/likeSlice";
 
@@ -172,31 +170,8 @@ export default function PostCardSimple({
           </div>
         )}
       </div>
-
-
-      <div className='pl-2 '>
-
-        <div className="flex justify-between gap-1">
-          {post.group?.id ? (
-            <Link
-              href={`/groups/${post.group.id}`}
-              className="inline-flex items-center gap-1 hover:underline text-xs text-gray-500"
-              onClick={(e) => e.stopPropagation()}
-              aria-label={`Open group ${post.group?.name ?? ""}`}
-              title={post.group?.name ?? ""}
-              prefetch={false} // 列表很多时可关预取，减少网络压力；需要的话可以删掉
-            >
-              <UsersIcon className="h-4 w-4 text-dark-green" />
-              <span>
-                {ellipsize(post.group?.name, 18)}
-              </span>
-            </Link>
-          ) : (
-            <span className="inline-flex items-center gap-1 text-gray-500">
-              <UsersIcon className="h-4 w-4" />
-              <span>Ungrouped</span>
-            </span>
-          )}
+      <div className='px-2 pb-2'>
+        <div className="flex justify-end">
           {canDelete && (selectMode || showDelete) && (
             <>
               <div className="absolute right-2 top-2 z-1 pointer-events-none">
@@ -224,7 +199,6 @@ export default function PostCardSimple({
                   )}
                 </div>
               </div>
-
               <div className="z-1 pointer-events-none">
                 <div
                   className="pointer-events-auto"
@@ -273,25 +247,40 @@ export default function PostCardSimple({
           )}
 
         </div>
-      </div>
-      <div className='px-2 pb-2'>
-
-        <h2 className="flex-1 font-semibold text-sm text-dark-gray leading-[1.3] md:leading-[1.3] mt-2">
-          {ellipsize(title, 35)}
+        <h2 className="flex-1 font-semibold text-sm text-dark-gray leading-[1.3] md:leading-[1.3] my-2">
+          {ellipsize(title, 40)}
         </h2>
 
-        {summary && (
+        {/* {summary && (
           <p className="text-gray text-sm text-text line-clamp-3 leading-[1.1] md:leading-[1.2] whitespace-pre-line mt-2">
             {ellipsize(summary, 160)}
           </p>
+        )} */}
+        {post.group?.id ? (
+          <Link
+            href={`/groups/${post.group.id}`}
+            className="inline-flex items-center gap-1 hover:underline text-xs text-gray-500 leading-none" onClick={(e) => e.stopPropagation()}
+            aria-label={`Open group ${post.group?.name ?? ""}`}
+            title={post.group?.name ?? ""}
+            prefetch={false} // 列表很多时可关预取，减少网络压力；需要的话可以删掉
+          >
+            <UsersIcon className="h-4 w-4 text-dark-green" />
+            <span>
+              {ellipsize(post.group?.name, 25)}
+            </span>
+          </Link>
+        ) : (
+          <span className="inline-flex items-center gap-1 text-gray-500">
+            <UsersIcon className="h-4 w-4" />
+            <span>Ungrouped</span>
+          </span>
         )}
-
-        <div className="mt-2 space-y-1 text-xs text-gray flex gap-1">
+        <div className="flex items-center gap-1 text-xs text-gray">
           <span className="flex-1 inline-flex items-center gap-1 text-xs m-0">
             <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-dark-green/10 text-dark-green font-semibold">
               {(author.firstName?.[0] || "?").toUpperCase()}
             </span>
-            <span className="text-[9px]">
+            <span className="text-[9px] leading-none">
               {ellipsize(author.firstName, 10)}
             </span>
           </span>
