@@ -458,17 +458,6 @@ export default function PostModal({
 
         {/* Footer */}
         <footer className="flex justify-between gap-5 px-4 md:px-6 py-3 border-t border-border/70 sticky bottom-0 bg-white z-10">
-          {step === 2 && isCompressing && (
-            <div
-              className="rounded-sm bg-yellow/10 border border-yellow/30 text-yellow-800 text-sm px-3 py-2"
-              role="status"
-              aria-live="polite"
-            >
-              <span className="inline-block mr-2 animate-pulse">●</span>
-              Compressing images… {compressDone}/{compressTotal}
-            </div>
-          )}
-
           <div className="inline-flex gap-3 ml-auto">
             <Button
               type="button"
