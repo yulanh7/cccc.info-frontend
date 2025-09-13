@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import { useAppDispatch } from '@/app/features/hooks';
 import { logoutThunk } from '@/app/features/auth/slice';
+import { ellipsize } from "@/app/ultility";
 
 interface TopNavItem {
   href: string;
@@ -60,7 +61,8 @@ export default function Menu({
         {isLoggedIn && (
           <div className="relative group">
             <span className="cursor-pointer text-dark-gray group-hover:text-dark-green">
-              {userName}
+              {ellipsize(userName, 20, { byWords: true })}
+
             </span>
 
             {/* 下拉菜单 */}
