@@ -4,10 +4,10 @@ import type { PostListItemApi } from "@/app/types";
 import Link from 'next/link';
 import {
   HandThumbUpIcon as HandThumbUpOutline,
-  CheckIcon, TrashIcon, PencilSquareIcon
+  CheckIcon, TrashIcon, PencilSquareIcon, UsersIcon
 } from "@heroicons/react/24/outline";
 import IconButton from "@/components/ui/IconButton";
-import { HandThumbUpIcon as HandThumbUpSolid, PlayIcon, UserGroupIcon } from "@heroicons/react/24/solid";
+import { HandThumbUpIcon as HandThumbUpSolid, PlayIcon } from "@heroicons/react/24/solid";
 import { ellipsize } from '@/app/ultility';
 import { getYouTubeThumbnail } from '@/app/ultility';
 
@@ -132,7 +132,7 @@ export default function PostCardSimple({
 
 
   return (
-    <div className="card relative cursor-pointer border border-border">
+    <div className="card relative group cursor-pointer border border-border">
       <div className="aspect-w-16 aspect-h-9 mb-1">
         {thumbnail ? (
           // 正常显示缩略图
@@ -177,9 +177,26 @@ export default function PostCardSimple({
 
       <div className='px-2 pb-2'>
         <div className="flex justify-between gap-1">
-          <h2 className="flex-1 font-semibold text-dark-gray leading-[1.3] md:leading-[1.3] mb-2">
-            {ellipsize(title, 30, { byWords: true })}
-          </h2>
+          {post.group?.id ? (
+            <Link
+              href={`/groups/${post.group.id}`}
+              className="inline-flex items-center gap-1 hover:underline text-xs text-gray-500"
+              onClick={(e) => e.stopPropagation()}
+              aria-label={`Open group ${post.group?.name ?? ""}`}
+              title={post.group?.name ?? ""}
+              prefetch={false} // 列表很多时可关预取，减少网络压力；需要的话可以删掉
+            >
+              <UsersIcon className="h-4 w-4 text-dark-green" />
+              <span>
+                {ellipsize(post.group?.name, 20, { byWords: true })}
+              </span>
+            </Link>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-gray-500">
+              <UsersIcon className="h-4 w-4" />
+              <span>Ungrouped</span>
+            </span>
+          )}
           {canDelete && (selectMode || showDelete) && (
             <>
               <div className="absolute right-2 top-2 z-1 pointer-events-none">
@@ -221,6 +238,7 @@ export default function PostCardSimple({
                           aria-label="Edit post"
                           rounded="full"
                           variant="ghost"
+                          tone="brand"
                           size="xs"
                           onClick={(e) => {
                             e.preventDefault();
@@ -237,6 +255,7 @@ export default function PostCardSimple({
                         aria-label="Delete post"
                         rounded="full"
                         variant="ghost"
+                        tone="danger"
                         size="xs"
                         onClick={(e) => {
                           e.preventDefault();
@@ -254,33 +273,16 @@ export default function PostCardSimple({
           )}
 
         </div>
-
+        <h2 className="flex-1 font-semibold text-dark-gray leading-[1.3] md:leading-[1.3] my-2">
+          {ellipsize(title, 30, { byWords: true })}
+        </h2>
 
         {summary && (
           <p className="text-gray text-sm line-clamp-3 leading-[1.1] md:leading-[1.2] whitespace-pre-line mt-2">
             {ellipsize(summary, 160, { byWords: true })}
           </p>
         )}
-        {post.group?.id ? (
-          <Link
-            href={`/groups/${post.group.id}`}
-            className="inline-flex items-center gap-1.5 mt-2 hover:underline text-xs"
-            onClick={(e) => e.stopPropagation()}
-            aria-label={`Open group ${post.group?.name ?? ""}`}
-            title={post.group?.name ?? ""}
-            prefetch={false} // 列表很多时可关预取，减少网络压力；需要的话可以删掉
-          >
-            <UserGroupIcon className="h-5 w-5 text-dark-green" />
-            <span>
-              {ellipsize(post.group?.name, 30, { byWords: true })}
-            </span>
-          </Link>
-        ) : (
-          <span className="inline-flex items-center gap-1.5 text-gray-500">
-            <UserGroupIcon className="h-5 w-5" />
-            <span>Ungrouped</span>
-          </span>
-        )}
+
         <div className="mt-1 space-y-1 text-xs text-gray flex gap-1">
           <span className="flex-1 inline-flex items-center gap-1 text-xs">
             <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-dark-green/10 text-dark-green font-semibold">

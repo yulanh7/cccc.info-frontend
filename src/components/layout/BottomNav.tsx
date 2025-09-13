@@ -5,7 +5,6 @@ import Link from 'next/link';
 import {
   HomeIcon as OutlineHomeIcon,
   UsersIcon as OutlineUsersIcon,
-  BellIcon as OutlineBellIcon,
   UserIcon as OutlineUserIcon,
   DocumentTextIcon,
   ArrowRightStartOnRectangleIcon,
@@ -13,7 +12,6 @@ import {
 import {
   HomeIcon as SolidHomeIcon,
   UsersIcon as SolidUsersIcon,
-  BellIcon as SolidBellIcon,
   UserIcon as SolidUserIcon,
 } from '@heroicons/react/24/solid';
 import { usePathname, useRouter } from 'next/navigation';

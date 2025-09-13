@@ -3,7 +3,7 @@ import React from "react";
 import { cn } from "./cn";
 
 type Variant = "primary" | "warning" | "outline" | "ghost" | "danger";
-type Size = "xs" | "sm" | "md";
+type Size = "xxs" | "xs" | "sm" | "md";
 type Tone = "default" | "brand" | "danger" | "warning" | "secondary";
 
 type Props = {
@@ -27,6 +27,7 @@ const boxBase =
   "inline-flex items-center justify-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-border disabled:opacity-50 disabled:cursor-not-allowed";
 
 const sizeBox: Record<Size, string> = {
+  xxs: "h-4 w-4",
   xs: "h-5 w-5",
   sm: "h-6 w-6",
   md: "h-9 w-9",
@@ -49,7 +50,7 @@ function toneClasses(variant: Variant, tone: Tone) {
     if (tone === "secondary") return "text-green";
   }
   if (variant === "ghost") {
-    if (tone === "brand") return "text-yellow";
+    if (tone === "brand") return "text-dark-yellow";
     if (tone === "danger") return "text-red";
     if (tone === "warning") return "text-[#FBD402]";
     if (tone === "secondary") return "text-green";

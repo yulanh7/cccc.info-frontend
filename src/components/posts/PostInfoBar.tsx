@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import { PencilSquareIcon, TrashIcon, CalendarIcon, UserGroupIcon } from "@heroicons/react/24/outline";
+import { PencilSquareIcon, TrashIcon, CalendarIcon, UsersIcon } from "@heroicons/react/24/outline";
 import IconButton from "@/components/ui/IconButton";
 import type { PostDetailData } from "@/app/types";
 import Link from 'next/link';
@@ -96,7 +96,7 @@ export default function PostInfoBar({
               href={`/groups/${post.group?.id}`}
             >
               <span className="inline-flex items-center gap-1.5">
-                <UserGroupIcon className="h-5 w-5" />
+                <UsersIcon className="h-5 w-5" />
                 {post.group?.name}
               </span>
             </Link>

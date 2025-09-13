@@ -9,7 +9,7 @@ import PostModal from "@/components/posts/PostModal";
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
 import {
   CalendarIcon,
-  UserGroupIcon,
+  UsersIcon,
   EyeIcon,
   PencilSquareIcon,
   TrashIcon,
@@ -361,7 +361,7 @@ function PostDetailPageInner() {
                 href={`/groups/${post.group?.id}`}
               >
                 <div className="text-xs  md:text-sm flex items-center hover:underline">
-                  <UserGroupIcon className="h-4 w-4 mr-1 text-dark-green" />
+                  <UsersIcon className="h-4 w-4 mr-1 text-dark-green" />
                   {post.group.name}
                 </div>
               </Link>
