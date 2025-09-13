@@ -309,7 +309,7 @@ function PostDetailPageInner() {
       {!pageLoading && post && (
         <>
           <CustomHeader
-            item={{ id: post.id, author: post.author?.first_name }}
+            item={{ id: post.id, author: post.author?.firstName }}
             showEdit={!!(post && isPostAuthor(post, user))}
             showDelete={!!(post && (isPostAuthor(post, user) || isGroupCreatorOfPost(post, user)))}
             onDelete={() => askDeleteWithContext(post)}
@@ -408,14 +408,7 @@ function PostDetailPageInner() {
 
 
             <div className="flex flex-wrap gap-3 mb-3">
-              <span className="hidden md:inline-flex items-center gap-1 text-xs">
-                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-dark-green/10 text-dark-green font-semibold">
-                  {(post?.author?.first_name?.[0] || "?").toUpperCase()}
-                </span>
-                <span className="text-sm">
-                  {post?.author?.first_name}
-                </span>
-              </span>
+
               <Link
                 href={`/groups/${post.group?.id}`}
               >
@@ -451,6 +444,14 @@ function PostDetailPageInner() {
                   </button>
                 </>
               )}
+            </div>
+            <div className="hidden md:inline-flex items-center gap-1 text-xs mb-4">
+              <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-dark-green/10 text-dark-green font-semibold">
+                {(post.author?.firstName?.[0] || "?").toUpperCase()}
+              </span>
+              <span className="text-sm">
+                {post.author?.firstName}
+              </span>
             </div>
 
             {/* 图片缩略图 */}
@@ -501,7 +502,7 @@ function PostDetailPageInner() {
             {/* 评论区 */}
             <CommentsSection
               postId={post.id}
-              postAuthorId={post.author.id}      // 你 PostDetailData 里 author: { id, first_name }
+              postAuthorId={post.author.id}      // 你 PostDetailData 里 author: { id, firstName }
               currentUserId={user?.id ?? null}
             />
 

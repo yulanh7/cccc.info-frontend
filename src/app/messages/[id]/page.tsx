@@ -19,7 +19,7 @@ export default function MessageDetailPage({ params: paramsPromise }: { params: P
       if (otherUserId) {
         setMessage({
           id,
-          title: `Chat with ${mockUsers.find(u => u.id === otherUserId)?.first_name}`,
+          title: `Chat with ${mockUsers.find(u => u.id === otherUserId)?.firstName}`,
           participants: [currentUserId, otherUserId],
           messages: [],
         });
@@ -52,7 +52,7 @@ export default function MessageDetailPage({ params: paramsPromise }: { params: P
   return (
     <div className="max-w-[760px] mx-auto">
       <CustomHeader
-        item={{ author: otherUser?.first_name }}
+        item={{ author: otherUser?.firstName }}
         showEdit={false}
         showDelete={false}
         showAdd={false}

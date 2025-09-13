@@ -28,9 +28,18 @@ export default function PostInfoBar({
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-white md:text-lg font-semibold">
-                {post.title}
-              </h2>
+              <div className="inline-flex items-center gap-2">
+
+                <h2 className="text-white md:text-lg font-semibold">
+                  {post.title}
+                </h2>
+                <span className="inline-flex items-center gap-2">
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-yellow/40 text-white text-xs font-semibold">
+                    {(post.author?.firstName?.[0] || "?").toUpperCase()}
+                  </span>
+                  <span>{post.author?.firstName}</span>
+                </span>
+              </div>
               {canManage && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded border border-yellow text-yellow">
                   Owner
@@ -79,9 +88,9 @@ export default function PostInfoBar({
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-white">
             <span className="inline-flex items-center gap-2">
               <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-yellow/40 text-white text-xs font-semibold">
-                {(post.author?.first_name?.[0] || "?").toUpperCase()}
+                {(post.author?.firstName?.[0] || "?").toUpperCase()}
               </span>
-              <span>{post.author?.first_name}</span>
+              <span>{post.author?.firstName}</span>
             </span>
             <Link
               href={`/groups/${post.group?.id}`}

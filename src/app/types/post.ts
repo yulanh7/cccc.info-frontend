@@ -88,7 +88,7 @@ export type PostDetailData = {
   files: PostFileApi[];
   author: {
     id: number;
-    first_name: string;
+    firstName: string;
   };
   created_at: string;
   like_count: number;
