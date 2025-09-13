@@ -284,7 +284,7 @@ function GroupDetailPageInner() {
         />
       ) : null}
 
-      <div className="container mx-auto md:p-6 p-2">
+      <div className="container mx-auto md:p-6 p-1">
         <PostListSection
           rows={safePosts}
           totalPages={totalPages}
