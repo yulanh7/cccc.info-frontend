@@ -130,7 +130,7 @@ export default function PostCardSimple({
 
 
   return (
-    <div className="card relative group cursor-pointer border border-border">
+    <div className="card relative group cursor-pointer">
       <div className="aspect-w-16 aspect-h-9 mb-1">
         {thumbnail ? (
           // 正常显示缩略图
@@ -266,7 +266,7 @@ export default function PostCardSimple({
           >
             <UsersIcon className="h-4 w-4 text-dark-green" />
             <span>
-              {ellipsize(post.group?.name, 25)}
+              {ellipsize(post.group?.name, 22)}
             </span>
           </Link>
         ) : (
