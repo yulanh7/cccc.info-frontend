@@ -37,8 +37,9 @@ export default function BasicsPanel({
   return (
     <>
       {/* 标题 */}
-      <label htmlFor="post-title" className="block text-sm font-medium mb-1 text-gray-900">
-        Title <span className="text-red-500">*</span>
+      <label htmlFor="title" className="block text-sm font-medium mb-1 text-gray-900">
+        Title <span className="text-red-600">*</span>
+        <span className="ml-1 text-xs text-gray-500">(Required)</span>
       </label>
       <input
         id="post-title"
@@ -59,8 +60,9 @@ export default function BasicsPanel({
 
 
       {/* 正文 */}
-      <label htmlFor="post-content" className="block text-gray-900 text-sm font-medium mb-1">
-        Content
+      <label htmlFor="post-content" className="block text-sm font-medium mb-1 text-gray-900">
+        Content <span className="text-red-600">*</span>
+        <span className="ml-1 text-xs text-gray-500">(Required)</span>
       </label>
       <textarea
         id="post-content"

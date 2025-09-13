@@ -88,7 +88,9 @@ export default function MediaPanel({
     <>
       {/* 视频 URL */}
       <div className="mt-1">
-        <label className="block text-sm font-medium mb-1 text-gray-900">Video URLs</label>
+        <label className="block text-sm font-medium mb-1 text-gray-900">
+          Video URLs <span className="ml-1 text-xs text-gray-500">(Optional)</span>
+        </label>
         <div className="flex gap-2">
           <input
             type="url"
@@ -167,7 +169,9 @@ export default function MediaPanel({
 
         {/* 新增上传：图片 */}
         <div className="mt-6">
-          <label className="block text-sm font-medium mb-1 text-gray-900">Add Images</label>
+          <label className="block text-sm font-medium mb-1 text-gray-900">
+            Add Images <span className="ml-1 text-xs text-gray-500">(Optional)</span>
+          </label>
           <input
             type="file"
             multiple
@@ -261,7 +265,9 @@ export default function MediaPanel({
         )}
 
         <div className="mt-6">
-          <label className="block text-sm font-medium mb-1 text-gray-900">Add Documents</label>
+          <label className="block text-sm font-medium mb-1 text-gray-900">
+            Add Documents <span className="ml-1 text-xs text-gray-500">(Optional)</span>
+          </label>
           <input
             type="file"
             multiple

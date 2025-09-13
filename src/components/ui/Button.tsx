@@ -37,13 +37,16 @@ const variants: Record<Variant, string> = {
   primary: "bg-yellow text-dark-gray border border-transparent",
   secondary: "bg-dark-green text-white hover:bg-green border border-transparent",
   warning: "bg-yellow text-dark-gray hover:bg-yellow/90 border border-transparent",
-  outline: "border border-dark-yellow text-dark-yellow hover:bg-white/5",
+  outline: "bg-white border hover:bg-white",
   ghost: "bg-transparent text-foreground hover:bg-white/5 border border-transparent",
   danger: "border border-red/50 text-red hover:bg-red/10",
 };
 
 function toneClasses(variant: Variant, tone: Tone) {
-  if (tone === "default") return "";
+  if (tone === "default") {
+    return variant === "outline" ? "text-dark-yellow border-dark-yellow" : "";
+  }
+
   if (variant === "outline") {
     if (tone === "brand") return "text-dark-green border-dark-green";
     if (tone === "danger") return "text-red border-red";
@@ -54,6 +57,7 @@ function toneClasses(variant: Variant, tone: Tone) {
   }
   return "";
 }
+
 
 function Spinner({ size = "md" as Size }: { size?: Size }) {
   const dim = size === "sm" ? "h-3 w-3 border" : "h-4 w-4 border-2";

@@ -9,6 +9,7 @@ import { compressImageFile } from "@/app/ultility/imageCompression";
 import BasicsPanel from "@/components/posts/BasicsPanel";
 import MediaPanel from "@/components/posts/MediaPanel";
 import StepDot from "@/components/posts/StepDot";
+import Stepper from "@/components/posts/Stepper";
 
 /* ======================= 常量 & 工具 ======================= */
 const IMAGE_ACCEPT = ".png,.jpg,.jpeg,.gif,.bmp,.webp";
@@ -185,13 +186,13 @@ export default function PostModal({
     return Object.keys(next).length === 0;
   };
 
-
   const isStep1Valid = React.useMemo(() => {
     const t = title.trim();
     if (!t) return false;
     if (t.length > MAX_TITLE) return false;
     return true;
   }, [title]);
+
 
   const validateAll = (): boolean => {
     // 现在只需要 Step1 的校验；需要时可扩展
@@ -375,18 +376,37 @@ export default function PostModal({
           >
             <XMarkIcon className="h-6 w-6" />
           </button>
+
           <h2 className="text-xl font-medium text-center">
             {isNew ? "Create Post" : "Edit Post"}
             <div className="mt-1 h-0.5 w-12 bg-green mx-auto rounded" />
           </h2>
 
           {/* Stepper */}
-          <div className="flex items-center gap-3 mt-3">
-            <StepDot active={step === 1} label="Basics" />
-            <div className="h-px flex-1 bg-border" />
-            <StepDot active={step === 2} label="Media" />
+          <div className="mt-3">
+            <Stepper
+              steps={[
+                { id: 1, label: "Basics" },
+                { id: 2, label: "Media" },
+              ]}
+              current={step}
+              onStepClick={(id) => {
+                if (saving || isCompressing) return;
+                if (id === 1) setStep(1);
+                if (id === 2 && isStep1Valid) setStep(2);
+                if (id === 2 && !isStep1Valid) {
+                  // 可选：轻提示
+                  // toast.warn("Please complete the basics first");
+                }
+              }}
+              canJumpToStep2={isStep1Valid}
+              disabled={saving || isCompressing}
+            />
+
+
           </div>
         </header>
+
 
         {/* Body */}
         <section className="px-4 md:px-6 py-4 overflow-y-auto flex-1">
@@ -438,7 +458,6 @@ export default function PostModal({
 
         {/* Footer */}
         <footer className="flex justify-between gap-5 px-4 md:px-6 py-3 border-t border-border/70 sticky bottom-0 bg-white z-10">
-          {/* 左侧状态提示（仅 Step 2 显示压缩提示） */}
           {step === 2 && isCompressing && (
             <div
               className="rounded-sm bg-yellow/10 border border-yellow/30 text-yellow-800 text-sm px-3 py-2"
@@ -462,14 +481,15 @@ export default function PostModal({
             </Button>
 
             {step === 1 && (
-              <Button onClick={goNext} disabled={saving || isCompressing || !isStep1Valid}>                Next
+              <Button variant="outline" tone="brand" onClick={goNext} disabled={saving || isCompressing || !isStep1Valid}>
+                Next: Media
               </Button>
             )}
 
             {step === 2 && (
               <>
-                <Button variant="outline" onClick={goBack} disabled={saving || isCompressing}>
-                  Back
+                <Button variant="outline" tone="brand" onClick={goBack} disabled={saving || isCompressing}>
+                  Back to Basics
                 </Button>
                 <Button variant="primary" onClick={handleSave} disabled={saving || isCompressing}>
                   {saving
@@ -484,6 +504,7 @@ export default function PostModal({
             )}
           </div>
         </footer>
+
       </div>
 
       {/* 关闭确认弹窗 */}
