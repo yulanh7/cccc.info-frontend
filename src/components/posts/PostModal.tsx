@@ -267,6 +267,7 @@ export default function PostModal({
   };
 
   const handleCloseClick = () => {
+    if (saving) return;
     if (hasChanges) {
       setAnchorEl(closeButtonRef.current);
       setPlacement("below");
@@ -277,6 +278,7 @@ export default function PostModal({
   };
 
   const handleCancelClick = () => {
+    if (saving) return;
     if (hasChanges) {
       setAnchorEl(cancelButtonRef.current);
       setPlacement("above");
@@ -291,16 +293,24 @@ export default function PostModal({
     const cleaned: FormModel = {
       title: title.trim(),
       description: description.replace(/\s+$/, ""),
-      content,  // ← content
+      content,
       videos,
       fileIds,
       localFiles: [...localImages, ...localDocs],
     };
-    await onSave(cleaned);
-    initialStateRef.current = serializeState();
-    setIsConfirmOpen(false);
-    onClose();
+
+    try {
+      await onSave(cleaned);            // ⬅️ 成功才继续
+      initialStateRef.current = serializeState();
+      setIsConfirmOpen(false);
+      onClose();                        // ✅ 只在成功时关闭
+    } catch (e: any) {
+      const msg = typeof e === "string" ? e : e?.message || "Save failed";
+      alert(msg);
+
+    }
   };
+
 
   const confirmCloseWithoutSaving = () => {
     setIsConfirmOpen(false);

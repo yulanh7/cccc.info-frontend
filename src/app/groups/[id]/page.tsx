@@ -66,6 +66,7 @@ function GroupDetailPageInner() {
 
   // —— 本地 UI 状态
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showSubsModal, setShowSubsModal] = useState(false);
   const [modalSaving, setModalSaving] = useState(false);
@@ -403,15 +404,21 @@ function GroupDetailPageInner() {
         <PostModal
           item={undefined}
           isNew={true}
+          saving={creating}                         // ⬅️ 传给 Modal，用于禁用关闭/按钮
           onSave={async (form) => {
-            setIsPostModalOpen(false);
+            setCreating(true);
             try {
-              await onCreatePost(form);
+              await onCreatePost(form);             // ⬅️ 先创建
+              setIsPostModalOpen(false);            // ⬅️ 成功后再关
             } catch (e: any) {
-              alert(e?.message || "Create post failed");
+              alert(e?.message || "Create post failed"); // ⬅️ 失败保留弹窗
+            } finally {
+              setCreating(false);
             }
           }}
-          onClose={() => setIsPostModalOpen(false)}
+          onClose={() => {
+            if (!creating) setIsPostModalOpen(false);    // ⬅️ 创建中禁止手动关闭
+          }}
         />
       )}
 

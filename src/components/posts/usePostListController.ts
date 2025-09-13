@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { uploadAllFiles } from "@/app/ultility";
+import { uploadAllFiles } from "@/app/ultility/uploadAllFiles";
 
 // ✅ 使用“最新的帖子 API 类型”
 import type {
@@ -137,21 +137,36 @@ export function usePostListController<
 
       let newIds: number[] = [];
       try {
-        // 开始上传：打开“Updating …”提示
         if (form.localFiles?.length) {
           setUploading(true);
           setUploadingProgress(0);
 
-          // 多文件进度：对每个文件的进度做简单平均
           const count = form.localFiles.length;
           const filePercents = Array(count).fill(0);
           const onEachProgress = (index: number, percent: number) => {
-            filePercents[index] = percent; // 每个文件 0~100
+            filePercents[index] = percent;
             const avg = filePercents.reduce((a, b) => a + b, 0) / count;
             setUploadingProgress(Math.round(avg));
           };
 
-          newIds = await uploadAllFiles(form.localFiles, dispatch, onEachProgress);
+          // ⬇️ 新：接收 successIds / failures
+          const { successIds, failures } = await uploadAllFiles(
+            form.localFiles,
+            dispatch,
+            onEachProgress,
+            2 // 小并发更稳
+          );
+          newIds = successIds;
+
+          if (failures.length) {
+            const failedList = failures
+              .map((f) => `• ${f.name}: ${f.error}`)
+              .join("\n");
+            alert(
+              `Some files failed to upload:\n${failedList}\n\nThe post will be created without these files.`
+            );
+            // 如果你希望“有失败就不创建”，这里可以直接：return;
+          }
         }
 
         const fileIds = [...(form.fileIds ?? []), ...newIds];
@@ -168,13 +183,13 @@ export function usePostListController<
         // 成功后刷新列表
         refreshCurrentPage();
       } finally {
-        // 结束上传：关闭 uploading，但“列表拉取中”的加载仍由 postsStatus 控制
         setUploading(false);
         setUploadingProgress(0);
       }
     },
     [createPost, buildCreateArgs, dispatch, refreshCurrentPage]
   );
+
 
   // —— 单删（可选）
   const onDeleteSingle = useCallback(

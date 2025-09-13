@@ -13,7 +13,6 @@ import {
   EyeIcon,
   PencilSquareIcon,
   TrashIcon,
-  HandThumbUpIcon as HandThumbUpOutline,
 } from "@heroicons/react/24/outline";
 import ImageLightboxGrid from "@/components/ui/ImageLightboxGrid";
 import { formatDate } from "@/app/ultility";
@@ -28,7 +27,7 @@ import {
 } from "@/app/features/posts/likeSlice";
 import IconButton from "@/components/ui/IconButton";
 import YouTubeList from "@/components/ui/YouTubeList";
-import { uploadAllFiles } from "@/app/ultility";
+import { uploadAllFiles } from "@/app/ultility/uploadAllFiles";
 import CommentsSection from "@/components/posts/CommentsSection";
 import type { UserProps } from "@/app/types";
 import type {
@@ -184,22 +183,31 @@ function PostDetailPageInner() {
       setEditSaving(true);
       setEditUploadingPercent(0);
 
-      // 带进度地上传本地文件
-      const uploadedIds = form.localFiles?.length
-        ? await (async () => {
-          const count = form.localFiles!.length;
-          const per = Array(count).fill(0);
-          const onEachProgress = (idx: number, percent: number) => {
-            per[idx] = percent;                          // 0~100
+      let uploadedIds: number[] = [];
+      if (form.localFiles?.length) {
+        const count = form.localFiles.length;
+        const per = Array(count).fill(0);
+        const { successIds, failures } = await uploadAllFiles(
+          form.localFiles,
+          dispatch,
+          (idx, percent) => {
+            per[idx] = percent;
             const avg = per.reduce((a, b) => a + b, 0) / count;
-            setEditUploadingPercent(Math.round(avg));    // 整体平均进度
-          };
-          return await uploadAllFiles(form.localFiles!, dispatch, onEachProgress);
-        })()
-        : [];
+            setEditUploadingPercent(Math.round(avg));
+          },
+          2 // 小并发
+        );
+
+        uploadedIds = successIds;
+
+        if (failures.length) {
+          // 给用户明确反馈
+          const failedList = failures.map(f => `• ${f.name}: ${f.error}`).join("\n");
+          alert(`Some files failed to upload:\n${failedList}\n\nThe post will be saved without these files.`);
+        }
+      }
 
       const fileIds = [...(form.fileIds ?? []), ...uploadedIds];
-
       const body: UpdatePostRequest = {
         title: form.title?.trim() ?? "",
         content: form.content ?? "",
@@ -209,9 +217,14 @@ function PostDetailPageInner() {
       };
 
       await dispatch(updatePost({ postId: post.id, body })).unwrap();
+
+      // ✅ 到这里才算彻底成功：关闭编辑
       handleEditClose();
+
     } catch (e: any) {
       alert(e?.message || "Update post failed");
+      // ❌ 失败则不关闭，保持在编辑态
+      throw e; // ⬅️ 抛给 PostModal 的 try/catch，让“保存并关闭”不关
     } finally {
       setEditSaving(false);
       setEditUploadingPercent(0);

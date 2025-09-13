@@ -1,25 +1,3 @@
-import { uploadFile } from "@/app/features/files/uploadSlice";
-import type { AppDispatch } from "@/app/features/store"; // 你的 store 类型按需改
-
-export async function uploadAllFiles(
-  files: File[],
-  dispatch: AppDispatch,
-  onEachProgress?: (index: number, percent: number) => void
-): Promise<number[]> {
-  const results = await Promise.all(
-    files.map((f, i) =>
-      dispatch(
-        uploadFile({
-          file: f,
-          file_category: "attachment",
-          onProgress: (p) => onEachProgress?.(i, p),
-        })
-      ).unwrap()
-    )
-  );
-  return results.map((r) => r.id);
-}
-
 export function formatDate(
   input: string | number | Date,
   withTime: boolean = false
