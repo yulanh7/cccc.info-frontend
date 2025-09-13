@@ -39,6 +39,8 @@ import type {
 import { isPostAuthor, isGroupCreatorOfPost } from "@/app/types";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useConfirm } from "@/hooks/useConfirm";
+import CollapsibleText from "@/components/ui/CollapsibleText";
+
 
 // —— 本页内部使用：编辑表单的最小类型（与 PostModal 对接）
 type EditForm = {
@@ -351,28 +353,12 @@ function PostDetailPageInner() {
             </div>
 
             {/* 正文（纯文本 + 保留换行，点击文字本身可收起） */}
-            <div
-              className="text-gray whitespace-pre-wrap cursor-pointer mb-5"
-              onClick={() => {
-                if (expanded) setExpanded(false);
-              }}
-            >
-              {shown}
-              {isLong && !expanded && (
-                <>
-                  {"… "}
-                  <button
-                    className="text-dark-green underline text-sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setExpanded(true);
-                    }}
-                  >
-                    See more
-                  </button>
-                </>
-              )}
-            </div>
+            <CollapsibleText
+              text={post.content ?? ""}
+              mobileChars={200}
+              desktopChars={300}
+              className="text-gray mb-5"
+            />
             <div className="hidden md:inline-flex items-center gap-1 text-xs mb-4">
               <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-dark-green/10 text-dark-green font-semibold">
                 {(post.author?.firstName?.[0] || "?").toUpperCase()}

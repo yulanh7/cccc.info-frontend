@@ -21,6 +21,9 @@ import {
   ChatBubbleLeftIcon
 } from "@heroicons/react/24/outline";
 import { HandThumbUpIcon as HandThumbUpSolid } from "@heroicons/react/24/solid";
+import { MAX_COMMENT_LEN } from '@/app/constants';
+import CollapsibleText from "@/components/ui/CollapsibleText";
+
 
 /* ======================= Props ======================= */
 type Props = {
@@ -304,7 +307,14 @@ function CommentItem({
             )}
           </div>
 
-          <div className="mt-1 text-sm text-gray-800 whitespace-pre-wrap">{c.body}</div>
+          <div className="mt-1 text-sm text-gray-800 whitespace-pre-wrap">
+            <CollapsibleText
+              text={c.body}
+              mobileChars={180}
+              desktopChars={300}
+              className="text-sm text-gray-800"
+            />
+          </div>
 
           {/* 操作行：回复 / 删除（自己的评论才显示删除） */}
           <div className="mt-1 flex items-center gap-3 text-xs text-gray-500">
@@ -412,7 +422,14 @@ function ChildCommentItem({
             </span>
           )}
         </div>
-        <div className="mt-1 text-sm text-gray-800 whitespace-pre-wrap">{c.body}</div>
+        <div className="mt-1 text-sm text-gray-800 whitespace-pre-wrap">
+          <CollapsibleText
+            text={c.body}
+            mobileChars={180}
+            desktopChars={300}
+            className="text-sm text-gray-800"
+          />
+        </div>
         <div className="mt-1 flex items-center gap-3 text-xs text-gray-500">
           {isMine && (
             <button
@@ -452,13 +469,13 @@ function CommentComposer({
   const textareaId = React.useId();
   const helpId = `${textareaId}-help`;
 
-  const MAX_LEN = 200;
+
   const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
   const containerRef = React.useRef<HTMLDivElement | null>(null);
 
   const textLen = value.length;
   const trimmedLen = value.trim().length;
-  const isOver = textLen > MAX_LEN;
+  const isOver = textLen > MAX_COMMENT_LEN;
   const canSend = trimmedLen > 0 && !isOver;
 
   // 打开时自动聚焦
@@ -548,12 +565,12 @@ function CommentComposer({
             <span
               className={clsx(
                 "text-[12px]",
-                isOver ? "text-red-600" : textLen >= MAX_LEN - 20 ? "text-amber-600" : "text-gray-500"
+                isOver ? "text-red-600" : textLen >= MAX_COMMENT_LEN - 20 ? "text-amber-600" : "text-gray-500"
               )}
               id={helpId}
               aria-live="polite"
             >
-              {textLen}/{MAX_LEN}
+              {textLen}/{MAX_COMMENT_LEN}
             </span>
 
             <button
