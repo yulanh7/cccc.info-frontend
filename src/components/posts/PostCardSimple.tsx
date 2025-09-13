@@ -1,12 +1,13 @@
 "use client";
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import type { PostListItemApi } from "@/app/types";
+import Link from 'next/link';
 import {
   HandThumbUpIcon as HandThumbUpOutline,
   CheckIcon, TrashIcon, PencilSquareIcon
 } from "@heroicons/react/24/outline";
 import IconButton from "@/components/ui/IconButton";
-import { HandThumbUpIcon as HandThumbUpSolid, PlayIcon } from "@heroicons/react/24/solid";
+import { HandThumbUpIcon as HandThumbUpSolid, PlayIcon, UserGroupIcon } from "@heroicons/react/24/solid";
 import { ellipsize } from '@/app/ultility';
 import { getYouTubeThumbnail } from '@/app/ultility';
 
@@ -45,7 +46,7 @@ export default function PostCardSimple({
 }: Props) {
 
   const dispatch = useAppDispatch();
-  const { id, title, files, author, summary, videos, like_count } = post;
+  const { id, title, author, summary, videos, like_count } = post;
 
   // like 数优先取全局（被点赞后会更新），否则回退列表原始值
   const storeCount = useAppSelector(selectLikeCount(id));
@@ -177,7 +178,7 @@ export default function PostCardSimple({
       <div className='px-2 pb-2'>
         <div className="flex justify-between gap-1">
           <h2 className="flex-1 font-semibold text-dark-gray leading-[1.3] md:leading-[1.3] mb-2">
-            {ellipsize(title, 50, { byWords: true })}
+            {ellipsize(title, 30, { byWords: true })}
           </h2>
           {canDelete && (selectMode || showDelete) && (
             <>
@@ -254,13 +255,33 @@ export default function PostCardSimple({
 
         </div>
 
+
         {summary && (
           <p className="text-gray text-sm line-clamp-3 leading-[1.1] md:leading-[1.2] whitespace-pre-line mt-2">
             {ellipsize(summary, 160, { byWords: true })}
           </p>
         )}
-
-        <div className="mt-4 space-y-1 text-xs text-gray flex gap-1">
+        {post.group?.id ? (
+          <Link
+            href={`/groups/${post.group.id}`}
+            className="inline-flex items-center gap-1.5 mt-2 hover:underline text-xs"
+            onClick={(e) => e.stopPropagation()}
+            aria-label={`Open group ${post.group?.name ?? ""}`}
+            title={post.group?.name ?? ""}
+            prefetch={false} // 列表很多时可关预取，减少网络压力；需要的话可以删掉
+          >
+            <UserGroupIcon className="h-5 w-5 text-dark-green" />
+            <span>
+              {ellipsize(post.group?.name, 30, { byWords: true })}
+            </span>
+          </Link>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 text-gray-500">
+            <UserGroupIcon className="h-5 w-5" />
+            <span>Ungrouped</span>
+          </span>
+        )}
+        <div className="mt-1 space-y-1 text-xs text-gray flex gap-1">
           <span className="flex-1 inline-flex items-center gap-1 text-xs">
             <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-dark-green/10 text-dark-green font-semibold">
               {(author.firstName?.[0] || "?").toUpperCase()}

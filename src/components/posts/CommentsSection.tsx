@@ -18,6 +18,7 @@ import {
   TrashIcon,
   ArrowUturnLeftIcon,
   HandThumbUpIcon as HandThumbUpOutline,
+  ChatBubbleLeftIcon
 } from "@heroicons/react/24/outline";
 import { HandThumbUpIcon as HandThumbUpSolid } from "@heroicons/react/24/solid";
 
@@ -102,6 +103,8 @@ export default function CommentsSection({
       dispatch(fetchPostRootComments({ postId, page: next, per_page: perPage, append: true }));
     }
   };
+
+
 
   return (
     <>
@@ -195,6 +198,14 @@ export default function CommentsSection({
                 <span>{likeCount}</span>
               </button>
             )}
+            <div
+              className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-3 py-1 text-sm shadow-sm"
+              aria-label={`Comments: ${rootPg?.total_comments ?? 0}`}
+              title="Comments"
+            >
+              <ChatBubbleLeftIcon className="h-4 w-4" />
+              <span>{rootPg?.total_comments ?? 0}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -204,18 +215,24 @@ export default function CommentsSection({
         <CommentComposer
           value={inputValue}
           onChange={setInputValue}
-          onSend={() => {
+          onSend={async () => {
             if (!inputValue.trim()) return;
-            onSend();
+            await onSend();           // 你的原逻辑（会创建/回复 + 清空 input）
+            closeComposer();          // 发送成功后关闭
           }}
           onCancel={() => {
-            onCancel();
-            closeComposer(); // 取消后恢复为紧凑栏
+            onCancel();               // 清空输入与回复状态
+            closeComposer();          // 取消后关闭
           }}
           replyingToName={replyTo?.nickname || null}
           autoFocus={composerAutoFocus}
+          onRequestClose={() => {     // 点击外部或 ESC 时关闭
+            onCancel();
+            closeComposer();
+          }}
         />
       )}
+
     </>
   );
 }
@@ -420,13 +437,15 @@ function CommentComposer({
   onChange,
   onSend,
   onCancel,
+  onRequestClose,         // 新增：请求关闭（点击外部、ESC）
   replyingToName,
   autoFocus,
 }: {
   value: string;
   onChange: (v: string) => void;
-  onSend: () => void;
+  onSend: () => void | Promise<void>;
   onCancel: () => void;
+  onRequestClose: () => void;   // 新增
   replyingToName: string | null;
   autoFocus?: boolean;
 }) {
@@ -434,15 +453,13 @@ function CommentComposer({
   const helpId = `${textareaId}-help`;
 
   const MAX_LEN = 200;
-  const [focused, setFocused] = React.useState(false);
   const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
+  const containerRef = React.useRef<HTMLDivElement | null>(null);
 
   const textLen = value.length;
   const trimmedLen = value.trim().length;
   const isOver = textLen > MAX_LEN;
   const canSend = trimmedLen > 0 && !isOver;
-
-  const expanded = focused || !!value.trim() || !!replyingToName;
 
   // 打开时自动聚焦
   React.useEffect(() => {
@@ -451,13 +468,37 @@ function CommentComposer({
     }
   }, [autoFocus]);
 
+  // 点击外部关闭（click-away）
+  React.useEffect(() => {
+    const onDocPointerDown = (e: PointerEvent) => {
+      if (!containerRef.current) return;
+      const target = e.target as Node | null;
+      if (target && !containerRef.current.contains(target)) {
+        onRequestClose();
+      }
+    };
+    document.addEventListener("pointerdown", onDocPointerDown, true);
+    return () => document.removeEventListener("pointerdown", onDocPointerDown, true);
+  }, [onRequestClose]);
+
+  // ESC 关闭
+  const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      onRequestClose();
+    }
+  };
+
   return (
     <div
+      ref={containerRef}
       className="
         fixed left-0 right-0 md:bottom-0 bottom-[66px] z-20
         border-t border-border
         bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70
       "
+      role="dialog"
+      aria-labelledby={helpId}
     >
       <div
         className="
@@ -473,7 +514,7 @@ function CommentComposer({
               className="ml-2 text-gray-400 hover:text-gray-600 underline"
               onClick={() => {
                 onCancel();
-                setFocused(false);
+                onRequestClose();
               }}
             >
               cancel
@@ -481,7 +522,8 @@ function CommentComposer({
           </div>
         )}
 
-        <div className={clsx("flex gap-2", expanded ? "flex-col" : "items-end")}>
+        {/* 固定上下布局：textarea 在上，按钮在下 */}
+        <div className="flex flex-col gap-2">
           <textarea
             id={textareaId}
             name="comment"
@@ -494,28 +536,21 @@ function CommentComposer({
               "text-base md:text-sm",
               isOver ? "border-red-400 focus:ring-red-300" : ""
             )}
-            rows={expanded ? 2 : 1}
+            rows={2}
             placeholder={replyingToName ? "Write a reply…" : "Write a comment…"}
             value={value}
-            onFocus={() => setFocused(true)}
-            onBlur={() => {
-              if (!value.trim() && !replyingToName) setFocused(false);
-            }}
             onChange={(e) => onChange(e.target.value)}
+            onKeyDown={onKeyDown}
           />
 
-          {/* 第二行：字数 + 按钮 */}
-          <div
-            className={clsx(
-              "flex items-center gap-2",
-              expanded ? "justify-end w-full mt-1" : "shrink-0"
-            )}
-          >
+          {/* 底部：字数 + 按钮（永远在 textarea 下方） */}
+          <div className="flex items-center gap-2 justify-end w-full mt-1">
             <span
               className={clsx(
                 "text-[12px]",
                 isOver ? "text-red-600" : textLen >= MAX_LEN - 20 ? "text-amber-600" : "text-gray-500"
               )}
+              id={helpId}
               aria-live="polite"
             >
               {textLen}/{MAX_LEN}
@@ -525,7 +560,7 @@ function CommentComposer({
               className="text-sm rounded-md border border-border bg-white px-3 py-2 hover:bg-gray-50"
               onClick={() => {
                 onCancel();
-                setFocused(false);
+                onRequestClose();
               }}
             >
               Cancel
@@ -533,10 +568,10 @@ function CommentComposer({
 
             <button
               className="text-sm rounded-md bg-dark-green text-white px-3 py-2 hover:bg-green-700 disabled:opacity-50"
-              onClick={() => {
+              onClick={async () => {
                 if (!canSend) return;
-                onSend();
-                setFocused(false);
+                await onSend();
+                onRequestClose();
               }}
               disabled={!canSend}
               title={isOver ? "Comment is too long" : undefined}
