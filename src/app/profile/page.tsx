@@ -10,9 +10,7 @@ import Button from '@/components/ui/Button'
 import PageTitle from '@/components/layout/PageTitle';
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
 import CustomHeader from "@/components/layout/CustomHeader";
-
-const MIN_FIRST = 2;
-const MAX_FIRST = 30;
+import { MIN_USER_NAME_LEN, MAX_USER_NAME_LEN } from '@/app/constants'
 
 export default function ProfilePage() {
   const dispatch = useAppDispatch();
@@ -50,7 +48,7 @@ export default function ProfilePage() {
   // 规范化 + 安全计数（支持多字节）
   const nameTrimmed = useMemo(() => firstName.trim(), [firstName]);
   const nameLen = useMemo(() => [...nameTrimmed].length, [nameTrimmed]);
-  const lengthInvalid = nameLen > 0 && (nameLen < MIN_FIRST || nameLen > MAX_FIRST);
+  const lengthInvalid = nameLen > 0 && (nameLen < MIN_USER_NAME_LEN || nameLen > MAX_USER_NAME_LEN);
   const sameAsPrev = nameTrimmed === prevFirstName;
 
   // 仅在“已触碰”时展示长度错误；提交且为空时展示必填
@@ -60,7 +58,7 @@ export default function ProfilePage() {
 
   function validateFirstNameForSubmit() {
     if (nameLen === 0) return 'Name is required.';
-    if (lengthInvalid) return `Name must be ${MIN_FIRST}–${MAX_FIRST} characters.`;
+    if (lengthInvalid) return `Name must be ${MIN_USER_NAME_LEN}–${MAX_USER_NAME_LEN} characters.`;
     if (prevFirstName && sameAsPrev) return 'New name must be different from current name.';
     return null;
   }
@@ -200,14 +198,14 @@ export default function ProfilePage() {
                 id="firstName-help"
                 className={`text-xs mt-1 ${showLengthError ? 'text-red-500' : 'text-dark-gray'}`}
               >
-                {nameLen}/{MAX_FIRST} (min {MIN_FIRST})
+                {nameLen}/{MAX_USER_NAME_LEN} (min {MIN_USER_NAME_LEN})
               </div>
 
               {/* 错误提示：提交空、长度越界、或服务端/业务错误（如与原名相同） */}
               {showEmptyError && <p className="mt-1 text-sm text-red-500">Name is required.</p>}
               {showLengthError && (
                 <p className="mt-1 text-sm text-red-500">
-                  Name must be {MIN_FIRST}–{MAX_FIRST} characters.
+                  Name must be {MIN_USER_NAME_LEN}–{MAX_USER_NAME_LEN} characters.
                 </p>
               )}
               {showServerError && <p className="mt-1 text-sm text-red-500">{nameErr}</p>}
