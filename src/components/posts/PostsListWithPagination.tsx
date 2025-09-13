@@ -79,7 +79,7 @@ export default function PostsListWithPagination({
     }
 
     return (
-      <div className="columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-2 md:gap-4">
+      <div className="columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-1">
         {rows.map((post) => {
           const canManageEdit = !!canEdit?.(post);
           const canManageDelete = !!canDelete?.(post);
@@ -91,7 +91,7 @@ export default function PostsListWithPagination({
             typeof onEditSingle === "function";
 
           return (
-            <div key={post.id} className="relative rounded-sm overflow-hidden mb-2 break-inside-avoid">
+            <div key={post.id} className="relative rounded-sm overflow-hidden mb-1 break-inside-avoid">
               <Link href={`/posts/${post.id}`} className="block">
                 <PostCardSimple
                   post={post}

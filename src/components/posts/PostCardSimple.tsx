@@ -167,15 +167,15 @@ export default function PostCardSimple({
             style={{ backgroundImage: `url(${bgUrl})` }}
           >
             <h2 className="text-dark-gray font-semibold text-center px-4">
-              {ellipsize(title, 90, { byWords: true })}
+              {ellipsize(title, 90)}
             </h2>
           </div>
         )}
       </div>
 
 
+      <div className='pl-2 '>
 
-      <div className='px-2 pb-2'>
         <div className="flex justify-between gap-1">
           {post.group?.id ? (
             <Link
@@ -188,7 +188,7 @@ export default function PostCardSimple({
             >
               <UsersIcon className="h-4 w-4 text-dark-green" />
               <span>
-                {ellipsize(post.group?.name, 20, { byWords: true })}
+                {ellipsize(post.group?.name, 18)}
               </span>
             </Link>
           ) : (
@@ -273,23 +273,26 @@ export default function PostCardSimple({
           )}
 
         </div>
-        <h2 className="flex-1 font-semibold text-dark-gray leading-[1.3] md:leading-[1.3] my-2">
-          {ellipsize(title, 30, { byWords: true })}
+      </div>
+      <div className='px-2 pb-2'>
+
+        <h2 className="flex-1 font-semibold text-sm text-dark-gray leading-[1.3] md:leading-[1.3] mt-2">
+          {ellipsize(title, 35)}
         </h2>
 
         {summary && (
-          <p className="text-gray text-sm line-clamp-3 leading-[1.1] md:leading-[1.2] whitespace-pre-line mt-2">
-            {ellipsize(summary, 160, { byWords: true })}
+          <p className="text-gray text-sm text-text line-clamp-3 leading-[1.1] md:leading-[1.2] whitespace-pre-line mt-2">
+            {ellipsize(summary, 160)}
           </p>
         )}
 
-        <div className="mt-1 space-y-1 text-xs text-gray flex gap-1">
-          <span className="flex-1 inline-flex items-center gap-1 text-xs">
+        <div className="mt-2 space-y-1 text-xs text-gray flex gap-1">
+          <span className="flex-1 inline-flex items-center gap-1 text-xs m-0">
             <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-dark-green/10 text-dark-green font-semibold">
               {(author.firstName?.[0] || "?").toUpperCase()}
             </span>
             <span className="text-[9px]">
-              {ellipsize(author.firstName, 10, { byWords: true })}
+              {ellipsize(author.firstName, 10)}
             </span>
           </span>
 

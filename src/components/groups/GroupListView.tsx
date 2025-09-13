@@ -202,7 +202,7 @@ export default function GroupListView({
 
                   {/* 描述 */}
                   <p className="text-gray text-sm whitespace-pre-line" title={group.description || ""}>
-                    {ellipsize(group.description || "", 160, { byWords: true })}
+                    {ellipsize(group.description || "", 160)}
                   </p>
 
                   {/* 底部：作者 + 订阅按钮（阻止冒泡） */}
@@ -212,7 +212,7 @@ export default function GroupListView({
                         {(group.creator_name?.[0] || "?").toUpperCase()}
                       </span>
                       <span className="text-[10px]">
-                        {ellipsize(group.creator_name, 10, { byWords: true })}
+                        {ellipsize(group.creator_name, 10)}
                       </span>
                     </span>
 

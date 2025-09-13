@@ -61,7 +61,7 @@ export default function Menu({
         {isLoggedIn && (
           <div className="relative group">
             <span className="cursor-pointer text-dark-gray group-hover:text-dark-green">
-              {ellipsize(userName, 20, { byWords: true })}
+              {ellipsize(userName, 20)}
 
             </span>
 

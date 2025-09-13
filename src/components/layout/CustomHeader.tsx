@@ -69,7 +69,7 @@ export default function CustomHeader({
           )}
         </div>
 
-        <div>{ellipsize(pageTitle, 20, { byWords: true })}</div>
+        <div>{ellipsize(pageTitle, 20)}</div>
 
         <div className="flex items-center space-x-4">
           {showDelete && onDelete && (

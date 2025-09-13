@@ -298,7 +298,7 @@ function CommentItem({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-gray-900">
-              {ellipsize(c.user.firstName, 10, { byWords: true })}
+              {ellipsize(c.user.firstName, 10)}
             </span>
             {isAuthor && (
               <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
@@ -414,7 +414,7 @@ function ChildCommentItem({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-gray-900">
-            {ellipsize(c.user.firstName, 10, { byWords: true })}
+            {ellipsize(c.user.firstName, 10)}
           </span>
           {isAuthor && (
             <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
