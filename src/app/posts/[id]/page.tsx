@@ -296,48 +296,45 @@ function PostDetailPageInner() {
 
 
             <div className="flex items-center justify-between gap-2 mt-3 ">
-              <h1 className="hidden md:inline text-2xl">{post.title}</h1>
+              <h1 className={`${videoUrls.length > 0 ? "inline" : "hidden"} md:inline text-2xl`}>{post.title}</h1>
 
-              <div className="md:flex items-center gap-2">
+              {!!post && (
+                <div className="hidden md:flex items-center gap-2">
+                  {/* 编辑：只能帖子作者 */}
+                  {isPostAuthor(post, user) && (
+                    <IconButton
+                      className="text-white"
+                      title="Edit post"
+                      aria-label="Edit post"
+                      variant="outline"
+                      tone="brand"
+                      size="md"
+                      onClick={handleEditOpen}
+                    >
+                      <PencilSquareIcon className="h-5 w-5" />
+                    </IconButton>
+                  )}
 
-                {!!post && (
-                  <div className="hidden md:flex items-center gap-2">
-                    {/* 编辑：只能帖子作者 */}
-                    {isPostAuthor(post, user) && (
-                      <IconButton
-                        className="text-white"
-                        title="Edit post"
-                        aria-label="Edit post"
-                        variant="outline"
-                        tone="brand"
-                        size="md"
-                        onClick={handleEditOpen}
-                      >
-                        <PencilSquareIcon className="h-5 w-5" />
-                      </IconButton>
-                    )}
+                  {/* 删除：帖子作者 或 小组创建者 */}
+                  {(isPostAuthor(post, user) || isGroupCreatorOfPost(post, user)) && (
+                    <IconButton
+                      title="Delete post"
+                      aria-label="Delete post"
+                      variant="outline"
+                      tone="danger"
+                      size="md"
+                      onClick={() => askDeleteWithContext(post)}   // ← 修改这里
+                    >
+                      <TrashIcon className="h-5 w-5" />
+                    </IconButton>
+                  )}
+                </div>
+              )}
 
-                    {/* 删除：帖子作者 或 小组创建者 */}
-                    {(isPostAuthor(post, user) || isGroupCreatorOfPost(post, user)) && (
-                      <IconButton
-                        title="Delete post"
-                        aria-label="Delete post"
-                        variant="outline"
-                        tone="danger"
-                        size="md"
-                        onClick={() => askDeleteWithContext(post)}   // ← 修改这里
-                      >
-                        <TrashIcon className="h-5 w-5" />
-                      </IconButton>
-                    )}
-                  </div>
-                )}
-
-              </div>
             </div>
 
 
-            <div className="flex flex-wrap gap-3 mb-3 mt-4">
+            <div className="flex flex-wrap gap-3 mb-3 mt-2">
 
               <Link
                 href={`/groups/${post.group?.id}`}
