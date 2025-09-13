@@ -1,5 +1,7 @@
 "use client";
+
 import React, { useEffect, useState } from "react";
+import clsx from "clsx";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import {
   fetchPostRootComments,
@@ -11,23 +13,38 @@ import {
   selectChildCommentsFeed,
 } from "@/app/features/posts/commentsSlice";
 import type { CommentItemApi } from "@/app/types/comments";
-import { TrashIcon, ArrowUturnLeftIcon } from "@heroicons/react/24/outline";
-import clsx from "clsx";
 import { ellipsize } from "@/app/ultility";
+import {
+  TrashIcon,
+  ArrowUturnLeftIcon,
+  HandThumbUpIcon as HandThumbUpOutline,
+} from "@heroicons/react/24/outline";
+import { HandThumbUpIcon as HandThumbUpSolid } from "@heroicons/react/24/solid";
 
-
+/* ======================= Props ======================= */
 type Props = {
   postId: number;
   postAuthorId: number;
   currentUserId?: number | null;
   perPage?: number;
+
+  /** UI-only: like UI passed from parent */
+  likeCount?: number;
+  liked?: boolean;
+  likeBusy?: boolean;
+  onToggleLike?: () => void;
 };
 
+/* ======================= Main Component ======================= */
 export default function CommentsSection({
   postId,
   postAuthorId,
   currentUserId,
   perPage = 10,
+  likeCount = 0,
+  liked = false,
+  likeBusy = false,
+  onToggleLike,
 }: Props) {
   const dispatch = useAppDispatch();
 
@@ -35,10 +52,22 @@ export default function CommentsSection({
   const rootFeed = useAppSelector((s) => selectRootCommentsFeed(s, postId));
   const { items: rootComments, pagination: rootPg, status: rootStatus } = rootFeed;
 
-  // 回复状态
+  // 回复/输入状态（逻辑保持不变）
   const [inputValue, setInputValue] = useState("");
   const [replyTo, setReplyTo] = useState<null | { commentId: number; nickname: string }>(null);
   const isReplying = !!replyTo;
+
+  // 控制底部 Composer 是否打开（仅 UI）
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [composerAutoFocus, setComposerAutoFocus] = useState(false);
+  const openComposer = (focus = true) => {
+    setComposerOpen(true);
+    setComposerAutoFocus(!!focus);
+  };
+  const closeComposer = () => {
+    setComposerOpen(false);
+    setComposerAutoFocus(false);
+  };
 
   useEffect(() => {
     dispatch(fetchPostRootComments({ postId, page: 1, per_page: perPage }));
@@ -50,10 +79,8 @@ export default function CommentsSection({
 
     try {
       if (isReplying && replyTo) {
-        // 走 /comments/{id}/comments
         await dispatch(replyToComment({ commentId: replyTo.commentId, body })).unwrap();
       } else {
-        // 发根评论
         await dispatch(createComment({ postId, body })).unwrap();
       }
       // 清空
@@ -77,65 +104,119 @@ export default function CommentsSection({
   };
 
   return (
-    <div className="mt-8 md:mt-10 pb-24 px-2 pt-6 border-t-1 border-border"> {/* 底部输入框预留空间 */}
-      <p className=" font-semibold text-dark-gray mb-3 flex items-center gap-2">
-        <span className="text-gray font-normal">
-          {rootPg?.total_comments ?? 0}
-        </span>
-        Comment(s)
-      </p>
+    <>
+      {/* 主体内容：加厚底部内边距，避免被底部条遮挡 */}
+      <div className="mt-8 md:mt-10 pb-36 px-2 pt-6 border-t-1 border-border">
+        {/* 标题（评论总数） */}
+        <p className="font-semibold text-dark-gray mb-3 flex items-center gap-2">
+          <span className="text-gray font-normal">{rootPg?.total_comments ?? 0}</span>
+          Comment(s)
+        </p>
 
-      {/* 根评论列表 */}
-      <ul className="space-y-4">
-        {rootStatus === "loading" && rootComments.length === 0 && (
-          <li className="text-sm text-gray-500">Loading comments…</li>
-        )}
+        {/* 根评论列表 */}
+        <ul className="space-y-4">
+          {rootStatus === "loading" && rootComments.length === 0 && (
+            <li className="text-sm text-gray-500">Loading comments…</li>
+          )}
 
-        {rootComments.map((c: CommentItemApi) => (
-          <li key={c.id}>
-            <CommentItem
-              c={c}
-              postAuthorId={postAuthorId}
-              currentUserId={currentUserId}
-              onReply={(target) => setReplyTo(target)}
-              onDelete={async (commentId, parentId) => {
-                try {
-                  await dispatch(deleteComment({ commentId, parent_id: parentId })).unwrap();
-                } catch (e: any) {
-                  alert(e?.message || "Delete comment failed");
+          {rootComments.map((c: CommentItemApi) => (
+            <li key={c.id}>
+              <CommentItem
+                c={c}
+                postAuthorId={postAuthorId}
+                currentUserId={currentUserId}
+                onReply={(target) => {
+                  setReplyTo(target);
+                  openComposer(true); // 点“Reply”时自动展开底部 Composer
+                }}
+                onDelete={async (commentId, parentId) => {
+                  try {
+                    await dispatch(deleteComment({ commentId, parent_id: parentId })).unwrap();
+                  } catch (e: any) {
+                    alert(e?.message || "Delete comment failed");
+                  }
+                }}
+                fetchChildren={(parentId, page) =>
+                  dispatch(fetchChildComments({ postId, parentId, page, per_page: perPage }))
                 }
-              }}
-              // 子评论数据由内部组件自行拉取
-              fetchChildren={(parentId, page) =>
-                dispatch(fetchChildComments({ postId, parentId, page, per_page: perPage }))
-              }
-              selectChildren={(state, parentId) => selectChildCommentsFeed(state as any, parentId)}
+                selectChildren={(state, parentId) => selectChildCommentsFeed(state as any, parentId)}
+              />
+            </li>
+          ))}
+        </ul>
+
+        {/* 加载更多根评论 */}
+        {rootPg?.current_page < rootPg?.total_pages && (
+          <div className="mt-4">
+            <button
+              className="text-sm rounded-full border border-border bg-white px-3 py-1 shadow-sm hover:bg-gray-50"
+              onClick={loadMoreRoots}
+            >
+              Load more
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* === 底部固定紧凑栏：假输入 + Like（始终存在）；被真正的 Composer 覆盖 === */}
+      <div
+        className="
+          fixed left-0 right-0 md:bottom-0 bottom-[66px] z-10
+          border-t border-border
+          bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70
+        "
+        aria-hidden={composerOpen}
+      >
+        <div className="mx-auto max-w-4xl px-3 py-2">
+          <div className="flex items-center gap-2">
+            {/* 只负责触发底部 Composer 的“假输入框” */}
+            <input
+              className="flex-1 rounded-full border border-border bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-dark-green/30"
+              placeholder="Write a comment…"
+              readOnly
+              onFocus={() => openComposer(true)}
+              onClick={() => openComposer(true)}
             />
-          </li>
-        ))}
-      </ul>
 
-      {/* 加载更多根评论 */}
-      {rootPg?.current_page < rootPg?.total_pages && (
-        <div className="mt-4">
-          <button
-            className="text-sm rounded-full border border-border bg-white px-3 py-1 shadow-sm hover:bg-gray-50"
-            onClick={loadMoreRoots}
-          >
-            Load more
-          </button>
+            {onToggleLike && (
+              <button
+                onClick={onToggleLike}
+                disabled={likeBusy}
+                aria-pressed={liked}
+                aria-label={liked ? "Unlike" : "Like"}
+                className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-3 py-1 text-sm shadow-sm hover:bg-gray-50 disabled:opacity-60"
+                title={liked ? "Unlike" : "Like"}
+              >
+                {liked ? (
+                  <HandThumbUpSolid className="h-4 w-4 text-red" />
+                ) : (
+                  <HandThumbUpOutline className="h-4 w-4" />
+                )}
+                <span>{likeCount}</span>
+              </button>
+            )}
+          </div>
         </div>
-      )}
+      </div>
 
-      {/* 固定底部输入框 */}
-      <CommentComposer
-        value={inputValue}
-        onChange={setInputValue}
-        onSend={onSend}
-        onCancel={onCancel}
-        replyingToName={replyTo?.nickname || null}
-      />
-    </div>
+      {/* === 真正的底部 Composer：更高 z-index 以覆盖紧凑栏 === */}
+      {(composerOpen || !!replyTo?.nickname) && (
+        <CommentComposer
+          value={inputValue}
+          onChange={setInputValue}
+          onSend={() => {
+            if (!inputValue.trim()) return;
+            onSend();
+          }}
+          onCancel={() => {
+            onCancel();
+            closeComposer(); // 取消后恢复为紧凑栏
+          }}
+          replyingToName={replyTo?.nickname || null}
+          autoFocus={composerAutoFocus}
+        />
+      )}
+    </>
   );
 }
 
@@ -169,7 +250,7 @@ function CommentItem({
   const childrenFeed = useAppSelector((s) => selectChildren(s, c.id));
   const { items: children, pagination: pg, status } = childrenFeed;
 
-  // 首次展开时拉取子评论
+  // 首次展开时拉取子评论（逻辑不变）
   const [expanded, setExpanded] = useState(false);
   useEffect(() => {
     if (expanded && status === "idle") {
@@ -189,7 +270,7 @@ function CommentItem({
 
   return (
     <div className="group">
-      {/* 头部：头像首字母 + 名称 + author + 点赞数 */}
+      {/* 头部：头像首字母 + 名称 + author */}
       <div className="flex items-start gap-3">
         <div className="mt-0.5 h-7 w-7 flex items-center justify-center rounded-full bg-dark-green/10 text-dark-green font-semibold">
           {(c.user.firstName?.[0] || "?").toUpperCase()}
@@ -204,17 +285,12 @@ function CommentItem({
                 author
               </span>
             )}
-            {/* <span className="ml-auto inline-flex items-center gap-1 text-xs text-gray-500">
-              <HandThumbUpOutline className="h-4 w-4" />
-              {c.like_count ?? 0}
-            </span> */}
           </div>
+
           <div className="mt-1 text-sm text-gray-800 whitespace-pre-wrap">{c.body}</div>
 
           {/* 操作行：回复 / 删除（自己的评论才显示删除） */}
           <div className="mt-1 flex items-center gap-3 text-xs text-gray-500">
-
-
             <button
               className="inline-flex items-center gap-1 hover:text-dark-green"
               onClick={() => onReply({ commentId: c.id, nickname: c.user.firstName || "User" })}
@@ -223,8 +299,8 @@ function CommentItem({
               <ArrowUturnLeftIcon className="h-4 w-4" />
               Reply
             </button>
-            {isMine && (
 
+            {isMine && (
               <button
                 className="inline-flex items-center gap-1 hover:text-red-600"
                 onClick={() => onDelete(c.id, c.parent_id)}
@@ -318,25 +394,18 @@ function ChildCommentItem({
               author
             </span>
           )}
-          {/* <span className="ml-auto inline-flex items-center gap-1 text-xs text-gray-500">
-            <HandThumbUpOutline className="h-4 w-4" />
-            {c.like_count ?? 0}
-          </span> */}
         </div>
         <div className="mt-1 text-sm text-gray-800 whitespace-pre-wrap">{c.body}</div>
         <div className="mt-1 flex items-center gap-3 text-xs text-gray-500">
-
           {isMine && (
-            <>
-              <button
-                className="inline-flex items-center gap-1 hover:text-red-600"
-                onClick={() => onDelete(c.id, c.parent_id)}
-                title="Delete"
-              >
-                <TrashIcon className="h-4 w-4" />
-                Delete
-              </button>
-            </>
+            <button
+              className="inline-flex items-center gap-1 hover:text-red-600"
+              onClick={() => onDelete(c.id, c.parent_id)}
+              title="Delete"
+            >
+              <TrashIcon className="h-4 w-4" />
+              Delete
+            </button>
           )}
         </div>
       </div>
@@ -344,19 +413,22 @@ function ChildCommentItem({
   );
 }
 
-/* ======================= 底部固定输入框 ======================= */
+/* ======================= 底部固定输入框（覆盖紧凑栏） ======================= */
+
 function CommentComposer({
   value,
   onChange,
   onSend,
   onCancel,
   replyingToName,
+  autoFocus,
 }: {
   value: string;
   onChange: (v: string) => void;
   onSend: () => void;
   onCancel: () => void;
   replyingToName: string | null;
+  autoFocus?: boolean;
 }) {
   const textareaId = React.useId();
   const helpId = `${textareaId}-help`;
@@ -372,10 +444,17 @@ function CommentComposer({
 
   const expanded = focused || !!value.trim() || !!replyingToName;
 
+  // 打开时自动聚焦
+  React.useEffect(() => {
+    if (autoFocus && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [autoFocus]);
+
   return (
     <div
       className="
-        fixed left-0 right-0 md:bottom-0 bottom-[66px] z-10
+        fixed left-0 right-0 md:bottom-0 bottom-[66px] z-20
         border-t border-border
         bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/70
       "
@@ -383,7 +462,7 @@ function CommentComposer({
       <div
         className="
           mx-auto max-w-4xl px-3 py-2
-          pb-[calc(env(safe-area-inset-bottom)+8px)]   /* CHANGED: 安全区内边距 */
+          pb-[calc(env(safe-area-inset-bottom)+8px)]
         "
       >
         {/* 正在回复谁 */}
@@ -415,7 +494,6 @@ function CommentComposer({
               "text-base md:text-sm",
               isOver ? "border-red-400 focus:ring-red-300" : ""
             )}
-
             rows={expanded ? 2 : 1}
             placeholder={replyingToName ? "Write a reply…" : "Write a comment…"}
             value={value}
@@ -430,7 +508,7 @@ function CommentComposer({
           <div
             className={clsx(
               "flex items-center gap-2",
-              expanded ? "justify-end w-full mt-1" : "shrink-0" // ← 关键改动
+              expanded ? "justify-end w-full mt-1" : "shrink-0"
             )}
           >
             <span
@@ -452,6 +530,7 @@ function CommentComposer({
             >
               Cancel
             </button>
+
             <button
               className="text-sm rounded-md bg-dark-green text-white px-3 py-2 hover:bg-green-700 disabled:opacity-50"
               onClick={() => {
@@ -470,5 +549,3 @@ function CommentComposer({
     </div>
   );
 }
-
-

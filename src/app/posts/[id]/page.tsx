@@ -326,7 +326,7 @@ function PostDetailPageInner() {
                   iframeClassName="w-full h-[200px] md:h-[400px] rounded-sm"
                 />
               ) : (
-                <div className="w-full min-h-20 md:min-h-30 bg-[url('/images/bg-for-homepage.png')] bg-cover bg-center rounded-t-xs md:rounded-t-sm flex items-center justify-center">
+                <div className="hidden md:flex w-full min-h-20 md:min-h-30 bg-[url('/images/bg-for-homepage.png')] bg-cover bg-center rounded-t-xs md:rounded-t-sm items-center justify-center">
                   <h2 className="text-dark-gray text-xl md:text-5xl font-'Apple Color Emoji' font-semibold text-center px-4">
                     {post.title}
                   </h2>
@@ -338,38 +338,8 @@ function PostDetailPageInner() {
             <div className="flex items-center justify-between gap-2 mt-3">
               <h1 className="text-2xl mb-2">{post.title}</h1>
 
-              <div className="hidden md:flex items-center gap-2">
-                {/* 互动条：点赞 + 评论数 */}
-                <button
-                  onClick={onToggleLike}
-                  disabled={likeBusy}
-                  aria-pressed={liked}
-                  aria-label={liked ? "Unlike" : "Like"}
-                  className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-3 py-1 text-sm shadow-sm
-                 hover:bg-gray-50 disabled:opacity-60"
-                  title={liked ? "Unlike" : "Like"}
-                >
-                  {liked ? (
-                    <HandThumbUpSolid className="h-4 w-4 text-red-500" />
-                  ) : (
-                    <HandThumbUpOutline className="h-4 w-4 text-dark-gray" />
-                  )}
-                  <span className="text-dark-gray">{likeCount}</span>
-                </button>
+              <div className="md:flex items-center gap-2">
 
-                {/* 评论数（未来接入真实数值：post.comment_count 或从你的评论 slice 取） */}
-                {/* <div
-                className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-3 py-1 text-sm shadow-sm"
-                title="Comments"
-              >
-                <ChatBubbleLeftIcon className="h-4 w-4 text-dark-gray" />
-                <span className="text-dark-gray">{(post as any)?.comment_count ?? 0}</span>
-              </div> */}
-
-                {/* 分隔线 + 管理操作（仅作者/管理员可见） */}
-                {!!(post && (isPostAuthor(post, user) || isGroupCreatorOfPost(post, user))) && (
-                  <div className="mx-1 h-5 w-px bg-border" aria-hidden />
-                )}
                 {!!post && (
                   <div className="flex items-center gap-2">
                     {/* 编辑：只能帖子作者 */}
@@ -502,8 +472,12 @@ function PostDetailPageInner() {
             {/* 评论区 */}
             <CommentsSection
               postId={post.id}
-              postAuthorId={post.author.id}      // 你 PostDetailData 里 author: { id, firstName }
+              postAuthorId={post.author.id}
               currentUserId={user?.id ?? null}
+              likeCount={likeCount}
+              liked={liked}
+              likeBusy={likeBusy}
+              onToggleLike={onToggleLike}
             />
 
 
