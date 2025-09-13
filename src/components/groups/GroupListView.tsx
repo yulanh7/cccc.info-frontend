@@ -83,12 +83,12 @@ export default function GroupListView({
   return (
     <div className="space-y-4 mt-4">
       {/* 顶部操作（桌面） */}
-      <div className="hidden md:flex justify-between my-6">
+      <div className="hidden md:flex justify-between my-6 ">
         {canCreate && onAdd && (
           <Button
             onClick={onAdd}
             className="ml-auto"
-            variant="primary"
+            variant="secondary"
             leftIcon={<PlusIcon className="h-5 w-5" />}
           >
             New Group

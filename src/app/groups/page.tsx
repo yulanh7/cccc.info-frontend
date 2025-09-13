@@ -58,6 +58,7 @@ function GroupsPageInner() {
     toggleSubscription,
     // modal
     isModalOpen,
+    saveGroup: innerSaveGroup,
     isNew,
     selectedGroup,
     modalSaving,
@@ -73,6 +74,7 @@ function GroupsPageInner() {
     deleting,
     toggling,
     buildHref,
+
   } = useGroupListController({
     mode,
     pageSize: GROUPS_PER_PAGE,
@@ -95,6 +97,18 @@ function GroupsPageInner() {
   useEffect(() => {
     if (mobileSearchOpen) mobileInputRef.current?.focus();
   }, [mobileSearchOpen]);
+
+
+  const saveGroupAndRedirect = React.useCallback(
+    async (g: any) => {
+      await innerSaveGroup(g);
+      if (isNew) {
+        // 强制进入 All，并回到第 1 页
+        router.push("/groups?tab=all&page=1");
+      }
+    },
+    [innerSaveGroup, isNew, router]
+  );
 
   return (
     <>
@@ -263,7 +277,7 @@ function GroupsPageInner() {
       <div className="mx-auto w-full p-4 min-h-screen lg:container">
         {/* Desktop search bar (unchanged logic; your SearchBar component stays the same) */}
         {tab === "all" && (
-          <div className="hidden md:block my-6">
+          <div className="hidden md:block my-6 max-w-[400px] ml-auto">
             <SearchBar
               value={qInput}
               onChange={setQInput}
@@ -291,6 +305,7 @@ function GroupsPageInner() {
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={onPageChange}
+          onAdd={openNew}
           canCreate={canCreate}
           onEdit={openEdit}
           onDelete={(id) => confirmGroupDelete.ask(id)}
@@ -309,7 +324,7 @@ function GroupsPageInner() {
         <GroupModal
           group={selectedGroup}
           isNew={isNew}
-          onSave={saveGroup}
+          onSave={saveGroupAndRedirect}
           onClose={closeModal}
           saving={modalSaving}
           externalErrors={modalErrors}
