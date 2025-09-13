@@ -1,11 +1,14 @@
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { XMarkIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 import Button from "@/components/ui/Button";
 import SaveConfirmModal from "../SaveConfirmModal";
 import type { PostFileApi } from "@/app/types";
 import { compressImageFile } from "@/app/ultility/imageCompression";
+import BasicsPanel from "@/components/posts/BasicsPanel";
+import MediaPanel from "@/components/posts/MediaPanel";
+import StepDot from "@/components/posts/StepDot";
 
 /* ======================= 常量 & 工具 ======================= */
 const IMAGE_ACCEPT = ".png,.jpg,.jpeg,.gif,.bmp,.webp";
@@ -38,17 +41,19 @@ type FormModel = {
   localFiles?: File[];
 };
 
-type PostModalProps = {
+export type PostModalProps = {
   item?: Partial<FormModel>;
   isNew: boolean;
   onSave: (form: FormModel) => void | Promise<void>;
   onClose: () => void;
-  saving?: boolean; // 外部保存中（创建/更新时）
+  saving?: boolean; // 外部创建/更新中的状态
   existingFiles?: PostFileApi[];
-  uploadingPercent?: number;
+  uploadingPercent?: number; // 外部上传平均进度（用于显示 1~99%）
 };
 
 /* ======================= 组件 ======================= */
+type Step = 1 | 2;
+
 export default function PostModal({
   item,
   isNew,
@@ -58,12 +63,13 @@ export default function PostModal({
   existingFiles = [],
   uploadingPercent = 0,
 }: PostModalProps) {
+  const [step, setStep] = useState<Step>(1);
+
   // 表单
   const [title, setTitle] = useState(item?.title ?? "");
   const [description, setDescription] = useState(item?.description ?? "");
   const [content, setContent] = useState(item?.content ?? "");
   const [videos, setVideos] = useState<string[]>(item?.videos ?? []);
-  const [videoInput, setVideoInput] = useState("");
 
   // 文件
   const [fileIds, setFileIds] = useState<number[]>(
@@ -75,8 +81,9 @@ export default function PostModal({
 
   // 校验 & 交互
   const [errors, setErrors] = useState<{ title?: string; content?: string }>({});
-  const titleRef = useRef<HTMLInputElement>(null);
-  const contentRef = useRef<HTMLTextAreaElement>(null);
+  const titleRef = useRef<HTMLInputElement | null>(null);
+  const contentRef = useRef<HTMLTextAreaElement | null>(null);
+
 
   // 关闭确认
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -85,7 +92,7 @@ export default function PostModal({
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [placement, setPlacement] = useState<"above" | "below">("below");
 
-  // 额外：压缩状态（防止压缩中保存/关闭）
+  // 压缩状态（防止压缩中保存/关闭）
   const [isCompressing, setIsCompressing] = useState(false);
   const [compressTotal, setCompressTotal] = useState(0);
   const [compressDone, setCompressDone] = useState(0);
@@ -169,33 +176,37 @@ export default function PostModal({
 
   /* ---------- 校验 ---------- */
   const titleLen = title.trim().length;
-  const validate = (): boolean => {
+  const validateStep1Only = (): boolean => {
     const next: { title?: string; content?: string } = {};
     if (!title.trim()) next.title = "Title is required";
     if (titleLen > MAX_TITLE) next.title = `Title cannot exceed ${MAX_TITLE} characters.`;
     setErrors(next);
     if (next.title && titleRef.current) titleRef.current.focus();
-    else if (next.content && contentRef.current) contentRef.current.focus();
     return Object.keys(next).length === 0;
   };
 
-  /* ---------- 视频 ---------- */
-  const addVideo = () => {
-    const v = videoInput.trim();
-    if (!v) return;
-    if (!/^https?:\/\//i.test(v)) {
-      alert("Please input a valid URL (must start with http/https).");
-      return;
-    }
-    setVideos((prev) => [...prev, v]);
-    setVideoInput("");
-  };
-  const removeVideo = (idx: number) => setVideos((prev) => prev.filter((_, i) => i !== idx));
 
-  /* ---------- 已有文件移除关联 ---------- */
-  const removeFileId = (id?: number) => {
-    if (typeof id !== "number") return;
-    setFileIds((prev) => prev.filter((x) => x !== id));
+  const isStep1Valid = React.useMemo(() => {
+    const t = title.trim();
+    if (!t) return false;
+    if (t.length > MAX_TITLE) return false;
+    return true;
+  }, [title]);
+
+  const validateAll = (): boolean => {
+    // 现在只需要 Step1 的校验；需要时可扩展
+    return validateStep1Only();
+  };
+
+  /* ---------- 切换步骤 ---------- */
+  const goNext = () => {
+    if (saving || isCompressing) return;
+    if (!validateStep1Only()) return;
+    setStep(2);
+  };
+  const goBack = () => {
+    if (saving || isCompressing) return;
+    setStep(1);
   };
 
   /* ---------- 文件选择：图片（立刻清空 input，防止异步后 DOM 为 null） ---------- */
@@ -203,11 +214,11 @@ export default function PostModal({
     const inputEl = e.currentTarget;
     const picked = inputEl.files ? Array.from(inputEl.files) : [];
     if (!picked.length) return;
+    inputEl.value = ""; // 先清空，避免异步期间访问到 null
 
-    inputEl.value = "";        // ← 仍然先清空
     setIsCompressing(true);
-    setCompressTotal(picked.length);   // ✅ 新增
-    setCompressDone(0);                // ✅ 新增
+    setCompressTotal(picked.length);
+    setCompressDone(0);
 
     try {
       const tooHuge = picked.filter((f) => f.size > MAX_INPUT_IMAGE_BYTES);
@@ -232,7 +243,6 @@ export default function PostModal({
           console.error("Compress failed:", err);
           processed.push(f);
         } finally {
-          // ✅ 无论成功失败，都推进计数
           setCompressDone((d) => d + 1);
         }
       }
@@ -242,19 +252,14 @@ export default function PostModal({
       setLocalImages((prev) => [...prev, ...deduped]);
     } finally {
       setIsCompressing(false);
-      // 保留 compressTotal/compressDone 值一会儿也行；想复位可一起清零：
-      // setCompressTotal(0); setCompressDone(0);
     }
   };
-
 
   /* ---------- 文件选择：文档 ---------- */
   const onPickDocs: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     const inputEl = e.currentTarget;
     const picked = inputEl.files ? Array.from(inputEl.files) : [];
     if (!picked.length) return;
-
-    // 同样立即清空
     inputEl.value = "";
 
     const tooBig = picked.filter((f) => f.size > MAX_DOC_FILE_SIZE);
@@ -276,6 +281,10 @@ export default function PostModal({
     setLocalImages((prev) => prev.filter((_, i) => i !== idx));
   const removeLocalDoc = (idx: number) =>
     setLocalDocs((prev) => prev.filter((_, i) => i !== idx));
+  const removeFileId = (id?: number) => {
+    if (typeof id !== "number") return;
+    setFileIds((prev) => prev.filter((x) => x !== id));
+  };
 
   /* ---------- 关闭/取消：保存中或压缩中禁止 ---------- */
   const handleCloseClick = () => {
@@ -288,7 +297,6 @@ export default function PostModal({
       onClose();
     }
   };
-
   const handleCancelClick = () => {
     if (saving || isCompressing) return;
     if (hasChanges) {
@@ -315,29 +323,25 @@ export default function PostModal({
       alert("Images are still being compressed. Please wait a moment and try again.");
       return;
     }
-    if (!validate()) return;
+    if (!validateAll()) return;
     const cleaned = buildCleanForm();
-    await onSave(cleaned); // 由外部决定是否关闭（创建页/编辑页不一样）
-    // 注：列表页/详情页里会更新 initialStateRef & 关闭
+    await onSave(cleaned);
   };
 
-  // “保存并关闭”的确认弹窗（只在显式点击关闭后出现）
   const confirmSaveAndClose = async () => {
     if (isCompressing) {
       alert("Images are still being compressed. Please wait a moment and try again.");
       return;
     }
-    if (!validate()) return;
+    if (!validateAll()) return;
     const cleaned = buildCleanForm();
     try {
       await onSave(cleaned);
       initialStateRef.current = serializeState();
       setIsConfirmOpen(false);
-      onClose(); // ✅ 成功才关闭
+      onClose(); // 成功才关闭
     } catch (e: any) {
-      const msg = typeof e === "string" ? e : e?.message || "Save failed";
-      alert(msg);
-      // ❌ 失败不关闭
+      alert(typeof e === "string" ? e : e?.message || "Save failed");
     }
   };
 
@@ -361,7 +365,7 @@ export default function PostModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <header className="px-4 md:px-6 pt-4 pb-2 mb-4 border-b border-border/70 sticky top-0 bg-white z-10">
+        <header className="px-4 md:px-6 pt-4 pb-2 border-b border-border/70 sticky top-0 bg-white z-10">
           <button
             onClick={handleCloseClick}
             ref={closeButtonRef}
@@ -375,251 +379,69 @@ export default function PostModal({
             {isNew ? "Create Post" : "Edit Post"}
             <div className="mt-1 h-0.5 w-12 bg-green mx-auto rounded" />
           </h2>
+
+          {/* Stepper */}
+          <div className="flex items-center gap-3 mt-3">
+            <StepDot active={step === 1} label="Basics" />
+            <div className="h-px flex-1 bg-border" />
+            <StepDot active={step === 2} label="Media" />
+          </div>
         </header>
 
         {/* Body */}
         <section className="px-4 md:px-6 py-4 overflow-y-auto flex-1">
-          {/* 标题 */}
-          <label htmlFor="post-title" className="block text-sm font-medium mb-1 text-gray-900">
-            Title <span className="text-red-500">*</span>
-          </label>
-          <input
-            id="post-title"
-            ref={titleRef}
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className={`w-full p-2 mb-1 border rounded-sm ${errors.title ? "border-red-500" : "border-border"}`}
-            placeholder="Enter a short, descriptive title"
-            maxLength={MAX_TITLE + 100}
-            disabled={saving || isCompressing}
-          />
-          <div className={`text-xs mb-2 ${titleLen > MAX_TITLE ? "text-red-600" : "text-dark-gray"}`}>
-            {titleLen}/{MAX_TITLE}
-            {titleLen > MAX_TITLE ? " — over limit" : ""}
-          </div>
-          {errors.title && <p className="text-red-600 text-sm mb-3">{errors.title}</p>}
-
-          {/* 正文 */}
-          <label htmlFor="post-content" className="block text-gray-900 text-sm font-medium mb-1">
-            Content
-          </label>
-          <textarea
-            id="post-content"
-            ref={contentRef}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className={`w-full p-2 mb-1 border text-gray-600 rounded-sm ${errors.content ? "border-red-500" : "border-border"}`}
-            rows={10}
-            placeholder="Write your content here. Line breaks will be preserved."
-            disabled={saving || isCompressing}
-          />
-          {errors.content && <p className="text-red-600 text-sm mb-3">{errors.content}</p>}
-
-          {/* 视频 URL */}
-          <div className="mt-4">
-            <label className="block text-sm font-medium mb-1 text-gray-900">Video URLs</label>
-            <div className="flex gap-2">
-              <input
-                type="url"
-                value={videoInput}
-                onChange={(e) => setVideoInput(e.target.value)}
-                className="flex-1 p-2 border rounded-sm border-border"
-                placeholder="https://youtube.com/watch?v=..."
-                disabled={saving || isCompressing}
-              />
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={addVideo}
-                disabled={!videoInput.trim() || saving || isCompressing}
-              >
-                <PlusIcon className="h-4 w-4 mr-1" />
-                Add
-              </Button>
-            </div>
-
-            {videos.length > 0 && (
-              <ul className="mt-2 space-y-1">
-                {videos.map((v, i) => (
-                  <li
-                    key={`${v}-${i}`}
-                    className="text-sm flex items-center justify-between bg-gray-50 border border-border rounded px-2 py-1"
-                  >
-                    <span className="truncate mr-2">{v}</span>
-                    <button
-                      className="text-red-600 hover:underline text-xs disabled:opacity-50"
-                      onClick={() => removeVideo(i)}
-                      disabled={saving || isCompressing}
-                    >
-                      Remove
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          {/* 已有图片（编辑态） */}
-          <div className="border border-border p-2 mt-2">
-            {existingImages.length > 0 && (
-              <div>
-                <div className="text-sm font-medium mb-1 text-gray-900">Existing Images</div>
-                <ul className="mt-2 grid grid-cols-4 md:grid-cols-8 gap-2">
-                  {existingImages.map((f) => (
-                    <li key={`${f.id}-${f.url}`} className="border border-border rounded p-1">
-                      <img
-                        src={f.url}
-                        alt={f.filename}
-                        className="w-full object-cover rounded mb-2 aspect-square"
-                      />
-                      <div className="text-[10px] truncate">{f.filename}</div>
-                      {typeof f.file_size === "number" && (
-                        <div className="text-[11px] text-dark-gray">
-                          {(f.file_size / 1024 / 1024).toFixed(2)} MB
-                        </div>
-                      )}
-                      {f.id != null && (
-                        <button
-                          className="mt-1 p-1 text-red-600 hover:bg-red-50 rounded text-xs disabled:opacity-50"
-                          onClick={() => removeFileId(f.id)}
-                          title="Unlink this image from the post"
-                          disabled={saving || isCompressing}
-                        >
-                          Remove
-                        </button>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* 新增上传：图片 */}
-            <div className="mt-6">
-              <label className="block text-sm font-medium mb-1 text-gray-900">Add Images</label>
-              <input
-                type="file"
-                multiple
-                accept={IMAGE_ACCEPT}
-                onChange={onPickImages}
-                className="block w-full text-sm text-dark-gray file:mr-3 file:py-2 file:px-3 file:rounded-sm file:border-0 file:text-sm file:font-medium file:bg-gray-100 hover:file:bg-gray-200 disabled:opacity-50"
-                disabled={saving || isCompressing}
-              />
-
-              {localImages.length > 0 && (
-                <ul className="mt-2 grid grid-cols-4 md:grid-cols-8 gap-2">
-                  {localImages.map((f, i) => (
-                    <li key={`${f.name}-${f.size}-${i}`} className="border border-border rounded p-1">
-                      <img
-                        src={URL.createObjectURL(f)}
-                        alt={f.name}
-                        className="w-full object-cover rounded mb-2 aspect-square"
-                      />
-                      <div className="text-xs truncate">{f.name}</div>
-                      <div className="text-[11px] text-dark-gray">{(f.size / 1024 / 1024).toFixed(2)} MB</div>
-                      <button
-                        className="mt-1 p-1 text-red-600 hover:bg-red-50 rounded text-xs disabled:opacity-50"
-                        onClick={() => removeLocalImage(i)}
-                        title="Remove file"
-                        disabled={saving || isCompressing}
-                      >
-                        Remove
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-
-          {/* 已有文档 + 新增上传：文档 */}
-          <div className="border border-border p-2 mt-2">
-            {existingDocs.length > 0 && (
-              <div>
-                <div className="flex items-center justify-between text-gray-900">
-                  <div className="text-sm font-medium mb-1">Existing Documents</div>
-                </div>
-                <ul className="mt-2 divide-y divide-gray-200 border border-border rounded">
-                  {existingDocs.map((f) => (
-                    <li key={`${f.id}-${f.url}`} className="flex items-center justify-between px-2 py-1 text-sm">
-                      <a
-                        href={f.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="truncate hover:underline"
-                        title={f.filename}
-                      >
-                        {f.filename}
-                      </a>
-                      <div className="flex items-center gap-2">
-                        {typeof f.file_size === "number" && (
-                          <span className="text-xs text-dark-gray">
-                            {(f.file_size / 1024 / 1024).toFixed(2)} MB
-                          </span>
-                        )}
-                        {f.id != null && (
-                          <button
-                            className="p-1 text-red-600 hover:bg-red-50 rounded text-xs disabled:opacity-50"
-                            onClick={() => removeFileId(f.id)}
-                            title="Unlink this document from the post"
-                            disabled={saving || isCompressing}
-                          >
-                            Remove
-                          </button>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <div className="mt-6">
-              <label className="block text-sm font-medium mb-1 text-gray-900">Add Documents</label>
-              <input
-                type="file"
-                multiple
-                accept={DOC_ACCEPT}
-                onChange={onPickDocs}
-                className="block w-full text-sm text-dark-gray file:mr-3 file:py-2 file:px-3 file:rounded-sm file:border-0 file:text-sm file:font-medium file:bg-gray-100 hover:file:bg-gray-200 disabled:opacity-50"
-                disabled={saving || isCompressing}
-              />
-              <p id="doc-size-hint" className="mt-1 text-xs text-dark-gray">
-                * Each file ≤ {MAX_DOC_MB} MB.
-              </p>
-
-              {localDocs.length > 0 && (
-                <ul className="mt-2 divide-y divide-gray-200 border border-border rounded">
-                  {localDocs.map((f, i) => (
-                    <li key={`${f.name}-${f.size}-${i}`} className="flex items-center justify-between px-2 py-1 text-sm">
-                      <div className="min-w-0">
-                        <div className="truncate">{f.name}</div>
-                        <div className="text-xs text-dark-gray">
-                          {(f.size / 1024 / 1024).toFixed(2)} MB
-                        </div>
-                      </div>
-                      <button
-                        className="p-1 text-red-600 hover:bg-red-50 rounded text-xs disabled:opacity-50"
-                        onClick={() => removeLocalDoc(i)}
-                        title="Remove file"
-                        disabled={saving || isCompressing}
-                      >
-                        Remove
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
+          {step === 1 ? (
+            <BasicsPanel
+              title={title}
+              setTitle={setTitle}
+              titleLen={titleLen}
+              maxTitle={MAX_TITLE}
+              description={description}
+              setDescription={setDescription}
+              content={content}
+              setContent={setContent}
+              errors={errors}
+              setErrors={setErrors}
+              titleRef={titleRef}
+              contentRef={contentRef}
+              saving={saving}
+              isCompressing={isCompressing}
+            />
+          ) : (
+            <MediaPanel
+              videos={videos}
+              setVideos={setVideos}
+              localImages={localImages}
+              setLocalImages={setLocalImages}
+              localDocs={localDocs}
+              setLocalDocs={setLocalDocs}
+              fileIds={fileIds}
+              setFileIds={setFileIds}
+              onPickImages={onPickImages}
+              onPickDocs={onPickDocs}
+              removeLocalImage={removeLocalImage}
+              removeLocalDoc={removeLocalDoc}
+              removeFileId={removeFileId}
+              existingImages={existingImages}
+              existingDocs={existingDocs}
+              isCompressing={isCompressing}
+              compressDone={compressDone}
+              compressTotal={compressTotal}
+              formatMB={formatMB}
+              IMAGE_ACCEPT={IMAGE_ACCEPT}
+              DOC_ACCEPT={DOC_ACCEPT}
+              saving={saving}
+              uploadingPercent={uploadingPercent}
+            />
+          )}
         </section>
 
         {/* Footer */}
         <footer className="flex justify-between gap-5 px-4 md:px-6 py-3 border-t border-border/70 sticky bottom-0 bg-white z-10">
-          {isCompressing && (
+          {/* 左侧状态提示（仅 Step 2 显示压缩提示） */}
+          {step === 2 && isCompressing && (
             <div
-              className="mx-4 md:mx-6 mb-2 rounded-sm bg-yellow/10 border border-yellow/30 text-yellow-800 text-sm px-3 py-2"
+              className="rounded-sm bg-yellow/10 border border-yellow/30 text-yellow-800 text-sm px-3 py-2"
               role="status"
               aria-live="polite"
             >
@@ -627,7 +449,8 @@ export default function PostModal({
               Compressing images… {compressDone}/{compressTotal}
             </div>
           )}
-          <div className="inline-flex gap-4 ml-auto">
+
+          <div className="inline-flex gap-3 ml-auto">
             <Button
               type="button"
               variant="outline"
@@ -637,24 +460,33 @@ export default function PostModal({
             >
               Cancel
             </Button>
-            <Button
-              variant="primary"
-              onClick={handleSave}
-              disabled={saving || isCompressing}
-            >
-              {saving
-                ? "Saving…" // 保存阶段统一显示 Saving…
-                : (uploadingPercent > 0
-                  ? `Uploading… ${Math.min(99, uploadingPercent)}%` // 上传阶段最多 99%
-                  : (isNew ? "Create" : "Save"))
-              }
 
-            </Button>
+            {step === 1 && (
+              <Button onClick={goNext} disabled={saving || isCompressing || !isStep1Valid}>                Next
+              </Button>
+            )}
+
+            {step === 2 && (
+              <>
+                <Button variant="outline" onClick={goBack} disabled={saving || isCompressing}>
+                  Back
+                </Button>
+                <Button variant="primary" onClick={handleSave} disabled={saving || isCompressing}>
+                  {saving
+                    ? "Saving…"
+                    : uploadingPercent > 0
+                      ? `Uploading… ${Math.min(99, uploadingPercent)}%`
+                      : isNew
+                        ? "Create"
+                        : "Save"}
+                </Button>
+              </>
+            )}
           </div>
         </footer>
       </div>
 
-      {/* 关闭确认弹窗：保存并关闭 or 放弃更改 */}
+      {/* 关闭确认弹窗 */}
       <SaveConfirmModal
         onConfirm={confirmSaveAndClose}
         onCancel={confirmCloseWithoutSaving}
