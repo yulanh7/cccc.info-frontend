@@ -99,16 +99,6 @@ function GroupsPageInner() {
   }, [mobileSearchOpen]);
 
 
-  const saveGroupAndRedirect = React.useCallback(
-    async (g: any) => {
-      await innerSaveGroup(g);
-      if (isNew) {
-        // 强制进入 All，并回到第 1 页
-        router.push("/groups?tab=all&page=1");
-      }
-    },
-    [innerSaveGroup, isNew, router]
-  );
 
   return (
     <>
@@ -324,7 +314,7 @@ function GroupsPageInner() {
         <GroupModal
           group={selectedGroup}
           isNew={isNew}
-          onSave={saveGroupAndRedirect}
+          onSave={saveGroup}
           onClose={closeModal}
           saving={modalSaving}
           externalErrors={modalErrors}
