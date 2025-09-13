@@ -87,6 +87,8 @@ export default function PostModal({
 
   // 额外：压缩状态（防止压缩中保存/关闭）
   const [isCompressing, setIsCompressing] = useState(false);
+  const [compressTotal, setCompressTotal] = useState(0);
+  const [compressDone, setCompressDone] = useState(0);
 
   // 常量（图片/文档限制）
   const TARGET_IMAGE_BYTES = 700 * 1024; // 单图目标上限
@@ -202,12 +204,12 @@ export default function PostModal({
     const picked = inputEl.files ? Array.from(inputEl.files) : [];
     if (!picked.length) return;
 
-    // 在任何 await 前，立即清空，避免后续再访问 e.currentTarget 导致 null
-    inputEl.value = "";
-
+    inputEl.value = "";        // ← 仍然先清空
     setIsCompressing(true);
+    setCompressTotal(picked.length);   // ✅ 新增
+    setCompressDone(0);                // ✅ 新增
+
     try {
-      // (1) 极端大图直接拦截
       const tooHuge = picked.filter((f) => f.size > MAX_INPUT_IMAGE_BYTES);
       if (tooHuge.length) {
         alert(
@@ -217,11 +219,9 @@ export default function PostModal({
       }
       const candidates = picked.filter((f) => f.size <= MAX_INPUT_IMAGE_BYTES);
 
-      // (2) 顺序压缩（避免并发占内存）
       const processed: File[] = [];
       for (const f of candidates) {
         try {
-          // GIF 不压缩（在 compressImageFile 内部已兜底）
           const out = await compressImageFile(f, {
             targetBytes: TARGET_IMAGE_BYTES,
             maxLongEdge: MAX_LONG_EDGE,
@@ -230,18 +230,23 @@ export default function PostModal({
           processed.push(out);
         } catch (err) {
           console.error("Compress failed:", err);
-          processed.push(f); // 失败则保留原图
+          processed.push(f);
+        } finally {
+          // ✅ 无论成功失败，都推进计数
+          setCompressDone((d) => d + 1);
         }
       }
 
-      // (3) 去重（按 name+size）
       const existing = new Map(localImages.map((f) => [`${f.name}-${f.size}`, true]));
       const deduped = processed.filter((f) => !existing.has(`${f.name}-${f.size}`));
       setLocalImages((prev) => [...prev, ...deduped]);
     } finally {
       setIsCompressing(false);
+      // 保留 compressTotal/compressDone 值一会儿也行；想复位可一起清零：
+      // setCompressTotal(0); setCompressDone(0);
     }
   };
+
 
   /* ---------- 文件选择：文档 ---------- */
   const onPickDocs: React.ChangeEventHandler<HTMLInputElement> = (e) => {
@@ -611,25 +616,37 @@ export default function PostModal({
         </section>
 
         {/* Footer */}
-        <footer className="flex justify-end gap-5 px-4 md:px-6 py-3 border-t border-border/70 sticky bottom-0 bg-white z-10">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleCancelClick}
-            ref={cancelButtonRef}
-            disabled={saving || isCompressing}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            onClick={handleSave}
-            disabled={saving || isCompressing}
-          >
-            {saving
-              ? (uploadingPercent > 0 ? `Uploading… ${uploadingPercent}%` : "Saving…")
-              : (isNew ? "Create" : "Save")}
-          </Button>
+        <footer className="flex justify-between gap-5 px-4 md:px-6 py-3 border-t border-border/70 sticky bottom-0 bg-white z-10">
+          {isCompressing && (
+            <div
+              className="mx-4 md:mx-6 mb-2 rounded-sm bg-yellow/10 border border-yellow/30 text-yellow-800 text-sm px-3 py-2"
+              role="status"
+              aria-live="polite"
+            >
+              <span className="inline-block mr-2 animate-pulse">●</span>
+              Compressing images… {compressDone}/{compressTotal}
+            </div>
+          )}
+          <div className="inline-flex gap-4 ml-auto">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCancelClick}
+              ref={cancelButtonRef}
+              disabled={saving || isCompressing}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleSave}
+              disabled={saving || isCompressing}
+            >
+              {saving
+                ? (uploadingPercent > 0 ? `Uploading… ${uploadingPercent}%` : "Saving…")
+                : (isNew ? "Create" : "Save")}
+            </Button>
+          </div>
         </footer>
       </div>
 
