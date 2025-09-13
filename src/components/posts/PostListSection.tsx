@@ -63,7 +63,11 @@ export default function PostListSection({
     <section className={`relative ${className}`}>
       {/* 首次骨架 */}
       {initialPostsLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-[3px]">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
           <CardSkeleton />
           <CardSkeleton />
           <CardSkeleton />
