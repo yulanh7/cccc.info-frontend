@@ -11,14 +11,11 @@ import {
   CalendarIcon,
   UserGroupIcon,
   EyeIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  XMarkIcon,
   PencilSquareIcon,
   TrashIcon,
   HandThumbUpIcon as HandThumbUpOutline,
 } from "@heroicons/react/24/outline";
-import { HandThumbUpIcon as HandThumbUpSolid } from "@heroicons/react/24/solid";
+import ImageLightboxGrid from "@/components/ui/ImageLightboxGrid";
 import { formatDate } from "@/app/ultility";
 import { fetchPostDetail, updatePost, deletePost } from "@/app/features/posts/slice";
 import {
@@ -109,9 +106,7 @@ function PostDetailPageInner() {
     () => splitFiles(post?.files || []),
     [post?.files]
   );
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [lightboxIdx, setLightboxIdx] = useState(0);
-  const touchStartX = useRef<number | null>(null);
+
 
   const confirmOwnDelete = useConfirm<number>("Delete this post?");
   const confirmOtherDelete = useConfirm<number>(
@@ -257,43 +252,6 @@ function PostDetailPageInner() {
   const isLong = content.length > maxChars;
   const shown = expanded || !isLong ? content : content.slice(0, maxChars);
 
-  // —— 灯箱控制
-  const openLightbox = (idx: number) => {
-    setLightboxIdx(idx);
-    setLightboxOpen(true);
-  };
-  const closeLightbox = () => setLightboxOpen(false);
-  const prevImg = useCallback(() => {
-    setLightboxIdx((i) => (i - 1 + images.length) % images.length);
-  }, [images.length]);
-  const nextImg = useCallback(() => {
-    setLightboxIdx((i) => (i + 1) % images.length);
-  }, [images.length]);
-
-  // 键盘左右/Escape
-  useEffect(() => {
-    if (!lightboxOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeLightbox();
-      else if (e.key === "ArrowLeft") prevImg();
-      else if (e.key === "ArrowRight") nextImg();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [lightboxOpen, prevImg, nextImg]);
-
-  // 触摸滑动
-  const onTouchStart: React.TouchEventHandler<HTMLDivElement> = (e) => {
-    touchStartX.current = e.changedTouches[0].clientX;
-  };
-  const onTouchEnd: React.TouchEventHandler<HTMLDivElement> = (e) => {
-    if (touchStartX.current == null) return;
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    // 阈值 40px
-    if (dx > 40) prevImg();
-    if (dx < -40) nextImg();
-    touchStartX.current = null;
-  };
 
   // YouTube 需要 string[] 的视频链接
   const videoUrls = useMemo(
@@ -326,7 +284,7 @@ function PostDetailPageInner() {
                   iframeClassName="w-full h-[200px] md:h-[400px] rounded-sm"
                 />
               ) : (
-                <div className="hidden md:flex w-full min-h-20 md:min-h-30 bg-[url('/images/bg-for-homepage.png')] bg-cover bg-center rounded-t-xs md:rounded-t-sm items-center justify-center">
+                <div className="flex w-full px-2 py-4 bg-[url('/images/bg-for-homepage.png')] bg-cover bg-center rounded-t-xs md:rounded-t-sm items-center justify-center">
                   <h2 className="text-dark-gray text-xl md:text-5xl font-'Apple Color Emoji' font-semibold text-center px-4">
                     {post.title}
                   </h2>
@@ -335,13 +293,13 @@ function PostDetailPageInner() {
             </div>
 
 
-            <div className="flex items-center justify-between gap-2 mt-3">
-              <h1 className="text-2xl mb-2">{post.title}</h1>
+            <div className="flex items-center justify-between gap-2 mt-3 ">
+              <h1 className="hidden md:inline text-2xl">{post.title}</h1>
 
               <div className="md:flex items-center gap-2">
 
                 {!!post && (
-                  <div className="flex items-center gap-2">
+                  <div className="hidden md:flex items-center gap-2">
                     {/* 编辑：只能帖子作者 */}
                     {isPostAuthor(post, user) && (
                       <IconButton
@@ -377,7 +335,7 @@ function PostDetailPageInner() {
             </div>
 
 
-            <div className="flex flex-wrap gap-3 mb-3">
+            <div className="flex flex-wrap gap-3 mb-3 mt-4">
 
               <Link
                 href={`/groups/${post.group?.id}`}
@@ -427,22 +385,14 @@ function PostDetailPageInner() {
             {/* 图片缩略图 */}
             {images.length > 0 && (
               <div className="mb-4">
-                <ul className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
-                  {images.map((img, idx) => (
-                    <li
-                      key={`${img.id ?? img.url}-${idx}`}
-                      className="relative cursor-zoom-in aspect-square"
-                      onClick={() => openLightbox(idx)}
-                      title="Click to preview"
-                    >
-                      <img
-                        src={img.url}
-                        alt={img.filename}
-                        className="w-full h-full object-cover rounded-sm border border-border"
-                      />
-                    </li>
-                  ))}
-                </ul>
+                <ImageLightboxGrid
+                  items={images.map((img) => ({
+                    id: img.id,
+                    url: img.url,
+                    filename: img.filename,
+                    alt: img.filename,
+                  }))}
+                />
               </div>
             )}
 
@@ -502,56 +452,7 @@ function PostDetailPageInner() {
               />
             )}
 
-            {/* 图片灯箱 */}
-            {lightboxOpen && images.length > 0 && (
-              <div
-                className="fixed inset-0 z-40 bg-black/80 flex items-center justify-center"
-                onClick={closeLightbox}
-                onTouchStart={onTouchStart}
-                onTouchEnd={onTouchEnd}
-              >
-                <button
-                  className="absolute top-4 right-4 text-white p-1 rounded hover:bg-white/10"
-                  onClick={(e) => { e.stopPropagation(); closeLightbox(); }}
-                  aria-label="Close preview"
-                  title="Close"
-                >
-                  <XMarkIcon className="h-7 w-7" />
-                </button>
 
-                <button
-                  className="absolute left-3 md:left-6 text-white p-2 rounded hover:bg-white/10"
-                  onClick={(e) => { e.stopPropagation(); prevImg(); }}
-                  aria-label="Previous image"
-                  title="Previous"
-                >
-                  <ChevronLeftIcon className="h-8 w-8" />
-                </button>
-
-                <img
-                  src={images[lightboxIdx].url}
-                  alt={images[lightboxIdx].filename}
-                  className="max-h-[85vh] max-w-[90vw] object-contain rounded"
-                  onClick={(e) => e.stopPropagation()}
-                />
-
-                <button
-                  className="absolute right-3 md:right-6 text-white p-2 rounded hover:bg-white/10"
-                  onClick={(e) => { e.stopPropagation(); nextImg(); }}
-                  aria-label="Next image"
-                  title="Next"
-                >
-                  <ChevronRightIcon className="h-8 w-8" />
-                </button>
-
-                <div
-                  className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white text-sm bg-black/40 px-3 py-1 rounded"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {lightboxIdx + 1}/{images.length}
-                </div>
-              </div>
-            )}
           </div>
         </>
 
