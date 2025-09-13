@@ -576,14 +576,13 @@ export default function PostModal({
           <Button
             type="button"
             variant="outline"
-            size="sm"
             onClick={handleCancelClick}
             ref={cancelButtonRef}
             disabled={saving}
           >
             Cancel
           </Button>
-          <Button variant="primary" size="sm" onClick={handleSave} disabled={saving}>
+          <Button variant="primary" onClick={handleSave} disabled={saving}>
             {saving
               ? (uploadingPercent > 0 ? `Uploading… ${uploadingPercent}%` : "Saving…")
               : (isNew ? "Create" : "Save")}

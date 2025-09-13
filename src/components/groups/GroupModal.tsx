@@ -274,7 +274,6 @@ export default function GroupEditModal({
           <Button
             type="button"
             variant="outline"
-            size="sm"
             onClick={handleCancelClick}
             ref={cancelButtonRef}
             disabled={saving}
@@ -284,7 +283,6 @@ export default function GroupEditModal({
           <Button
             type="button"
             variant="primary"
-            size="sm"
             onClick={handleSave}
             disabled={
               saving ||
