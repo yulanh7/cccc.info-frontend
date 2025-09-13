@@ -106,8 +106,15 @@ export default function PostModal({
   const MAX_DOC_FILE_SIZE = MAX_DOC_MB * 1024 * 1024;
 
   /* ---------- 初始化/回填 ---------- */
+  // 仅在首次打开（或切换到不同的 post.id）时，把外部数据灌入本地状态
+  const didInitRef = React.useRef(false);
+  const seedId = item && (item as any).id ? String((item as any).id) : "new";
   useEffect(() => {
     if (!item) return;
+    // 如果是新建：只在首次挂载时初始化
+    // 如果是编辑：当 seedId（post.id）变化时才重新初始化
+    if (didInitRef.current && seedId !== "new") return;
+
     setTitle(item.title ?? "");
     setDescription(item.description ?? "");
     setContent(item.content ?? "");
@@ -118,7 +125,9 @@ export default function PostModal({
     );
     setLocalImages([]);
     setLocalDocs([]);
-  }, [item, existingFiles]);
+
+    didInitRef.current = true;
+  }, [seedId, item]);
 
   const { images: existingImagesAll, documents: existingDocsAll } = useMemo(
     () => splitFiles(existingFiles || []),
@@ -480,14 +489,18 @@ export default function PostModal({
                 <Button variant="outline" tone="brand" onClick={goBack} disabled={saving || isCompressing}>
                   Back to Basics
                 </Button>
-                <Button variant="primary" onClick={handleSave} disabled={saving || isCompressing}>
-                  {saving
-                    ? "Saving…"
-                    : uploadingPercent > 0
+                <Button
+                  variant="primary"
+                  onClick={handleSave}
+                  loading={saving || uploadingPercent > 0}
+                  loadingText={
+                    uploadingPercent > 0
                       ? `Uploading… ${Math.min(99, uploadingPercent)}%`
-                      : isNew
-                        ? "Create"
-                        : "Save"}
+                      : (isNew ? "Creating…" : "Saving…")
+                  }
+                  disabled={isCompressing}
+                >
+                  {isNew ? "Create" : "Save"}
                 </Button>
               </>
             )}
