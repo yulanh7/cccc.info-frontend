@@ -643,8 +643,12 @@ export default function PostModal({
               disabled={saving || isCompressing}
             >
               {saving
-                ? (uploadingPercent > 0 ? `Uploading… ${uploadingPercent}%` : "Saving…")
-                : (isNew ? "Create" : "Save")}
+                ? "Saving…" // 保存阶段统一显示 Saving…
+                : (uploadingPercent > 0
+                  ? `Uploading… ${Math.min(99, uploadingPercent)}%` // 上传阶段最多 99%
+                  : (isNew ? "Create" : "Save"))
+              }
+
             </Button>
           </div>
         </footer>

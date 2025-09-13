@@ -137,6 +137,7 @@ export function usePostListController<
 
       let newIds: number[] = [];
       try {
+        // —— 上传阶段（有文件才进入）
         if (form.localFiles?.length) {
           setUploading(true);
           setUploadingProgress(0);
@@ -144,31 +145,33 @@ export function usePostListController<
           const count = form.localFiles.length;
           const filePercents = Array(count).fill(0);
           const onEachProgress = (index: number, percent: number) => {
-            filePercents[index] = percent;
+            filePercents[index] = percent; // 0~100
             const avg = filePercents.reduce((a, b) => a + b, 0) / count;
-            setUploadingProgress(Math.round(avg));
+            // 上传阶段最多显示 99%，避免“卡 100%”
+            setUploadingProgress(Math.min(99, Math.round(avg)));
           };
 
-          // ⬇️ 新：接收 successIds / failures
           const { successIds, failures } = await uploadAllFiles(
             form.localFiles,
             dispatch,
             onEachProgress,
             2 // 小并发更稳
           );
+
           newIds = successIds;
 
           if (failures.length) {
-            const failedList = failures
-              .map((f) => `• ${f.name}: ${f.error}`)
-              .join("\n");
-            alert(
-              `Some files failed to upload:\n${failedList}\n\nThe post will be created without these files.`
-            );
-            // 如果你希望“有失败就不创建”，这里可以直接：return;
+            const failedList = failures.map((f) => `• ${f.name}: ${f.error}`).join("\n");
+            alert(`Some files failed to upload:\n${failedList}\n\nThe post will be created without these files.`);
+            // 若需要“有失败就终止”，此处可 return;
           }
+
+          // ✅ 关键：上传结束后，立刻退出 uploading 状态
+          setUploading(false);
+          setUploadingProgress(0);
         }
 
+        // —— 保存阶段（无论是否有文件都会走）
         const fileIds = [...(form.fileIds ?? []), ...newIds];
         const body: CreatePostRequest = {
           title: form.title?.trim() ?? "",
@@ -183,12 +186,14 @@ export function usePostListController<
         // 成功后刷新列表
         refreshCurrentPage();
       } finally {
+        // 兜底：若上面因异常提前 return，也确保复位
         setUploading(false);
         setUploadingProgress(0);
       }
     },
     [createPost, buildCreateArgs, dispatch, refreshCurrentPage]
   );
+
 
 
   // —— 单删（可选）

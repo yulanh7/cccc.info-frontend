@@ -184,16 +184,19 @@ function PostDetailPageInner() {
       setEditUploadingPercent(0);
 
       let uploadedIds: number[] = [];
+
       if (form.localFiles?.length) {
         const count = form.localFiles.length;
         const per = Array(count).fill(0);
+
         const { successIds, failures } = await uploadAllFiles(
           form.localFiles,
           dispatch,
           (idx, percent) => {
+            // ✅ 进度取平均，但最多显示 99%
             per[idx] = percent;
             const avg = per.reduce((a, b) => a + b, 0) / count;
-            setEditUploadingPercent(Math.round(avg));
+            setEditUploadingPercent(Math.min(99, Math.round(avg)));
           },
           2 // 小并发
         );
@@ -201,10 +204,14 @@ function PostDetailPageInner() {
         uploadedIds = successIds;
 
         if (failures.length) {
-          // 给用户明确反馈
           const failedList = failures.map(f => `• ${f.name}: ${f.error}`).join("\n");
           alert(`Some files failed to upload:\n${failedList}\n\nThe post will be saved without these files.`);
         }
+
+        // ✅ 上传完立刻退出“Uploading%”状态，让按钮回到 “Saving…”
+        setEditUploadingPercent(0);
+        // 可选：为了丝滑一点，加入极短缓冲
+        // await new Promise(r => setTimeout(r, 120));
       }
 
       const fileIds = [...(form.fileIds ?? []), ...uploadedIds];
@@ -224,12 +231,13 @@ function PostDetailPageInner() {
     } catch (e: any) {
       alert(e?.message || "Update post failed");
       // ❌ 失败则不关闭，保持在编辑态
-      throw e; // ⬅️ 抛给 PostModal 的 try/catch，让“保存并关闭”不关
+      throw e; // 抛给 PostModal 的 try/catch，避免“保存并关闭”把弹窗关掉
     } finally {
       setEditSaving(false);
       setEditUploadingPercent(0);
     }
   };
+
 
 
   const onToggleLike = async () => {
