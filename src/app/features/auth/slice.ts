@@ -12,9 +12,6 @@ import {
 import {
   UserProps,
   AuthResponseData,
-  ProfileGetResponse,
-  ProfileUpdateBody,
-  ProfileUpdateResponse,
   ProfileGetData,
 } from '@/app/types/user';
 import { LoginCredentials, SignupCredentials } from '@/app/types/auth';
