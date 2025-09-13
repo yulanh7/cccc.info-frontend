@@ -5,6 +5,7 @@ import React from "react";
 import { PencilSquareIcon, TrashIcon, CalendarIcon, UserGroupIcon } from "@heroicons/react/24/outline";
 import IconButton from "@/components/ui/IconButton";
 import type { PostDetailData } from "@/app/types";
+import Link from 'next/link';
 
 type Props = {
   post: PostDetailData;
@@ -82,12 +83,14 @@ export default function PostInfoBar({
               </span>
               <span>{post.author?.first_name}</span>
             </span>
-
-
-            <span className="inline-flex items-center gap-1.5">
-              <UserGroupIcon className="h-5 w-5" />
-              {post.group?.name}
-            </span>
+            <Link
+              href={`/groups/${post.group?.id}`}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <UserGroupIcon className="h-5 w-5" />
+                {post.group?.name}
+              </span>
+            </Link>
             <span className="inline-flex items-center gap-1.5">
               <CalendarIcon className="h-5 w-5" />
               <time dateTime={post.created_at} className="font-medium">

@@ -1,5 +1,6 @@
 "use client";
 import { Suspense } from "react";
+import Link from 'next/link';
 import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useParams, useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
@@ -415,10 +416,14 @@ function PostDetailPageInner() {
                   {post?.author?.first_name}
                 </span>
               </span>
-              <div className="text-xs  md:text-sm flex items-center">
-                <UserGroupIcon className="h-4 w-4 mr-1 text-dark-green" />
-                {post.group.name}
-              </div>
+              <Link
+                href={`/groups/${post.group?.id}`}
+              >
+                <div className="text-xs  md:text-sm flex items-center hover:underline">
+                  <UserGroupIcon className="h-4 w-4 mr-1 text-dark-green" />
+                  {post.group.name}
+                </div>
+              </Link>
               <div className="text-xs md:text-sm flex items-center">
                 <CalendarIcon className="h-4 w-4 mr-1 text-dark-green" /> {formatDate(post.created_at)}
               </div>
