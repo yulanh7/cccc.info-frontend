@@ -11,10 +11,10 @@ import {
   selectChildCommentsFeed,
 } from "@/app/features/posts/commentsSlice";
 import type { CommentItemApi } from "@/app/types/comments";
-import { ChatBubbleLeftIcon, TrashIcon, ArrowUturnLeftIcon } from "@heroicons/react/24/outline";
+import { TrashIcon, ArrowUturnLeftIcon } from "@heroicons/react/24/outline";
 import clsx from "clsx";
-import Button from "@/components/ui/Button";
-import IconButton from "@/components/ui/IconButton";
+import { ellipsize } from "@/app/ultility";
+
 
 type Props = {
   postId: number;
@@ -77,7 +77,7 @@ export default function CommentsSection({
   };
 
   return (
-    <div className="mt-8 md:mt-10 pb-24 shadow-md px-6 pt-6"> {/* 底部输入框预留空间 */}
+    <div className="mt-8 md:mt-10 pb-24 px-2 pt-6 border-t-1 border-border"> {/* 底部输入框预留空间 */}
       <p className=" font-semibold text-dark-gray mb-3 flex items-center gap-2">
         <span className="text-gray font-normal">
           {rootPg?.total_comments ?? 0}
@@ -196,7 +196,9 @@ function CommentItem({
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-900">{c.user.firstName}</span>
+            <span className="text-sm font-medium text-gray-900">
+              {ellipsize(c.user.firstName, 10, { byWords: true })}
+            </span>
             {isAuthor && (
               <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
                 author
@@ -246,7 +248,7 @@ function CommentItem({
 
           {/* 子评论区域 */}
           {expanded && (
-            <div className="mt-3 pl-4 border-l border-gray-200">
+            <div className="mt-3 pl-2">
               {status === "loading" && children.length === 0 && (
                 <div className="text-xs text-gray-500">Loading replies…</div>
               )}
@@ -308,7 +310,9 @@ function ChildCommentItem({
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-900">{c.user.firstName}</span>
+          <span className="text-sm font-medium text-gray-900">
+            {ellipsize(c.user.firstName, 10, { byWords: true })}
+          </span>
           {isAuthor && (
             <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
               author
