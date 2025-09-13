@@ -368,6 +368,11 @@ function PostDetailPageInner() {
               <div className="text-xs md:text-sm flex items-center">
                 <CalendarIcon className="h-4 w-4 mr-1 text-dark-green" /> {formatDate(post.created_at)}
               </div>
+              {isPostAuthor(post, user) && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded border border-dark-green text-dark-green">
+                  Owner
+                </span>
+              )}
             </div>
 
             {/* 正文（纯文本 + 保留换行，点击文字本身可收起） */}
