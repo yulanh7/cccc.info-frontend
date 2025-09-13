@@ -79,7 +79,7 @@ export default function PostsListWithPagination({
     }
 
     return (
-      <div className="columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-1">
+      <div className="columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-[3px]">
         {rows.map((post) => {
           const canManageEdit = !!canEdit?.(post);
           const canManageDelete = !!canDelete?.(post);

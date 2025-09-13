@@ -114,7 +114,7 @@ function HomePageInner() {
       />
       <PageTitle title="Home" showPageTitle={true} />
 
-      <div className="container mx-auto md:p-6 p-2 mt-0 md:mt-16">
+      <div className="container mx-auto md:p-6 p-1 mt-0 md:mt-16">
         <PostListSection
           rows={rows}
           totalPages={totalPages}
