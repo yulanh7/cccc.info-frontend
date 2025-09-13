@@ -99,7 +99,7 @@ export default function PostModal({
   const [compressDone, setCompressDone] = useState(0);
 
   // 常量（图片/文档限制）
-  const TARGET_IMAGE_BYTES = 700 * 1024; // 单图目标上限
+  const TARGET_IMAGE_BYTES = 300 * 1024; // 单图目标上限
   const MAX_INPUT_IMAGE_BYTES = 25 * 1024 * 1024; // 极端大图拦截
   const MAX_LONG_EDGE = 1920; // 最长边
   const MAX_DOC_MB = 40;
