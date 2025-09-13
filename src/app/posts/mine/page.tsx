@@ -107,7 +107,7 @@ function MyPostsPageInner() {
         showLogo={true}
       />
       <PageTitle title="My Posts" showPageTitle={true} />
-      <div className="container mx-auto md:p-6 p-2 mt-1 md:mt-16">
+      <div className="container mx-auto md:p-6 p-1 mt-1 md:mt-16">
         {rows.length > 0 && showHint && (
           <div
             className="mb-3 flex items-center justify-between gap-3 rounded-md border border-border bg-white px-3 py-2 text-sm shadow-sm"
