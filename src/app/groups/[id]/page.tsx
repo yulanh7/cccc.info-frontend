@@ -440,7 +440,7 @@ function GroupDetailPageInner() {
           onClick={() => setIsPostModalOpen(true)}
           className="fixed  bottom-20 z-10 right-10 bg-yellow p-2 rounded-[50%]"
         >
-          <PlusIcon className="h-5 w-5 text-white" />
+          <PlusIcon className="h-5 w-5 md:w-7 md:h-7 text-white" />
         </button>
       )}
     </>

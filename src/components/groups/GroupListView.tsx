@@ -91,8 +91,7 @@ export default function GroupListView({
 
   return (
     <div className="space-y-4 mt-4">
-      {/* 顶部操作（桌面） */}
-      <div className="hidden md:flex justify-between my-6 ">
+      {/* <div className="hidden md:flex justify-between my-6 ">
         {canCreate && onAdd && (
           <Button
             onClick={onAdd}
@@ -103,15 +102,15 @@ export default function GroupListView({
             New Group
           </Button>
         )}
-      </div>
+      </div> */}
 
       {/* 移动端悬浮新增 */}
       {canCreate && onAdd && (
         <button
           onClick={onAdd}
-          className="fixed md:hidden bottom-20 z-10 right-10 bg-yellow p-2 rounded-[50%]"
+          className="fixed bottom-20 z-10 right-10 bg-yellow p-2 rounded-[50%]"
         >
-          <PlusIcon className="h-5 w-5 text-white" />
+          <PlusIcon className="h-5 w-5 md:h-7 md:w-7 text-white" />
         </button>
       )}
 
