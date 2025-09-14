@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import Button from "@/components/ui/Button";
 import type { PostFileApi } from "@/app/types";
+import { MAX_DOC_MB } from '@/app/constants'
 
 const isImageMime = (mime?: string) => !!mime && /^image\//i.test(mime);
 const isPdfOrDoc = (mime?: string) =>
@@ -276,7 +277,7 @@ export default function MediaPanel({
             className="block w-full text-sm text-dark-gray file:mr-3 file:py-2 file:px-3 file:rounded-sm file:border-0 file:text-sm file:font-medium file:bg-gray-100 hover:file:bg-gray-200 disabled:opacity-50"
             disabled={saving || isCompressing}
           />
-          <p className="mt-1 text-xs text-dark-gray">* Each file ≤ 40 MB.</p>
+          <p className="mt-1 text-xs text-dark-gray">* Each file ≤ {MAX_DOC_MB} MB.</p>
 
           {localDocs.length > 0 && (
             <ul className="mt-2 divide-y divide-gray-200 border border-border rounded">

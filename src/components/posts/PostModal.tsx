@@ -10,7 +10,13 @@ import BasicsPanel from "@/components/posts/BasicsPanel";
 import MediaPanel from "@/components/posts/MediaPanel";
 import StepDot from "@/components/posts/StepDot";
 import Stepper from "@/components/posts/Stepper";
-
+import {
+  TARGET_IMAGE_BYTES,
+  MAX_INPUT_IMAGE_BYTES,
+  MAX_LONG_EDGE,
+  MAX_DOC_MB,
+  MAX_DOC_FILE_SIZE
+} from '@/app/constants'
 /* ======================= 常量 & 工具 ======================= */
 const IMAGE_ACCEPT = ".png,.jpg,.jpeg,.gif,.bmp,.webp";
 const DOC_ACCEPT = ".doc,.docx,.pdf";
@@ -98,12 +104,7 @@ export default function PostModal({
   const [compressTotal, setCompressTotal] = useState(0);
   const [compressDone, setCompressDone] = useState(0);
 
-  // 常量（图片/文档限制）
-  const TARGET_IMAGE_BYTES = 300 * 1024; // 单图目标上限
-  const MAX_INPUT_IMAGE_BYTES = 25 * 1024 * 1024; // 极端大图拦截
-  const MAX_LONG_EDGE = 1920; // 最长边
-  const MAX_DOC_MB = 40;
-  const MAX_DOC_FILE_SIZE = MAX_DOC_MB * 1024 * 1024;
+
 
   /* ---------- 初始化/回填 ---------- */
   // 仅在首次打开（或切换到不同的 post.id）时，把外部数据灌入本地状态
