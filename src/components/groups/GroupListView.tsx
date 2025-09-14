@@ -242,16 +242,26 @@ export default function GroupListView({
       )}
 
       {/* 订阅确认弹窗（未订阅时点击卡片触发） */}
+
       <ConfirmModal
         isOpen={Boolean(pendingSubscribeGroup)}
-        onCancel={cancelAndEnter}
+        title="Follow this group?"
+        message={"We’ll show new posts on your Home feed.\nYou can unfollow anytime."}
+        // 主按钮：关注并进入
         onConfirm={confirmSubscribeAndEnter}
-        message={"Follow this group?\n\nGet updates on your Home feed. You can unfollow anytime."}
         confirmLabel="Follow"
-        cancelLabel="Continue without following"
         confirmVariant="primary"
-        cancelVariant="outline"
+        // 次要按钮：不关注但进入
+        onCancel={cancelAndEnter}
+        cancelLabel="Continue without following"
+        cancelVariant="ghost"
+        // 纯关闭（✕ / 遮罩 / Esc）：仅关闭，不导航
+        onClose={() => setPendingSubscribeGroup(null)}
+        showCloseButton
+        closeOnBackdrop
+        closeOnEsc
       />
+
 
     </div>
   );

@@ -56,7 +56,6 @@ export default function SubscribeToggle({
   className,
   confirmOnLeave = false,
   disabled = false,
-
   labelSubscribe,
   labelUnsubscribe,
   size = "sm",
@@ -142,7 +141,7 @@ export default function SubscribeToggle({
 
   // 默认渲染
   const common = {
-    size: "sm",
+    size: "md",
     onClick: toggle,
     disabled: disabled || busy,
     className,
