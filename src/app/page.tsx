@@ -128,24 +128,18 @@ function HomePageInner() {
             </h2>
 
             <p className="text-dark-gray mb-6">
-              Follow some groups to see updates on your Home feed. You can create posts inside groups you follow.
-            </p>
+              Your Home feed shows posts from groups you follow. Follow groups to get their latest posts here.            </p>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
-              {/* 主按钮：去发现/关注 */}
               <Link href="/groups?tab=all" className="contents">
                 <Button variant="primary" title="Browse all groups" className="w-40">
                   Browse Groups
                 </Button>
               </Link>
-              {/* 次按钮：管理已关注 */}
-              <Link href="/groups?tab=subscribed" className="contents">
-                <Button variant="secondary" title="Go to Subscribed groups" className="w-40">
-                  Go to Subscribed
-                </Button>
-              </Link>
+
             </div>
           </div>
+
 
         ) :
 

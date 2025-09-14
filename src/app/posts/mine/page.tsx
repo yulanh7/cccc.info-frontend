@@ -180,7 +180,7 @@ function MyPostsPageInner() {
               No posts yet
             </h2>
             <p className="text-dark-gray mb-6">
-              To create a post, please go to a group you’ve subscribed to and post there.
+              To create a post, please go to a group to and post there.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
