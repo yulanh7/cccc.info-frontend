@@ -79,6 +79,15 @@ export default function GroupListView({
       setPendingSubscribeGroup(null);
     }
   };
+  const cancelAndEnter = () => {
+    const g = pendingSubscribeGroup;
+    if (!g) {
+      setPendingSubscribeGroup(null);
+      return;
+    }
+    router.push(`/groups/${g.id}`);
+    setPendingSubscribeGroup(null);
+  };
 
   return (
     <div className="space-y-4 mt-4">
@@ -216,16 +225,9 @@ export default function GroupListView({
                       </span>
                     </span>
 
-                    {onToggleSubscription && (
-                      <div onClick={(e) => e.stopPropagation()}>
-                        <SubscribeToggleButton
-                          subbed={subbed}
-                          toggling={toggling}
-                          disabled={saving || deleting}
-                          onClick={() => onToggleSubscription(group)}
-                        />
-                      </div>
-                    )}
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <SubscribeToggleButton groupId={group.id} isMemberHint={group.is_member} />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -243,7 +245,7 @@ export default function GroupListView({
       {/* 订阅确认弹窗（未订阅时点击卡片触发） */}
       <ConfirmModal
         isOpen={Boolean(pendingSubscribeGroup)}
-        onCancel={() => setPendingSubscribeGroup(null)}
+        onCancel={cancelAndEnter}
         onConfirm={confirmSubscribeAndEnter}
         message="Subscribe to view this group?"
         confirmLabel="Subscribe"

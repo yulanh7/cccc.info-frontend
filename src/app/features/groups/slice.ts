@@ -46,7 +46,7 @@ interface GroupsState {
   visibleGroupsPagination: GroupListPaginationApi | null;
 
   /** 订阅成员映射（仅来自 subscribedGroups） */
-  userMembership: Record<number, true>;
+  userMembership: Record<number, boolean>;
 
   searchQuery: string;
   visibleSearchResults: GroupApi[];
@@ -135,7 +135,7 @@ export const fetchUserGroups = createAsyncThunk<
 
 /** 我订阅的群组（/user/subscribed-groups）——负责 userMembership */
 export const fetchUserSubscribedGroups = createAsyncThunk<
-  { groups: GroupApi[]; pagination: GroupListPaginationApi; membership: Record<number, true> },
+  { groups: GroupApi[]; pagination: GroupListPaginationApi; membership: Record<number, boolean> },
   { page?: number; per_page?: number } | undefined,
   { state: RootState; dispatch: AppDispatch }
 >('groups/fetchUserSubscribedGroups', async (params, { rejectWithValue, getState }) => {
@@ -151,7 +151,7 @@ export const fetchUserSubscribedGroups = createAsyncThunk<
 
     const currentUserId = (getState().auth.user?.id ?? undefined) as number | undefined;
     const groups = res.data.groups.map(g => normalizeFromUserGroups(g, currentUserId));
-    const membership = Object.fromEntries(groups.map(g => [g.id, true])) as Record<number, true>;
+    const membership = Object.fromEntries(groups.map(g => [g.id, true])) as Record<number, boolean>;
     return { groups, pagination: res.data.pagination, membership };
   } catch (e: any) {
     return rejectWithValue(e.message || 'Fetch user subscribed groups failed') as any;
@@ -365,6 +365,10 @@ const groupsSlice = createSlice({
       state.searchResults = [];
       state.searchPagination = null;
     },
+    setMembershipFlag: (state, action: PayloadAction<{ groupId: number; value: boolean }>) => {
+      const { groupId, value } = action.payload;
+      state.userMembership[groupId] = value; // true 或 false，永远保留 key
+    },
   },
   extraReducers: (builder) => {
     // create group
@@ -446,10 +450,8 @@ const groupsSlice = createSlice({
         s.userGroups = s.userGroups.filter(g => g.id !== id);
         s.subscribedGroups = s.subscribedGroups.filter(g => g.id !== id);
         if (s.currentGroup?.id === id) s.currentGroup = null;
-        if (s.userMembership[id]) {
-          const { [id]: _, ...rest } = s.userMembership;
-          s.userMembership = rest;
-        }
+        const { [id]: _ignored, ...rest } = s.userMembership;
+        s.userMembership = rest;
       })
       .addCase(deleteGroup.rejected, (s, a) => {
         setStatus(s, 'deleteGroup', 'failed');
@@ -508,10 +510,7 @@ const groupsSlice = createSlice({
         if (s.subscribedGroupsPagination && s.subscribedGroupsPagination.total > 0) {
           s.subscribedGroupsPagination.total -= 1;
         }
-        if (s.userMembership[id]) {
-          const { [id]: _, ...rest } = s.userMembership;
-          s.userMembership = rest;
-        }
+        s.userMembership[id] = false;
       })
       .addCase(leaveGroup.rejected, (s, a) => {
         setStatus(s, 'leaveGroup', 'failed');

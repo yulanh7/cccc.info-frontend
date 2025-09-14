@@ -22,6 +22,7 @@ export type PostGroupApi = {
   name: string;
   isPrivate: boolean;
   creator: number;
+  is_member?: boolean;
 };
 
 

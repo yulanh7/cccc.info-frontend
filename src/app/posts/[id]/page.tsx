@@ -39,6 +39,7 @@ import { isPostAuthor, isGroupCreatorOfPost } from "@/app/types";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useConfirm } from "@/hooks/useConfirm";
 import CollapsibleText from "@/components/ui/CollapsibleText";
+import SubscribeToggleButton from "@/components/ui/SubscribeToggleButton";
 
 
 // —— 本页内部使用：编辑表单的最小类型（与 PostModal 对接）
@@ -354,8 +355,11 @@ function PostDetailPageInner() {
 
             </div>
 
+            <div className="text-xs md:text-sm flex items-center mb-2">
+              <CalendarIcon className="h-4 w-4 mr-1 text-dark-green" /> {formatDate(post.created_at)}
+            </div>
 
-            <div className="flex flex-wrap gap-3 mb-3 mt-2">
+            <div className="inline-flex items-center flex-wrap gap-3 mb-2 mt-2 w-fit ">
 
               <Link
                 href={`/groups/${post.group?.id}`}
@@ -365,15 +369,21 @@ function PostDetailPageInner() {
                   {post.group.name}
                 </div>
               </Link>
-              <div className="text-xs md:text-sm flex items-center">
-                <CalendarIcon className="h-4 w-4 mr-1 text-dark-green" /> {formatDate(post.created_at)}
-              </div>
-              {isPostAuthor(post, user) && (
+              {post.group?.creator === user?.id ? (
                 <span className="text-[10px] px-1.5 py-0.5 rounded border border-dark-green text-dark-green">
-                  Owner
+                  Group Owner
                 </span>
+              ) : (
+
+                <SubscribeToggleButton
+                  groupId={post.group.id}
+                  mode="follow"
+                  confirmOnLeave
+                  className="ml-2"
+                />
               )}
             </div>
+
 
             {/* 正文（纯文本 + 保留换行，点击文字本身可收起） */}
             <CollapsibleText

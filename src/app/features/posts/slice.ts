@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import type { RootState } from "@/app/features/store";
 import { apiRequest } from "../request";
 import type {
   CreatePostRequest,
@@ -225,6 +226,18 @@ const initFeed = (): FeedList => ({
   error: null,
 });
 
+// 取帖子所在群组 id
+export const selectPostGroupId = (postId: number) => (state: RootState): number | undefined => {
+  const p = state.posts.byId[postId] as PostDetailData | undefined;
+  return p?.group?.id;
+};
+
+// 取帖子所在群组的 membership hint（若接口未返回则是 undefined）
+export const selectPostGroupIsMemberHint = (postId: number) => (state: RootState): boolean | undefined => {
+  const p = state.posts.byId[postId] as PostDetailData | undefined;
+  return p?.group?.is_member;
+};
+
 const initialState: PostsState = {
   byId: {},
   current: null,
@@ -264,6 +277,7 @@ const postsSlice = createSlice({
     clearFeed(state, action: { payload: string }) {
       state.lists[action.payload] = initFeed();
     },
+
   },
   extraReducers: (builder) => {
     /** ====== 列表（mine / subscribed / group） ====== */
