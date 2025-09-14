@@ -315,7 +315,7 @@ function GroupDetailPageInner() {
           onEditSingle={(id) => ctrl.goEdit(id)}
           onDeleteSingle={(postId) => askDeleteWithContext(postId)}
           buildHref={buildHref}
-          emptyText="No posts here yet. Be the first to post."
+          emptyText={group?.isPrivate ? "No posts yet" : "No posts here yet. Be the first to post."}
         />
       </div>
 
