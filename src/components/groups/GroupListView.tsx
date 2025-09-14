@@ -225,7 +225,7 @@ export default function GroupListView({
                     </span>
 
                     <div onClick={(e) => e.stopPropagation()}>
-                      <SubscribeToggleButton groupId={group.id} isMemberHint={group.is_member} />
+                      <SubscribeToggleButton groupId={group.id} isMemberHint={group.is_member} mode="follow" />
                     </div>
                   </div>
                 </div>
@@ -246,11 +246,13 @@ export default function GroupListView({
         isOpen={Boolean(pendingSubscribeGroup)}
         onCancel={cancelAndEnter}
         onConfirm={confirmSubscribeAndEnter}
-        message="Subscribe to view this group?"
-        confirmLabel="Subscribe"
-        cancelLabel="Not now"
+        message={"Follow this group?\n\nGet updates on your Home feed. You can unfollow anytime."}
+        confirmLabel="Follow"
+        cancelLabel="Continue without following"
         confirmVariant="primary"
+        cancelVariant="outline"
       />
+
     </div>
   );
 }
