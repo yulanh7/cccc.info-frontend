@@ -51,23 +51,31 @@ Thanks.`
 
         {isLogin ? <LoginForm /> : <SignUpForm />}
 
-        <div className="mt-4 flex flex-col items-center gap-2">
-          {/* Forgot password */}
-          <button
-            onClick={openForgot}
-            className="text-dark-green hover:underline px-4"
+        {/* 分隔区域 + 两个不同层级的链接 */}
+        <div className="mt-6 w-full border-t border-border pt-4">
+          <div
+            className="flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+            role="group"
+            aria-label="Auth actions"
           >
-            Forgot password?
-          </button>
+            {/* 次要动作：忘记密码（灰色、虚线下划线、小字） */}
+            <button
+              onClick={openForgot}
+              className="px-2 py-1 text-xs text-gray-500 hover:text-dark-green underline underline-offset-4 decoration-dotted hover:decoration-solid rounded-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-border"
+            >
+              Forgot password?
+            </button>
 
-          {/* 切换登录/注册 */}
-          <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-dark-green hover:underline px-4"
-          >
-            {isLogin ? 'Need an account? Sign Up' : 'Already have an account? Login'}
-          </button>
+            {/* 主要动作：注册/登录（品牌色、加粗、可点击区域更大） */}
+            <button
+              onClick={() => setIsLogin(!isLogin)}
+              className="px-3 py-1 text-sm font-semibold text-dark-green  bg-green/10 hover:bg-green/20 rounded-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-border"
+            >
+              {isLogin ? 'Need an account? Sign Up' : 'Already have an account? Login'}
+            </button>
+          </div>
         </div>
+
       </div>
 
       {/* Modal：提示联系管理员并提供注册邮箱 */}
