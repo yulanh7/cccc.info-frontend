@@ -15,6 +15,8 @@ import { fetchSubscribedPosts, deletePost as deletePostThunk } from "@/app/featu
 import type { PostListItemApi } from "@/app/types";
 import { isPostAuthor, isGroupCreatorOfPost } from "@/app/types";
 import { POSTS_PER_PAGE } from "@/app/constants";
+import { InformationCircleIcon } from "@heroicons/react/24/outline";
+import Link from 'next/link';
 
 
 export default function HomePage() {
@@ -115,6 +117,19 @@ function HomePageInner() {
       <PageTitle title="Home" showPageTitle={true} />
 
       <div className="container mx-auto md:p-6 p-1 mt-0 md:mt-16">
+        {rows.length < 1 && (
+          <div className="flex items-center justify-center gap-2 text-base">
+            <InformationCircleIcon className="h-4 w-4 mt-0.5" aria-hidden="true" />
+            <span className="text-dark-gray">
+              No posts yet. Follow some groups to see updates on your Home feed. Browse{" "}
+              <Link href="/groups?tab=all" className="underline hover:no-underline text-dark-gray">
+                Groups (All)
+              </Link>{" "}
+              to discover .
+            </span>
+          </div>
+        )}
+
         <PostListSection
           rows={rows}
           totalPages={totalPages}
@@ -133,6 +148,7 @@ function HomePageInner() {
           onEditSingle={(id) => ctrl.goEdit(id)}
           onDeleteSingle={(postId) => askDeleteWithContext(postId)}
           buildHref={buildHref}
+          emptyText={''}
         />
       </div>
 
