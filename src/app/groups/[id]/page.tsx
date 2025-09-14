@@ -31,6 +31,7 @@ import { isPostAuthor, isGroupCreatorOfPost, canEditGroup } from "@/app/types";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { useConfirm } from "@/hooks/useConfirm";
 import { POSTS_PER_PAGE, MEMBERS_PER_PAGE } from "@/app/constants";
+import SubscribeToggleButton from "@/components/ui/SubscribeToggleButton";
 
 
 export default function GroupDetailPage() {
@@ -257,7 +258,18 @@ function GroupDetailPageInner() {
         showDelete={canManageGroup}
         onEdit={handleEditGroup}
         onDelete={() => confirmGroupDelete.ask()}
+        rightSlot={
+          safeGroup && !canManageGroup ? (
+            <SubscribeToggleButton
+              groupId={safeGroup.id}
+              mode="follow"
+              confirmOnLeave
+              className="w-fit"
+            />
+          ) : null
+        }
       />
+
 
       {!pageLoading && safeGroup ? (
         <GroupInfoBar
@@ -426,7 +438,7 @@ function GroupDetailPageInner() {
       {!pageLoading && canShowCreateFab && (
         <button
           onClick={() => setIsPostModalOpen(true)}
-          className="fixed md:hidden bottom-20 z-10 right-10 bg-yellow p-2 rounded-[50%]"
+          className="fixed  bottom-20 z-10 right-10 bg-yellow p-2 rounded-[50%]"
         >
           <PlusIcon className="h-5 w-5 text-white" />
         </button>

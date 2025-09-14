@@ -11,16 +11,13 @@ interface CustomHeaderProps {
   showDelete?: boolean;
   showAdd?: boolean;
   pageTitle?: string;
-  // 改成无参数：让父组件决定要不要确认、确认文案是什么、以及删除逻辑
   onDelete?: () => void;
   onEdit?: () => void;
   onAdd?: () => void;
   showLogo?: boolean;
-
-  /** 是否在 Header 内部弹确认；默认 false（推荐交给父级处理） */
   confirmDeleteInHeader?: boolean;
-  /** 当 confirmDeleteInHeader=true 时使用的确认文案 */
   deleteConfirmMessage?: string;
+  rightSlot?: React.ReactNode;
 }
 
 export default function CustomHeader({
@@ -34,6 +31,7 @@ export default function CustomHeader({
   showLogo = false,
   confirmDeleteInHeader = false,
   deleteConfirmMessage = "Are you sure you want to delete this item?",
+  rightSlot
 }: CustomHeaderProps) {
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
@@ -42,7 +40,6 @@ export default function CustomHeader({
     if (confirmDeleteInHeader) {
       setIsDeleteConfirmOpen(true);
     } else {
-      // 直接交给父级（父级会根据是否本人/组长，弹出不同的确认框）
       onDelete();
     }
   };
@@ -56,7 +53,6 @@ export default function CustomHeader({
 
   return (
     <>
-      {/* 注意：md:hidden => 这个 Header 只在移动端显示 */}
       <header className="sticky top-0 z-10 flex items-center justify-between gap-2 bg-bg border-b border-border px-3 py-2 md:hidden">
         <div className="flex items-center space-x-2">
           {showLogo && <Logo isScrolled={false} />}
@@ -93,6 +89,7 @@ export default function CustomHeader({
               <PencilSquareIcon className="h-6 w-6" />
             </button>
           )}
+          {rightSlot}
         </div>
       </header>
 
