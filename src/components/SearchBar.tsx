@@ -51,7 +51,7 @@ export default function SearchBar({
         {/* 用通用 Button；保持提交逻辑不变 */}
         <Button
           type="submit"
-          variant="primary"
+          variant="outline"
           size="md"
           className="rounded-sm"
           aria-label="Search"
