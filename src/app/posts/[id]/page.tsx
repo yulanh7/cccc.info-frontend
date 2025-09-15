@@ -300,160 +300,160 @@ function PostDetailPageInner() {
             pageTitle={post.title}
           />
           {/* 顶部横幅：视频优先，否则背景图 */}
-          <div className="container mx-auto px-4 mt-1">
-            <div>
-              {videoUrls.length > 0 ? (
-                <YouTubeList
-                  videos={videoUrls}
-                  iframeClassName="w-full h-[200px] md:h-[400px] rounded-sm"
-                />
-              ) : (
-                <div className="flex w-full px-2 py-4 bg-[url('/images/bg-for-homepage.png')] bg-cover bg-center rounded-t-xs md:rounded-t-sm items-center justify-center">
-                  <h2 className="text-dark-gray text-xl md:text-2xl font-'Apple Color Emoji' font-semibold text-center px-4">
-                    {post.title}
-                  </h2>
-                </div>
-              )}
-            </div>
+          <div className="container mx-auto ">
 
-
-            <div className="flex items-center justify-between gap-2 mt-3 ">
-              {videoUrls.length > 0 &&
-
-                <h1 className={`${videoUrls.length > 0 ? "inline" : "hidden"} md:inline text-2xl`}>{post.title}</h1>
-              }
-
-              {!!post && (
-                <div className="hidden md:flex items-center gap-2">
-                  {/* 编辑：只能帖子作者 */}
-                  {isPostAuthor(post, user) && (
-                    <IconButton
-                      className="text-white"
-                      title="Edit post"
-                      aria-label="Edit post"
-                      variant="outline"
-                      tone="brand"
-                      size="md"
-                      onClick={handleEditOpen}
-                    >
-                      <PencilSquareIcon className="h-5 w-5" />
-                    </IconButton>
-                  )}
-
-                  {/* 删除：帖子作者 或 小组创建者 */}
-                  {(isPostAuthor(post, user) || isGroupCreatorOfPost(post, user)) && (
-                    <IconButton
-                      title="Delete post"
-                      aria-label="Delete post"
-                      variant="outline"
-                      tone="danger"
-                      size="md"
-                      onClick={() => askDeleteWithContext(post)}   // ← 修改这里
-                    >
-                      <TrashIcon className="h-5 w-5" />
-                    </IconButton>
-                  )}
-                </div>
-              )}
-
-            </div>
-
-            <div className="text-xs md:text-sm flex items-center mb-2">
-              <CalendarIcon className="h-4 w-4 mr-1 text-dark-green" /> {formatDate(post.created_at)}
-            </div>
-
-            <div className="inline-flex items-center flex-wrap gap-3 mb-2 mt-2 w-fit ">
-
-              <Link
-                href={`/groups/${post.group?.id}`}
-              >
-                <div className="text-xs  md:text-sm flex items-center hover:underline">
-                  <UsersIcon className="h-4 w-4 mr-1 text-dark-green" />
-                  {post.group.name}
-                </div>
-              </Link>
-              {post.group?.creator === user?.id ? (
-                <span className="text-[10px] px-1.5 py-0.5 rounded border border-dark-green text-dark-green">
-                  Group Owner
-                </span>
-              ) : (
-
-                <SubscribeToggleButton
-                  groupId={post.group.id}
-                  mode="follow"
-                  isMemberHint={post.group.is_member}
-                  confirmOnLeave
-                  className="ml-2"
-                />
-              )}
-            </div>
-
-
-            {/* 正文（纯文本 + 保留换行，点击文字本身可收起） */}
-            <CollapsibleText
-              text={post.content ?? ""}
-              mobileChars={200}
-              desktopChars={300}
-              className="text-gray mb-5"
-            />
-            <div className="hidden md:inline-flex items-center gap-1 text-xs mb-4">
-              <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-dark-green/10 text-dark-green font-semibold">
-                {(post.author?.firstName?.[0] || "?").toUpperCase()}
-              </span>
-              <span className="text-sm">
-                {post.author?.firstName}
-              </span>
-            </div>
-
-            {/* 图片缩略图 */}
-            {images.length > 0 && (
-              <div className="mb-4">
-                <ImageLightboxGrid
-                  items={images.map((img) => ({
-                    id: img.id,
-                    url: img.url,
-                    filename: img.filename,
-                    alt: img.filename,
-                  }))}
-                />
+            {videoUrls.length > 0 ? (
+              <YouTubeList
+                videos={videoUrls}
+                iframeClassName="w-full h-[200px] md:h-[400px] rounded-sm"
+              />
+            ) : (
+              <div className="flex w-full px-2 py-4 bg-[url('/images/bg-for-homepage.png')] bg-cover bg-center rounded-t-xs md:rounded-t-sm items-center justify-center">
+                <h2 className="text-dark-gray text-xl md:text-2xl font-'Apple Color Emoji' font-semibold text-center px-4">
+                  {post.title}
+                </h2>
               </div>
             )}
 
-            {/* 底部文档 */}
-            {documents.length > 0 && (
-              <div className="mt-4 shadow-md p-4">
-                <h3 className="text-lg font-semibold text-dark-gray mb-2">「资料」</h3>
-                <ul className="space-y-2">
-                  {documents.map((file, index) => (
-                    <li key={`${file.id ?? file.url}-${index}`} className="flex items-center space-x-4">
-                      <a
-                        href={file.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex text-sm items-center text-dark-green hover:text-green underline"
-                        title={file.filename}
+
+            <div className="mx-auto px-4 mt-1">
+              <div className="flex items-center justify-between gap-2 mt-3 ">
+                {videoUrls.length > 0 &&
+
+                  <h1 className={`${videoUrls.length > 0 ? "inline" : "hidden"} md:inline text-2xl`}>{post.title}</h1>
+                }
+
+                {!!post && (
+                  <div className="hidden md:flex items-center gap-2">
+                    {/* 编辑：只能帖子作者 */}
+                    {isPostAuthor(post, user) && (
+                      <IconButton
+                        className="text-white"
+                        title="Edit post"
+                        aria-label="Edit post"
+                        variant="outline"
+                        tone="brand"
+                        size="md"
+                        onClick={handleEditOpen}
                       >
-                        <EyeIcon className="h-5 w-5 mr-2" />
-                        {file.filename}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
+                        <PencilSquareIcon className="h-5 w-5" />
+                      </IconButton>
+                    )}
+
+                    {/* 删除：帖子作者 或 小组创建者 */}
+                    {(isPostAuthor(post, user) || isGroupCreatorOfPost(post, user)) && (
+                      <IconButton
+                        title="Delete post"
+                        aria-label="Delete post"
+                        variant="outline"
+                        tone="danger"
+                        size="md"
+                        onClick={() => askDeleteWithContext(post)}   // ← 修改这里
+                      >
+                        <TrashIcon className="h-5 w-5" />
+                      </IconButton>
+                    )}
+                  </div>
+                )}
+
               </div>
-            )}
 
-            {/* 评论区 */}
-            <CommentsSection
-              postId={post.id}
-              postAuthorId={post.author.id}
-              currentUserId={user?.id ?? null}
-              likeCount={likeCount}
-              liked={liked}
-              likeBusy={likeBusy}
-              onToggleLike={onToggleLike}
-            />
+              <div className="text-xs md:text-sm flex items-center mb-2">
+                <CalendarIcon className="h-4 w-4 mr-1 text-dark-green" /> {formatDate(post.created_at)}
+              </div>
+
+              <div className="inline-flex items-center flex-wrap gap-3 mb-2 mt-2 w-fit ">
+
+                <Link
+                  href={`/groups/${post.group?.id}`}
+                >
+                  <div className="text-xs  md:text-sm flex items-center hover:underline">
+                    <UsersIcon className="h-4 w-4 mr-1 text-dark-green" />
+                    {post.group.name}
+                  </div>
+                </Link>
+                {post.group?.creator === user?.id ? (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded border border-dark-green text-dark-green">
+                    Group Owner
+                  </span>
+                ) : (
+
+                  <SubscribeToggleButton
+                    groupId={post.group.id}
+                    mode="follow"
+                    isMemberHint={post.group.is_member}
+                    confirmOnLeave
+                    className="ml-2"
+                  />
+                )}
+              </div>
 
 
+              {/* 正文（纯文本 + 保留换行，点击文字本身可收起） */}
+              <CollapsibleText
+                text={post.content ?? ""}
+                mobileChars={200}
+                desktopChars={300}
+                className="text-gray mb-5"
+              />
+              <div className="hidden md:inline-flex items-center gap-1 text-xs mb-4">
+                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-dark-green/10 text-dark-green font-semibold">
+                  {(post.author?.firstName?.[0] || "?").toUpperCase()}
+                </span>
+                <span className="text-sm">
+                  {post.author?.firstName}
+                </span>
+              </div>
+
+              {/* 图片缩略图 */}
+              {images.length > 0 && (
+                <div className="mb-4">
+                  <ImageLightboxGrid
+                    items={images.map((img) => ({
+                      id: img.id,
+                      url: img.url,
+                      filename: img.filename,
+                      alt: img.filename,
+                    }))}
+                  />
+                </div>
+              )}
+
+              {/* 底部文档 */}
+              {documents.length > 0 && (
+                <div className="mt-4 shadow-md p-4">
+                  <h3 className="text-lg font-semibold text-dark-gray mb-2">「资料」</h3>
+                  <ul className="space-y-2">
+                    {documents.map((file, index) => (
+                      <li key={`${file.id ?? file.url}-${index}`} className="flex items-center space-x-4">
+                        <a
+                          href={file.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex text-sm items-center text-dark-green hover:text-green underline"
+                          title={file.filename}
+                        >
+                          <EyeIcon className="h-5 w-5 mr-2" />
+                          {file.filename}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* 评论区 */}
+              <CommentsSection
+                postId={post.id}
+                postAuthorId={post.author.id}
+                currentUserId={user?.id ?? null}
+                likeCount={likeCount}
+                liked={liked}
+                likeBusy={likeBusy}
+                onToggleLike={onToggleLike}
+              />
+
+            </div>
             {/* 编辑弹窗（传入与 API 对齐的数据） */}
             {isEdit && post && (
               <PostModal
