@@ -39,7 +39,7 @@ import { isPostAuthor, isGroupCreatorOfPost } from "@/app/types";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useConfirm } from "@/hooks/useConfirm";
 import CollapsibleText from "@/components/ui/CollapsibleText";
-import SubscribeToggleButton from "@/components/ui/SubscribeToggleButton";
+import SubscribeToggleButton from "@/components/groups/SubscribeToggleButton";
 
 
 // —— 本页内部使用：编辑表单的最小类型（与 PostModal 对接）

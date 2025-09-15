@@ -8,7 +8,7 @@ import type { GroupApi } from "@/app/types";
 import Pagination from "@/components/ui/Pagination";
 import { ellipsize } from "@/app/ultility";
 import IconButton from "@/components/ui/IconButton";
-import SubscribeToggleButton from "@/components/ui/SubscribeToggleButton";
+import SubscribeToggleButton from "@/components/groups/SubscribeToggleButton";
 import ConfirmModal from "@/components/ConfirmModal";
 import Button from "@/components/ui/Button";
 

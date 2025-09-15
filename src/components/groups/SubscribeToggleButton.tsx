@@ -49,7 +49,7 @@ type Props = {
   }) => React.ReactNode;
 };
 
-export default function SubscribeToggle({
+export default function SubscribeToggleButton({
   groupId,
   mode = "subscribe",
   isMemberHint,

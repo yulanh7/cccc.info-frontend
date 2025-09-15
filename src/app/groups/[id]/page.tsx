@@ -31,7 +31,7 @@ import { isPostAuthor, isGroupCreatorOfPost, canEditGroup } from "@/app/types";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { useConfirm } from "@/hooks/useConfirm";
 import { POSTS_PER_PAGE, MEMBERS_PER_PAGE } from "@/app/constants";
-import SubscribeToggleButton from "@/components/ui/SubscribeToggleButton";
+import SubscribeToggleButton from "@/components/groups/SubscribeToggleButton";
 
 
 export default function GroupDetailPage() {

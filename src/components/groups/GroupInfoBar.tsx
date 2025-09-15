@@ -13,7 +13,7 @@ import {
 import Button from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
 import type { GroupApi } from "@/app/types/group";
-import SubscribeToggleButton from "@/components/ui/SubscribeToggleButton";
+import SubscribeToggleButton from "@/components/groups/SubscribeToggleButton";
 
 type Props = {
   group: GroupApi;
