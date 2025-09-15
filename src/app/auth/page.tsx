@@ -15,8 +15,8 @@ export default function AuthPage() {
 
   const handleForgotConfirm = useCallback(() => {
     // 组装 mailto：收件人 + 主题 + 正文模板
-    const to = "yulanh7@gmail.com";
-    const subject = encodeURIComponent("Password reset request");
+    const to = "rachelyl717@gmail.com";
+    const subject = encodeURIComponent("CCCC.info Password reset request");
     const body = encodeURIComponent(
       `Hi Admin,
 
@@ -84,7 +84,7 @@ Thanks.`
         onCancel={closeForgot}
         onConfirm={handleForgotConfirm}
         message={
-          "Forgot your password?\n\nPlease contact the administrator (yulanh7@gmail.com).\nWhen you email us, include the email address you used to register."
+          "Forgot your password?\n\nPlease contact the administrator (rachelyl717@gmail.com).\nWhen you email us, include the email address you used to register."
         }
         confirmLabel="Email admin"
         cancelLabel="Close"
