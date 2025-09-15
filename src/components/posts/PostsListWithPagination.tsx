@@ -6,6 +6,7 @@ import CardSkeleton from "@/components/feedback/CardSkeleton";
 import type { PostListItemApi } from "@/app/types";
 import PostCardSimple from "./PostCardSimple";
 import Pagination from "@/components/ui/Pagination";
+import { useRouter } from "next/navigation";
 
 type Props = {
   // 数据 & 加载
@@ -64,6 +65,7 @@ export default function PostsListWithPagination({
   className = "",
 }: Props) {
   const showSkeleton = listLoading && rows.length === 0;
+  const router = useRouter();
 
   const grid = useMemo(() => {
     if (showSkeleton) return (
@@ -92,22 +94,22 @@ export default function PostsListWithPagination({
 
           return (
             <div key={post.id} className="relative rounded-sm overflow-hidden mb-1 break-inside-avoid">
-              <Link href={`/posts/${post.id}`} className="block">
-                <PostCardSimple
-                  post={post}
-                  formatDate={formatDate}
-                  canEdit={canManageEdit}
-                  canDelete={canManageDelete}
-                  selectMode={selectMode}
-                  isSelected={isSelected}
-                  onToggleSelect={onToggleSelect}
-                  showDelete={showDelete}
-                  onEditSingle={onEditSingle}
-                  onDeleteSingle={onDeleteSingle}
-                />
-              </Link>
+              <PostCardSimple
+                post={post}
+                formatDate={formatDate}
+                canEdit={canManageEdit}
+                canDelete={canManageDelete}
+                selectMode={selectMode}
+                isSelected={isSelected}
+                onToggleSelect={onToggleSelect}
+                showDelete={showDelete}
+                onEditSingle={onEditSingle}
+                onDeleteSingle={onDeleteSingle}
+                onOpenPost={() => router.push(`/posts/${post.id}`)}
 
+              />
             </div>
+
           );
         })}
       </div>

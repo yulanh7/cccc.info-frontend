@@ -1,7 +1,9 @@
 "use client";
-import React, { useMemo, useState, useEffect, useRef } from "react";
+import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import type { PostListItemApi } from "@/app/types";
 import Link from 'next/link';
+import { useRouter } from "next/navigation";
+
 import {
   HandThumbUpIcon as HandThumbUpOutline,
   CheckIcon, TrashIcon, PencilSquareIcon, UsersIcon
@@ -25,6 +27,8 @@ type Props = {
   showDelete?: boolean;
   onEditSingle?: (id: number) => void;
   onDeleteSingle?: (id: number) => void;
+  onOpenPost?: () => void;
+
 };
 
 const BG_URLS = ["/images/bg-card-2.jpg", "/images/bg-for-homepage.png"];
@@ -41,8 +45,9 @@ export default function PostCardSimple({
   showDelete = false,
   onEditSingle,
   onDeleteSingle,
+  onOpenPost
 }: Props) {
-
+  const router = useRouter();
   const dispatch = useAppDispatch();
   const { id, title, author, summary, videos, like_count } = post;
 
@@ -128,9 +133,30 @@ export default function PostCardSimple({
     }
   };
 
+  const handleOpenPost = useCallback(() => {
+    if (onOpenPost) {
+      onOpenPost();
+    } else {
+      // 作为后备，避免别的页面复用时忘记传 onOpenPost
+      router.push(`/posts/${post.id}`);
+    }
+  }, [onOpenPost, router, post.id]);
 
   return (
-    <div className="card relative group cursor-pointer">
+    <div
+      className="card relative group cursor-pointer"
+      role="link"
+      tabIndex={0}
+      onClick={handleOpenPost}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleOpenPost();
+        }
+      }}
+      aria-label={`Open post ${title}`}
+      title={title}
+    >
       <div className="aspect-w-16 aspect-h-9 mb-1">
         {thumbnail ? (
           // 正常显示缩略图
@@ -257,24 +283,33 @@ export default function PostCardSimple({
           </p>
         )} */}
         {post.group?.id ? (
-          <Link
-            href={`/groups/${post.group.id}`}
-            className="inline-flex items-center gap-1 hover:underline text-xs text-gray-500 leading-none" onClick={(e) => e.stopPropagation()}
-            aria-label={`Open group ${post.group?.name ?? ""}`}
-            title={post.group?.name ?? ""}
-            prefetch={false} // 列表很多时可关预取，减少网络压力；需要的话可以删掉
+          <div
+            className="pointer-events-auto"
+            onClick={(e) => e.stopPropagation()}
           >
-            <UsersIcon className="h-4 w-4 text-dark-green" />
-            <span>
-              {ellipsize(post.group?.name, 22)}
-            </span>
-          </Link>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+
+                router.push(`/groups/${post.group!.id}`);
+              }}
+              className="inline-flex items-center gap-1 hover:underline text-xs text-gray-500 leading-none"
+              aria-label={`Open group ${post.group?.name ?? ""}`}
+              title={post.group?.name ?? ""}
+            >
+              <UsersIcon className="h-4 w-4 text-dark-green" />
+              <span>{ellipsize(post.group?.name, 22)}</span>
+            </button>
+          </div>
         ) : (
           <span className="inline-flex items-center gap-1 text-gray-500">
             <UsersIcon className="h-4 w-4" />
             <span>Ungrouped</span>
           </span>
         )}
+
         <div className="flex items-center gap-1 text-xs text-gray">
           <span className="flex-1 inline-flex items-center gap-1 text-xs m-0">
             <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-dark-green/10 text-dark-green font-semibold">
