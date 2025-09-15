@@ -3,7 +3,7 @@
 import { useState, useRef, useMemo, useEffect } from "react";
 import { mockUsers } from '@/app/data/mockData';
 import type { GroupApi } from '@/app/types/group';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 import Button from "@/components/ui/Button";
 import SaveConfirmModal from "../SaveConfirmModal";
 
@@ -40,6 +40,7 @@ export default function GroupEditModal({
     is_creator: true,
     isPrivate: false,
   };
+  const privacyHelpId = "group-privacy-help";
 
   const [editedItem, setEditedItem] = useState<GroupApi>(
     isNew ? defaultItem : { ...(group as GroupApi) }
@@ -256,6 +257,7 @@ export default function GroupEditModal({
           {displayErrors.description && <p className="text-red-600 text-sm mb-3">{displayErrors.description}</p>}
 
           {/* Invite Only */}
+          {/* Invite Only */}
           <div className="mb-4">
             <label className="flex items-center">
               <input
@@ -263,10 +265,31 @@ export default function GroupEditModal({
                 checked={editedItem.isPrivate}
                 onChange={(e) => handleChange("isPrivate", e.target.checked)}
                 className="mr-2"
+                aria-describedby={editedItem.isPrivate ? privacyHelpId : undefined}
               />
               <span className="text-sm text-dark-gray">Invite Only</span>
             </label>
+
+            {editedItem.isPrivate && (
+              <div
+                id={privacyHelpId}
+                role="note"
+                aria-live="polite"
+                className="mt-2 flex items-start gap-2 rounded-sm border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+              >
+                <LockClosedIcon className="h-5 w-5 shrink-0" />
+                <div>
+                  <p className="font-medium mb-1">This group is private</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Invite-only — members must be invited by an admin.</li>
+                    <li>Not discoverable — registered users can’t search or follow it.</li>
+                    <li>Only group admins can create posts.</li>
+                  </ul>
+                </div>
+              </div>
+            )}
           </div>
+
         </div>
 
         {/* Actions */}
