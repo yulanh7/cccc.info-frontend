@@ -25,7 +25,6 @@ type Props = {
   formatDate: (timestamp: string, showTime?: boolean) => string;
   canManageGroup: boolean;
   canShowCreateFab: boolean;
-  /** 选择模式（由父组件控制） */
   selectMode: boolean;
   selectedCount: number;
   onToggleSelectMode: () => void;
@@ -36,7 +35,6 @@ export default function GroupInfoBar({
   group,
   subscriberCount,
   onShowMembers,
-  onNewPost,
   onEditGroup,
   onDeleteGroup,
   formatDate,
@@ -116,7 +114,8 @@ export default function GroupInfoBar({
               {!canManageGroup && (
                 <SubscribeToggleButton
                   groupId={group.id}
-                  mode="follow"   // 或 "join" 按你的语义
+                  mode="follow"
+                  isMemberHint={group.is_member}
                   confirmOnLeave
                   className="w-fit"
                   size="md"

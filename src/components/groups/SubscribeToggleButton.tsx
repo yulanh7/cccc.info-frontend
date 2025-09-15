@@ -6,73 +6,60 @@ import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import { joinGroup, leaveGroup } from "@/app/features/groups/slice";
 import Button from "@/components/ui/Button";
 import Spinner from "@/components/feedback/Spinner";
+import ConfirmModal from "@/components/ConfirmModal";
 import {
   BellIcon,
   XMarkIcon,
   UserPlusIcon,
   CheckIcon,
-  EyeIcon,
 } from "@heroicons/react/24/outline";
 
-/**
- * 三种语义模式：
- * - "join"：加入/退出群组（影响成员权限）。推荐用于需要成员资格的页面。
- * - "follow"：关注/取消关注（仅信息流，不改变权限）。如果你的后端也是 join/leave，可先复用。
- * - "subscribe"：订阅/取消订阅（强调通知语义）。默认模式。
- */
 type Mode = "subscribe" | "follow" | "join";
 
 type Props = {
   groupId: number;
   mode?: Mode;
-
-  /** 首屏兜底：在 store 尚未有该 groupId 的 membership 时临时显示 */
+  /** store 未加载时的兜底：临时显示成员态 */
   isMemberHint?: boolean;
 
   className?: string;
-  confirmOnLeave?: boolean;
   disabled?: boolean;
+  /** 仅当从“成员”切换到“非成员”时弹确认弹窗 */
+  confirmOnLeave?: boolean;
 
-  /** 可覆盖的文案与样式 */
-  labelSubscribe?: string;
-  labelUnsubscribe?: string;
-  size?: "sm" | "md" | "lg";
+  /** 可覆盖文案 */
+  labelSubscribe?: string;   // 非成员态按钮文案
+  labelUnsubscribe?: string; // 成员态按钮文案
+
+  size?: "sm" | "md";
   variantWhenSubbed?: "outline" | "ghost";
   variantWhenUnsubbed?: "primary" | "warning";
-
-  /** 高级：完全自定义渲染（受控于内部状态） */
-  render?: (opts: {
-    isMember: boolean;
-    busy: boolean;
-    toggle: () => void;
-    disabled: boolean;
-  }) => React.ReactNode;
 };
 
-export default function SubscribeToggleButton({
+export default function SubscribeToggle({
   groupId,
-  mode = "subscribe",
+  mode = "follow",
   isMemberHint,
   className,
-  confirmOnLeave = false,
   disabled = false,
+  confirmOnLeave = true,
   labelSubscribe,
   labelUnsubscribe,
   size = "sm",
   variantWhenSubbed = "outline",
   variantWhenUnsubbed = "primary",
-
-  render,
 }: Props) {
   const dispatch = useAppDispatch();
-
-  // 单一真相来自 store（Record<number, boolean>）；若还没加载到，用 hint 兜底一次
+  // 单一真相来自 store；若尚未加载，用 hint 兜底
   const fromStore = useAppSelector((s) => s.groups.userMembership[groupId]);
   const isMember = typeof fromStore === "boolean" ? fromStore : !!isMemberHint;
+  console.log('groupid', groupId)
+  console.log('isMember', isMember)
 
   const [busy, setBusy] = React.useState(false);
+  const [showConfirm, setShowConfirm] = React.useState(false);
 
-  // 不同模式的默认文案与图标（可被 props 覆盖）
+  // 模式驱动的默认文案 & 图标
   const defaults = React.useMemo(() => {
     if (mode === "join") {
       return {
@@ -80,9 +67,11 @@ export default function SubscribeToggleButton({
         offLabel: "Join group",
         onIcon: <CheckIcon className="h-4 w-4" />,
         offIcon: <UserPlusIcon className="h-4 w-4" />,
-        confirmText: "Leave this group?",
+        confirmTitle: "Leave this group?",
+        confirmMsg: "You will lose member-only access.",
         busyOn: "Leaving…",
         busyOff: "Joining…",
+        confirmBtn: "Leave",
       };
     }
     if (mode === "follow") {
@@ -91,9 +80,11 @@ export default function SubscribeToggleButton({
         offLabel: "Follow",
         onIcon: <CheckIcon className="h-4 w-4" />,
         offIcon: <UserPlusIcon className="h-4 w-4" />,
-        confirmText: "Unfollow this group?",
+        confirmTitle: "Unfollow this group?",
+        confirmMsg: "You will stop seeing its updates in your feed.",
         busyOn: "Unfollowing…",
         busyOff: "Following…",
+        confirmBtn: "Unfollow",
       };
     }
     // subscribe（默认）
@@ -102,74 +93,95 @@ export default function SubscribeToggleButton({
       offLabel: "Subscribe",
       onIcon: <XMarkIcon className="h-4 w-4" />,
       offIcon: <BellIcon className="h-4 w-4" />,
-      confirmText: "Unsubscribe from this group?",
+      confirmTitle: "Unsubscribe from this group?",
+      confirmMsg: "You will stop receiving updates on the Home page.",
       busyOn: "Unsubscribing…",
       busyOff: "Subscribing…",
+      confirmBtn: "Unsubscribe",
     };
   }, [mode]);
 
   const finalOnLabel = labelUnsubscribe ?? defaults.onLabel;
   const finalOffLabel = labelSubscribe ?? defaults.offLabel;
 
-  const toggle = async () => {
-    if (disabled || busy) return;
-
-    if (isMember && confirmOnLeave) {
-      const ok = window.confirm(defaults.confirmText);
-      if (!ok) return;
-    }
-
+  const performJoin = async () => {
     setBusy(true);
     try {
-      if (isMember) {
-        await dispatch(leaveGroup(groupId)).unwrap();
-      } else {
-        await dispatch(joinGroup(groupId)).unwrap();
-      }
-      // 成功后 UI 会随 groups.userMembership[groupId] 的变化自动刷新
+      await dispatch(joinGroup(groupId)).unwrap();
     } catch (e: any) {
-      alert(typeof e === "string" ? e : e?.message || "Toggle failed");
+      alert(typeof e === "string" ? e : e?.message || "Action failed");
     } finally {
       setBusy(false);
     }
   };
 
-  // 自定义渲染出口
-  if (render) {
-    return <>{render({ isMember, busy, toggle, disabled })}</>;
-  }
+  const performLeave = async () => {
+    setBusy(true);
+    try {
+      await dispatch(leaveGroup(groupId)).unwrap();
+    } catch (e: any) {
+      alert(typeof e === "string" ? e : e?.message || "Action failed");
+    } finally {
+      setBusy(false);
+      setShowConfirm(false);
+    }
+  };
+
+  const handleToggle = () => {
+    if (disabled || busy) return;
+    if (isMember && confirmOnLeave) {
+      setShowConfirm(true); // 内嵌弹窗，不需要父级处理
+      return;
+    }
+    isMember ? performLeave() : performJoin();
+  };
 
   // 默认渲染
   const common = {
-    size: "md",
-    onClick: toggle,
+    size: size,
+    onClick: handleToggle,
     disabled: disabled || busy,
     className,
   } as const;
 
-  if (!isMember) {
-    return (
-      <Button
-        {...common}
-        variant={variantWhenUnsubbed}
-        aria-pressed={false}
-        aria-label={finalOffLabel}
-        leftIcon={busy ? <Spinner className="h-4 w-4" /> : defaults.offIcon}
-      >
-        {busy ? defaults.busyOff : finalOffLabel}
-      </Button>
-    );
-  }
-
   return (
-    <Button
-      {...common}
-      variant={variantWhenSubbed}
-      aria-pressed={true}
-      aria-label={finalOnLabel}
-      leftIcon={busy ? <Spinner className="h-4 w-4" /> : defaults.onIcon}
-    >
-      {busy ? defaults.busyOn : finalOnLabel}
-    </Button>
+    <>
+      {isMember ? (
+        <Button
+          {...common}
+          variant={variantWhenSubbed}
+          aria-pressed
+          aria-label={finalOnLabel}
+          leftIcon={busy ? <Spinner className="h-4 w-4" /> : defaults.onIcon}
+        >
+          {busy ? defaults.busyOn : finalOnLabel}
+        </Button>
+      ) : (
+        <Button
+          {...common}
+          variant={variantWhenUnsubbed}
+          aria-pressed={false}
+          aria-label={finalOffLabel}
+          leftIcon={busy ? <Spinner className="h-4 w-4" /> : defaults.offIcon}
+        >
+          {busy ? defaults.busyOff : finalOffLabel}
+        </Button>
+      )}
+
+      {confirmOnLeave && isMember && (
+        <ConfirmModal
+          isOpen={showConfirm}
+          onConfirm={performLeave}
+          onCancel={() => setShowConfirm(false)}
+          onClose={() => setShowConfirm(false)}
+          title={defaults.confirmTitle}
+          message={defaults.confirmMsg}
+          confirmLabel={defaults.confirmBtn}
+          cancelLabel="Cancel"
+          confirmVariant="danger"
+          cancelVariant="outline"
+        />
+      )}
+    </>
   );
 }

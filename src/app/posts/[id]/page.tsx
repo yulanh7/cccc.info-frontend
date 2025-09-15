@@ -381,6 +381,7 @@ function PostDetailPageInner() {
                 <SubscribeToggleButton
                   groupId={post.group.id}
                   mode="follow"
+                  isMemberHint={post.group.is_member}
                   confirmOnLeave
                   className="ml-2"
                 />

@@ -265,6 +265,7 @@ function GroupDetailPageInner() {
               mode="follow"
               confirmOnLeave
               className="w-fit"
+              isMemberHint={safeGroup.is_member}
             />
           ) : null
         }
