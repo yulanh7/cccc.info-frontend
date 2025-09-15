@@ -309,7 +309,7 @@ function PostDetailPageInner() {
                 />
               ) : (
                 <div className="flex w-full px-2 py-4 bg-[url('/images/bg-for-homepage.png')] bg-cover bg-center rounded-t-xs md:rounded-t-sm items-center justify-center">
-                  <h2 className="text-dark-gray text-xl md:text-5xl font-'Apple Color Emoji' font-semibold text-center px-4">
+                  <h2 className="text-dark-gray text-xl md:text-2xl font-'Apple Color Emoji' font-semibold text-center px-4">
                     {post.title}
                   </h2>
                 </div>
@@ -318,7 +318,10 @@ function PostDetailPageInner() {
 
 
             <div className="flex items-center justify-between gap-2 mt-3 ">
-              <h1 className={`${videoUrls.length > 0 ? "inline" : "hidden"} md:inline text-2xl`}>{post.title}</h1>
+              {videoUrls.length > 0 &&
+
+                <h1 className={`${videoUrls.length > 0 ? "inline" : "hidden"} md:inline text-2xl`}>{post.title}</h1>
+              }
 
               {!!post && (
                 <div className="hidden md:flex items-center gap-2">
