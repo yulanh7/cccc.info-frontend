@@ -53,8 +53,6 @@ export default function SubscribeToggle({
   // 单一真相来自 store；若尚未加载，用 hint 兜底
   const fromStore = useAppSelector((s) => s.groups.userMembership[groupId]);
   const isMember = typeof fromStore === "boolean" ? fromStore : !!isMemberHint;
-  console.log('groupid', groupId)
-  console.log('isMember', isMember)
 
   const [busy, setBusy] = React.useState(false);
   const [showConfirm, setShowConfirm] = React.useState(false);
