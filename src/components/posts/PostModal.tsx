@@ -364,7 +364,7 @@ export default function PostModal({
   /* ======================= 渲染 ======================= */
   return (
     <div
-      className="fixed inset-0 z-30 bg-gray bg-opacity-50 flex items-center justify-center"
+      className="fixed inset-0 z-50 bg-gray bg-opacity-50 flex items-center justify-center"
       role="dialog"
       aria-busy={saving || isCompressing}
     >

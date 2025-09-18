@@ -203,7 +203,7 @@ export default function GroupEditModal({
 
   return (
     <div
-      className="fixed inset-0 z-30 bg-gray bg-opacity-50 flex items-center justify-center "
+      className="fixed inset-0 z-50 bg-gray bg-opacity-50 flex items-center justify-center "
       role="dialog"
     >
       <div className="absolute inset-0" onClick={handleCloseClick} aria-hidden />
