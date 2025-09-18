@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/app/features/hooks';
 import { signupThunk } from '@/app/features/auth/slice';
 import { getRecaptchaToken, initRecaptcha } from '@/app/ultility/recaptcha';
 import Button from '@/components/ui/Button';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
-import { MIN_USER_NAME_LEN, MAX_USER_NAME_LEN } from '@/app/constants';
+import { FIRST_NAME_RULE, FIRST_NAME_ERR } from '@/app/constants'
 
 export default function SignUpForm() {
   const [email, setEmail] = useState('');
@@ -17,8 +17,6 @@ export default function SignUpForm() {
 
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-
-  // 只用于控制“提交后再显示错误文案”
   const [submitted, setSubmitted] = useState(false);
 
   const dispatch = useAppDispatch();
@@ -26,18 +24,8 @@ export default function SignUpForm() {
   const { status, error } = useAppSelector((state) => state.auth);
   const isLoading = status === 'loading';
 
-  const nameTrimmed = useMemo(() => firstName.trim(), [firstName]);
-  const nameLen = [...nameTrimmed].length; // 兼容中英文字符
-
-  const tooShort = nameLen > 0 && nameLen < MIN_USER_NAME_LEN;
-  const tooLong = nameLen > MAX_USER_NAME_LEN;
-  const missingOnSubmit = submitted && nameLen === 0;
-
-  // 计数器：输入阶段即可变红；提交空也变红
-  const showCounterRed = tooShort || tooLong || missingOnSubmit;
-
-  // 错误文案与红色边框：仅在提交后显示
-  const showErrorText = submitted && (missingOnSubmit || tooShort || tooLong);
+  // 2-20 位：英文/数字/下划线/中文；不允许空格
+  const invalidName = submitted && !FIRST_NAME_RULE.test(firstName);
 
   useEffect(() => { initRecaptcha(); }, []);
 
@@ -45,10 +33,10 @@ export default function SignUpForm() {
     e.preventDefault();
     if (isLoading) return;
 
-    setSubmitted(true); // 提交后才允许显示错误文案
+    setSubmitted(true);
 
-    // 直接基于当前值做校验（不要依赖刚 setSubmitted 的下一帧）
-    if (nameLen === 0 || nameLen < MIN_USER_NAME_LEN || nameLen > MAX_USER_NAME_LEN) {
+    // 名字校验（长度与字符集一次完成）
+    if (!FIRST_NAME_RULE.test(firstName)) {
       const el = document.getElementById('first-name-input') as HTMLInputElement | null;
       el?.focus();
       return;
@@ -61,22 +49,32 @@ export default function SignUpForm() {
 
     const recaptchaToken = await getRecaptchaToken('signup').catch(() => null);
 
-    const result = await dispatch(
-      signupThunk({
-        email,
-        firstName: nameTrimmed.replace(/\s+/g, ' '), // 规范空白
-        password,
-        ...(recaptchaToken ? { recaptchaToken } : {}),
-      })
-    );
+    // 替换原来的：const result = await dispatch(signupThunk(...)); if (signupThunk.fulfilled.match(result)) { ... }
 
-    if (signupThunk.fulfilled.match(result)) {
-      alert(`${nameTrimmed} 注册成功`);
+    try {
+      await dispatch(
+        signupThunk({
+          email,
+          firstName, // 已经在前面通过正则校验
+          password,
+          ...(recaptchaToken ? { recaptchaToken } : {}),
+        })
+      ).unwrap(); // <-- 关键
+
+      alert(`${firstName} 注册成功`);
       router.push('/groups');
+    } catch (e: any) {
+      // e 会是 rejectWithValue(...) 的字符串/对象，或 Error
+      const msg =
+        typeof e === 'string'
+          ? e
+          : e?.message || 'Signup failed';
+      alert(msg);
     }
+
   };
 
-  const describedBy = `first-name-help${showErrorText ? ' first-name-error' : ''}`;
+  const describedBy = `first-name-help${invalidName ? ' first-name-error' : ''}`;
 
   return (
     <form onSubmit={handleSubmit} className="max-w-md mx-auto p-4 space-y-4">
@@ -92,7 +90,7 @@ export default function SignUpForm() {
         autoComplete="email"
       />
 
-      {/* First Name：输入阶段不显示错误文案，仅计数器变红；提交后才显示错误文案与红边框 */}
+      {/* First Name */}
       <div>
         <input
           id="first-name-input"
@@ -100,29 +98,17 @@ export default function SignUpForm() {
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
           placeholder="First Name"
-          aria-invalid={showErrorText}
+          aria-invalid={invalidName}
           aria-describedby={describedBy}
-          className={`w-full p-2 border rounded-sm ${showErrorText ? 'border-red-500' : 'border-border'}`}
+          className={`w-full p-2 border rounded-sm ${invalidName ? 'border-red-500' : 'border-border'}`}
           disabled={isLoading}
           autoComplete="given-name"
         />
 
-        {/* 计数器：过短/过长或提交空时变红；否则为中性 */}
-        <div
-          id="first-name-help"
-          className={`text-xs mt-1 ${showCounterRed ? 'text-red-600' : 'text-dark-gray'}`}
-        >
-          {nameLen}/{MAX_USER_NAME_LEN} (min {MIN_USER_NAME_LEN})
-        </div>
-
-        {/* 错误文案：仅提交后显示 */}
-        {showErrorText && (
+        {/* 统一错误提示（仅提交后显示） */}
+        {invalidName && (
           <p id="first-name-error" className="text-red-600 text-sm mt-1">
-            {missingOnSubmit
-              ? 'First name is required.'
-              : tooShort
-                ? `First name must be at least ${MIN_USER_NAME_LEN} characters.`
-                : `First name cannot exceed ${MAX_USER_NAME_LEN} characters.`}
+            {FIRST_NAME_ERR}
           </p>
         )}
       </div>
@@ -184,8 +170,6 @@ export default function SignUpForm() {
       >
         Sign Up
       </Button>
-
-      {error && <p className="text-red-500 mt-2">{error}</p>}
     </form>
   );
 }

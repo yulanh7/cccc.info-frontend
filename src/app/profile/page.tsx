@@ -10,7 +10,7 @@ import Button from '@/components/ui/Button'
 import PageTitle from '@/components/layout/PageTitle';
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
 import CustomHeader from "@/components/layout/CustomHeader";
-import { MIN_USER_NAME_LEN, MAX_USER_NAME_LEN } from '@/app/constants'
+import { MIN_USER_NAME_LEN, MAX_USER_NAME_LEN, FIRST_NAME_RULE, FIRST_NAME_ERR } from '@/app/constants'
 
 export default function ProfilePage() {
   const dispatch = useAppDispatch();
@@ -47,19 +47,14 @@ export default function ProfilePage() {
 
   // 规范化 + 安全计数（支持多字节）
   const nameTrimmed = useMemo(() => firstName.trim(), [firstName]);
-  const nameLen = useMemo(() => [...nameTrimmed].length, [nameTrimmed]);
-  const lengthInvalid = nameLen > 0 && (nameLen < MIN_USER_NAME_LEN || nameLen > MAX_USER_NAME_LEN);
   const sameAsPrev = nameTrimmed === prevFirstName;
 
   // 仅在“已触碰”时展示长度错误；提交且为空时展示必填
-  const showEmptyError = submittedProfile && nameLen === 0;
-  const showLengthError = touchedFirst && lengthInvalid;
   const showServerError = Boolean(nameErr);
 
   function validateFirstNameForSubmit() {
-    if (nameLen === 0) return 'Name is required.';
-    if (lengthInvalid) return `Name must be ${MIN_USER_NAME_LEN}–${MAX_USER_NAME_LEN} characters.`;
-    if (prevFirstName && sameAsPrev) return 'New name must be different from current name.';
+    if (!FIRST_NAME_RULE.test(nameTrimmed)) return FIRST_NAME_ERR;
+    if (sameAsPrev) return 'New name must be different from current name.';
     return null;
   }
 
@@ -76,10 +71,9 @@ export default function ProfilePage() {
 
     try {
       await dispatch(
-        saveProfileNameThunk({
-          firstName: nameTrimmed.replace(/\s+/g, ' ') // 合并多空格
-        })
+        saveProfileNameThunk({ firstName: nameTrimmed })
       ).unwrap();
+
       setProfileMsg('Profile updated successfully.');
       setIsEditing(false);
     } catch (e: any) {
@@ -129,13 +123,6 @@ export default function ProfilePage() {
   const inputError =
     "border border-red/50 bg-white/5 focus:ring-2 focus:ring-dark-green/40 focus:border-dark-green/50";
 
-  // Save 按钮可用性
-  const canSubmitProfile =
-    isEditing &&
-    nameLen > 0 &&
-    !lengthInvalid &&
-    !sameAsPrev &&
-    !savingProfile;
 
   return (
     <>
@@ -173,6 +160,8 @@ export default function ProfilePage() {
           <div className="space-y-4 p-6">
             <div>
               <label htmlFor="firstName" className="block text-sm mb-1">First name</label>
+
+
               <input
                 id="firstName"
                 readOnly={!isEditing}
@@ -185,30 +174,12 @@ export default function ProfilePage() {
                 }}
                 onBlur={() => setTouchedFirst(true)}
                 placeholder="Your first name"
-                aria-invalid={showEmptyError || showLengthError || showServerError}
-                aria-describedby="firstName-help"
-                className={`${inputBase} ${(showEmptyError || showLengthError || showServerError)
-                  ? inputError
-                  : (isEditing ? inputEditing : inputReadonly)
-                  }`}
+                aria-invalid={!!nameErr}
+                className={`${inputBase} ${nameErr ? inputError : (isEditing ? inputEditing : inputReadonly)}`}
               />
-
-              {/* 计数器（仅在触碰后以长度越界变红；初始不红） */}
-              <div
-                id="firstName-help"
-                className={`text-xs mt-1 ${showLengthError ? 'text-red-500' : 'text-dark-gray'}`}
-              >
-                {nameLen}/{MAX_USER_NAME_LEN} (min {MIN_USER_NAME_LEN})
-              </div>
-
-              {/* 错误提示：提交空、长度越界、或服务端/业务错误（如与原名相同） */}
-              {showEmptyError && <p className="mt-1 text-sm text-red-500">Name is required.</p>}
-              {showLengthError && (
-                <p className="mt-1 text-sm text-red-500">
-                  Name must be {MIN_USER_NAME_LEN}–{MAX_USER_NAME_LEN} characters.
-                </p>
+              {submittedProfile && nameErr && (
+                <p className="mt-1 text-sm text-red-500">{nameErr}</p>
               )}
-              {showServerError && <p className="mt-1 text-sm text-red-500">{nameErr}</p>}
             </div>
 
             <div className="mt-2 flex justify-end gap-2">
@@ -238,7 +209,6 @@ export default function ProfilePage() {
                     loading={savingProfile}
                     loadingText="Saving..."
                     leftIcon={<CheckIcon className="h-5 w-5" />}
-                    disabled={!canSubmitProfile}
                     title="Save profile"
                   >
                     Save

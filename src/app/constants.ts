@@ -5,6 +5,9 @@ export const MEMBERS_PER_PAGE = 20;
 export const MIN_USER_NAME_LEN = 2;
 export const MAX_USER_NAME_LEN = 20;
 export const MAX_COMMENT_LEN = 1000;
+export const FIRST_NAME_RULE = /^[a-zA-Z0-9_\u4e00-\u9fa5]{2,20}$/;
+export const FIRST_NAME_ERR =
+  'First name is required (2-20 characters), letters/numbers/underscore/Chinese only, and must not contain spaces';
 
 // 常量（图片/文档限制）
 export const TARGET_IMAGE_BYTES = 300 * 1024; // 单图目标上限
