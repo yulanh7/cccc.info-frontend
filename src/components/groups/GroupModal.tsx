@@ -202,10 +202,13 @@ export default function GroupEditModal({
   );
 
   return (
-    <div className="fixed inset-0 min-h-screen bg-gray bg-opacity-50 flex items-center justify-center z-20 overflow-y-auto">
+    <div
+      className="fixed inset-0 z-30 bg-gray bg-opacity-50 flex items-center justify-center "
+      role="dialog"
+    >
       <div className="absolute inset-0" onClick={handleCloseClick} aria-hidden />
       <div
-        className="bg-white p-6 rounded-sm shadow-lg w-[95vw] md:max-w-3xl relative"
+        className="bg-white w-[95vw] md:max-w-3xl rounded-md shadow-lg relative flex flex-col max-h-[min(95vh,800px)] p-4"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -249,7 +252,7 @@ export default function GroupEditModal({
             value={editedItem.description}
             onChange={(e) => handleChange("description", e.target.value)}
             className={`w-full p-2 mb-1 border rounded-sm ${displayErrors.description ? "border-red-500" : "border-border"}`}
-            rows={6}
+            rows={5}
           />
           <div className={`text-xs mb-1 ${overDesc ? "text-red-600" : "text-dark-gray"}`}>
             {descLen}/{MAX_DESC}
@@ -275,7 +278,7 @@ export default function GroupEditModal({
                 id={privacyHelpId}
                 role="note"
                 aria-live="polite"
-                className="mt-2 flex items-start gap-2 rounded-sm border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
+                className="mt-2 flex items-start gap-1 rounded-sm border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
               >
                 <LockClosedIcon className="h-5 w-5 shrink-0" />
                 <div>
