@@ -3,6 +3,7 @@ import React, { useMemo, useState, useEffect, useRef, useCallback } from "react"
 import type { PostListItemApi } from "@/app/types";
 import Link from 'next/link';
 import { useRouter } from "next/navigation";
+import ConfirmModal from "@/components/ConfirmModal";
 
 import {
   HandThumbUpIcon as HandThumbUpOutline,
@@ -49,7 +50,8 @@ export default function PostCardSimple({
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { id, title, author, summary, videos, like_count } = post;
-
+  const [showEditConfirm, setShowEditConfirm] = useState(false);
+  const [pendingEditId, setPendingEditId] = useState<number | null>(null);
   // Redux state selectors
   const storeCount = useAppSelector(selectLikeCount(id));
   const storeLiked = useAppSelector(selectLikedByMe(id));
@@ -224,8 +226,10 @@ export default function PostCardSimple({
             variant="ghost"
             tone="brand"
             size="xs"
-            onClick={handleEditClick}
-          >
+            onClick={() => {
+              setPendingEditId(id);
+              setShowEditConfirm(true);
+            }}          >
             <PencilSquareIcon className="h-5 w-5" />
           </IconButton>
         )}
@@ -265,7 +269,7 @@ export default function PostCardSimple({
 
     if (videos?.length > 0) {
       return (
-        <div className="flex items-center justify-center w-full h-25 md:h-30 bg-gray-100 text-red-500 rounded-t-xs md:rounded-t-sm">
+        <div className="flex items-center justify-center w-full h-20 md:h-30 bg-gray-100 text-red-500 rounded-t-xs md:rounded-t-sm">
           Unable to parse this YouTube link
         </div>
       );
@@ -277,7 +281,7 @@ export default function PostCardSimple({
           <img
             src={imageUrl}
             alt={title}
-            className="w-full h-auto min-h-20 max-h-27 md:min-h-25 md:max-h-32 object-cover rounded-t-xs md:rounded-t-sm"
+            className="w-full h-auto min-h-20 max-h-25 md:min-h-25 md:max-h-30 object-cover rounded-t-xs md:rounded-t-sm"
             loading="lazy"
           />
         </div>
@@ -296,65 +300,7 @@ export default function PostCardSimple({
     );
   };
 
-  const renderActionButtons = () => {
-    if (!canDelete || (!selectMode && !showDelete)) return null;
 
-    return (
-      <div className="flex justify-between p-1">
-        <div className="z-1 pointer-events-none">
-          <div className="pointer-events-auto" onClick={stopPropagation}>
-            {showDelete && (
-              <div className="flex items-center gap-1">
-                {canEdit && (
-                  <IconButton
-                    title="Edit post"
-                    aria-label="Edit post"
-                    rounded="full"
-                    variant="ghost"
-                    tone="brand"
-                    size="xs"
-                    onClick={handleEditClick}
-                  >
-                    <PencilSquareIcon className="h-5 w-5" />
-                  </IconButton>
-                )}
-                <IconButton
-                  title="Delete post"
-                  aria-label="Delete post"
-                  rounded="full"
-                  variant="ghost"
-                  tone="danger"
-                  size="xs"
-                  onClick={handleDeleteClick}
-                >
-                  <TrashIcon className="h-5 w-5" />
-                </IconButton>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="pointer-events-none">
-          <div className="pointer-events-auto flex" onClick={stopPropagation}>
-            {selectMode && (
-              <IconButton
-                title={isSelected ? "Unselect" : "Select"}
-                aria-label="Select post"
-                size="xs"
-                variant={isSelected ? "primary" : "outline"}
-                tone={isSelected ? "default" : "brand"}
-                onClick={handleSelectToggle}
-                active={isSelected}
-                className="rounded-sm"
-              >
-                {isSelected && <CheckIcon className="h-4 w-4" />}
-              </IconButton>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   const renderGroupInfo = () => {
     if (post.group?.id) {
@@ -435,6 +381,31 @@ export default function PostCardSimple({
           </div>
         </div>
       </div>
+      <ConfirmModal
+        isOpen={showEditConfirm}
+
+        onConfirm={() => {
+          if (pendingEditId != null) {
+            onEditSingle?.(pendingEditId);
+          }
+          setShowEditConfirm(false);
+          setPendingEditId(null);
+        }}
+        onCancel={() => {
+          setShowEditConfirm(false);
+          setPendingEditId(null);
+        }}
+        onClose={() => {
+          setShowEditConfirm(false);
+          setPendingEditId(null);
+        }}
+        message="Processd to post page to edit"
+        confirmLabel="Processd"
+        cancelLabel="Cancel"
+        confirmVariant="danger"
+        cancelVariant="outline"
+      />
+
     </div>
   );
 }
