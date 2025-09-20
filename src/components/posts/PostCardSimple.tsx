@@ -16,7 +16,6 @@ import { likePost, unlikePost, setLikeCount, setLikedByMe, selectLikeCount, sele
 type Props = {
   post: PostListItemApi;
   formatDate: (timestamp: string, showTime?: boolean) => string;
-  showEnterArrow?: boolean;
   canEdit?: boolean;
   canDelete?: boolean;
   selectMode?: boolean;
@@ -28,12 +27,18 @@ type Props = {
   onOpenPost?: () => void;
 };
 
-const BG_URLS = ["/images/bg-card-2.jpg", "/images/bg-for-homepage.png"];
+const BG_URLS = [
+  "/images/bg-card-1.jpg",
+  "/images/bg-card-2.jpg",
+  "/images/bg-card-3.jpg",
+  "/images/bg-card-4.jpg",
+  "/images/bg-card-5.jpg",
+  // "/images/bg-card-6.jpg",
+];
 
 export default function PostCardSimple({
   post,
   formatDate,
-  showEnterArrow = true,
   canEdit = false,
   canDelete = false,
   selectMode = false,
