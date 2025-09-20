@@ -1,7 +1,9 @@
 "use client";
 import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import type { PostListItemApi } from "@/app/types";
+import Link from 'next/link';
 import { useRouter } from "next/navigation";
+
 import {
   HandThumbUpIcon as HandThumbUpOutline,
   CheckIcon, TrashIcon, PencilSquareIcon, UsersIcon
@@ -16,6 +18,7 @@ import { likePost, unlikePost, setLikeCount, setLikedByMe, selectLikeCount, sele
 type Props = {
   post: PostListItemApi;
   formatDate: (timestamp: string, showTime?: boolean) => string;
+  showEnterArrow?: boolean;
   canEdit?: boolean;
   canDelete?: boolean;
   selectMode?: boolean;
@@ -27,18 +30,12 @@ type Props = {
   onOpenPost?: () => void;
 };
 
-const BG_URLS = [
-  "/images/bg-card-1.jpg",
-  "/images/bg-card-2.jpg",
-  "/images/bg-card-3.jpg",
-  "/images/bg-card-4.jpg",
-  "/images/bg-card-5.jpg",
-  // "/images/bg-card-6.jpg",
-];
+const BG_URLS = ["/images/bg-card-2.jpg", "/images/bg-for-homepage.png"];
 
 export default function PostCardSimple({
   post,
   formatDate,
+  showEnterArrow = true,
   canEdit = false,
   canDelete = false,
   selectMode = false,
@@ -193,6 +190,60 @@ export default function PostCardSimple({
   }, []);
 
   // Render helpers
+  const renderSelectButton = () => {
+    if (!selectMode) return null;
+
+    return (
+      <div className="absolute top-2 right-2 z-10 pointer-events-auto" onClick={stopPropagation}>
+        <IconButton
+          title={isSelected ? "Unselect" : "Select"}
+          aria-label="Select post"
+          size="xs"
+          variant={isSelected ? "primary" : "outline"}
+          tone={isSelected ? "default" : "brand"}
+          onClick={handleSelectToggle}
+          active={isSelected}
+          className="rounded-sm"
+        >
+          {isSelected && <CheckIcon className="h-4 w-4" />}
+        </IconButton>
+      </div>
+    );
+  };
+
+  const renderEditDeleteButtons = () => {
+    if (!canDelete || !showDelete) return null;
+
+    return (
+      <div className="flex justify-end gap-1 mb-2 pointer-events-auto" onClick={stopPropagation}>
+        {canEdit && (
+          <IconButton
+            title="Edit post"
+            aria-label="Edit post"
+            rounded="full"
+            variant="ghost"
+            tone="brand"
+            size="xs"
+            onClick={handleEditClick}
+          >
+            <PencilSquareIcon className="h-5 w-5" />
+          </IconButton>
+        )}
+        <IconButton
+          title="Delete post"
+          aria-label="Delete post"
+          rounded="full"
+          variant="ghost"
+          tone="danger"
+          size="xs"
+          onClick={handleDeleteClick}
+        >
+          <TrashIcon className="h-5 w-5" />
+        </IconButton>
+      </div>
+    );
+  };
+
   const renderThumbnail = () => {
     if (thumbnail) {
       return (
@@ -200,7 +251,7 @@ export default function PostCardSimple({
           <img
             src={thumbnail}
             alt={title}
-            className="w-full h-20 md:h-25 object-cover rounded-t-xs md:rounded-t-sm"
+            className="w-full h-25 md:h-30 object-cover rounded-t-xs md:rounded-t-sm"
             loading="lazy"
           />
           <div className="absolute top-3 left-3 pointer-events-none">
@@ -226,7 +277,7 @@ export default function PostCardSimple({
           <img
             src={imageUrl}
             alt={title}
-            className="w-full h-auto min-h-20 max-h-22 md:min-h-25 md:max-h-25 object-cover rounded-t-xs md:rounded-t-sm"
+            className="w-full h-auto min-h-20 max-h-27 md:min-h-25 md:max-h-32 object-cover rounded-t-xs md:rounded-t-sm"
             loading="lazy"
           />
         </div>
@@ -235,7 +286,7 @@ export default function PostCardSimple({
 
     return (
       <div
-        className="w-full pt-7 pb-4 px-3 min-h-15  bg-cover bg-center rounded-t-xs md:rounded-t-sm items-center justify-center"
+        className="w-full pt-7 pb-4 px-3 min-h-20 bg-cover bg-center rounded-t-xs md:rounded-t-sm items-center justify-center"
         style={{ backgroundImage: `url(${bgUrl})` }}
       >
         <h2 className="text-dark-gray font-semibold text-center px-4">
@@ -284,24 +335,21 @@ export default function PostCardSimple({
         </div>
 
         <div className="pointer-events-none">
-          <div className="pointer-events-auto" onClick={stopPropagation}>
-            <div className="flex">
-
-              {selectMode && (
-                <IconButton
-                  title={isSelected ? "Unselect" : "Select"}
-                  aria-label="Select post"
-                  size="xs"
-                  variant={isSelected ? "primary" : "outline"}
-                  tone={isSelected ? "default" : "brand"}
-                  onClick={handleSelectToggle}
-                  active={isSelected}
-                  className="rounded-sm"
-                >
-                  {isSelected && <CheckIcon className="h-4 w-4" />}
-                </IconButton>
-              )}
-            </div>
+          <div className="pointer-events-auto flex" onClick={stopPropagation}>
+            {selectMode && (
+              <IconButton
+                title={isSelected ? "Unselect" : "Select"}
+                aria-label="Select post"
+                size="xs"
+                variant={isSelected ? "primary" : "outline"}
+                tone={isSelected ? "default" : "brand"}
+                onClick={handleSelectToggle}
+                active={isSelected}
+                className="rounded-sm"
+              >
+                {isSelected && <CheckIcon className="h-4 w-4" />}
+              </IconButton>
+            )}
           </div>
         </div>
       </div>
@@ -344,13 +392,14 @@ export default function PostCardSimple({
       aria-label={`Open post ${title}`}
       title={title}
     >
-      {renderActionButtons()}
-
-      <div className="aspect-w-16 aspect-h-9 mb-1">
+      <div className="relative aspect-w-16 aspect-h-9 mb-1">
         {renderThumbnail()}
+        {renderSelectButton()}
       </div>
 
       <div className='px-2 pb-2'>
+        {renderEditDeleteButtons()}
+
         <h2 className="flex-1 font-semibold text-base text-dark-gray leading-[1.3] md:leading-[1.3] my-2">
           {ellipsize(title, 40)}
         </h2>
