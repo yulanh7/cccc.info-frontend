@@ -23,6 +23,7 @@ import {
 import { HandThumbUpIcon as HandThumbUpSolid } from "@heroicons/react/24/solid";
 import { MAX_COMMENT_LEN } from '@/app/constants';
 import CollapsibleText from "@/components/ui/CollapsibleText";
+import { formatDate } from "@/app/ultility";
 
 
 /* ======================= Props ======================= */
@@ -297,7 +298,7 @@ function CommentItem({
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-900">
+            <span className="text-sm text-gray-500">
               {ellipsize(c.user.firstName, 10)}
             </span>
             {isAuthor && (
@@ -315,7 +316,10 @@ function CommentItem({
               className="text-sm text-gray-800"
             />
           </div>
+          <div className="text-[10px] text-gray-500">
+            {c.created_at ? formatDate(c.created_at) : "—"}
 
+          </div>
           {/* 操作行：回复 / 删除（自己的评论才显示删除） */}
           <div className="mt-1 flex items-center gap-3 text-xs text-gray-500">
             <button
@@ -413,7 +417,7 @@ function ChildCommentItem({
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-900">
+          <span className="text-sm  text-gray-500">
             {ellipsize(c.user.firstName, 10)}
           </span>
           {isAuthor && (
@@ -429,6 +433,10 @@ function ChildCommentItem({
             desktopChars={300}
             className="text-sm text-gray-800"
           />
+        </div>
+        <div className="text-[10px] text-gray-500">
+          {c.created_at ? formatDate(c.created_at) : "—"}
+
         </div>
         <div className="mt-1 flex items-center gap-3 text-xs text-gray-500">
           {isMine && (
