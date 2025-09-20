@@ -121,7 +121,7 @@ export default function GroupListView({
           <CardSkeleton />
         </div>
       ) : (
-        <div className="columns-1 md:columns-2 lg:columns-3 gap-4">
+        <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-[3px]">
           {rows.map((group) => {
             const subbed = isUserSubscribed(group);
 
@@ -133,13 +133,13 @@ export default function GroupListView({
                   role="button"
                   tabIndex={0}
                   className="
-                    card relative p-4 cursor-pointer hover:shadow-sm
+                    card relative p-2 cursor-pointer hover:shadow-sm
                     focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-dark-green
                   "
                   aria-label={`Open group ${group.name}`}
                 >
 
-                  <div className="flex justify-between align-middle space-x-2 border-b-1 border-border mb-4 pb-1">
+                  <div className="flex justify-between align-middle space-x-2 border-b-1 border-border mb-2 pb-1">
 
                     {group.isPrivate ? (
                       <div className="flex items-center gap-1 text-dark-gray/80">
@@ -191,15 +191,15 @@ export default function GroupListView({
                     )}
                   </div>
                   {/* 标题 & 时间 */}
-                  <h2 className="text-lg font-semibold text-dark-gray mb-1">
+                  <h2 className="text-base font-semibold text-dark-gray mb-1">
                     {group.name}
-                    {group.is_creator && (
+                    {/* {group.is_creator && (
                       <span className="ml-2 align-middle text-[10px] px-1.5 py-0.5 rounded border border-dark-green text-dark-green">
                         Owner
                       </span>
-                    )}
+                    )} */}
                   </h2>
-                  <p className="text-xs text-dark-gray mb-1.5">
+                  <p className="text-xs text-dark-gray mb-1">
                     <span className="inline-flex items-center gap-1.5 italic">
                       <CalendarIcon className="h-4 w-4 " />
                       <time dateTime={group.time} className="font-medium">
@@ -209,12 +209,12 @@ export default function GroupListView({
                   </p>
 
                   {/* 描述 */}
-                  <p className="text-gray text-sm whitespace-pre-line" title={group.description || ""}>
+                  {/* <p className="text-gray text-sm whitespace-pre-line" title={group.description || ""}>
                     {ellipsize(group.description || "", 160)}
-                  </p>
+                  </p> */}
 
                   {/* 底部：作者 + 订阅按钮（阻止冒泡） */}
-                  <div className="mt-4 flex justify-between items-center">
+                  <div className="mt-2 flex justify-between items-center">
                     <span className="inline-flex items-center gap-2">
                       <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-dark-green/10 text-dark-green text-xs font-semibold">
                         {(group.creator_name?.[0] || "?").toUpperCase()}
