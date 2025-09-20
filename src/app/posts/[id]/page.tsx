@@ -309,20 +309,17 @@ function PostDetailPageInner() {
               />
             ) : (
               <div className="flex w-full px-2 py-4 bg-[url('/images/bg-for-homepage.png')] bg-cover bg-center rounded-t-xs md:rounded-t-sm items-center justify-center">
-                <h2 className="text-dark-gray text-xl md:text-2xl font-'Apple Color Emoji' font-semibold text-center px-4">
+                <h2 className="text-dark-gray max-w-[700px] text-xl md:text-2xl font-'Apple Color Emoji' font-semibold text-center px-4">
                   {post.title}
                 </h2>
               </div>
             )}
 
-
             <div className="mx-auto px-4 mt-1">
-              <div className="flex items-center justify-between gap-2 mt-3 ">
-                {videoUrls.length > 0 &&
-
-                  <h1 className={`${videoUrls.length > 0 ? "inline" : "hidden"} md:inline text-2xl`}>{post.title}</h1>
-                }
-
+              <div className="text-xs md:text-sm flex items-end justify-between gap-2 my-2">
+                <span className="inline-flex">
+                  <CalendarIcon className="h-4 w-4 mr-1 text-dark-green" /> {formatDate(post.created_at)}
+                </span>
                 {!!post && (
                   <div className="hidden md:flex items-center gap-2">
                     {/* 编辑：只能帖子作者 */}
@@ -355,15 +352,9 @@ function PostDetailPageInner() {
                     )}
                   </div>
                 )}
-
               </div>
 
-              <div className="text-xs md:text-sm flex items-center mb-2">
-                <CalendarIcon className="h-4 w-4 mr-1 text-dark-green" /> {formatDate(post.created_at)}
-              </div>
-
-              <div className="inline-flex items-center flex-wrap gap-3 mb-2 mt-2 w-fit ">
-
+              <div className="inline-flex items-center flex-wrap gap-3 mb-3 w-fit ">
                 <Link
                   href={`/groups/${post.group?.id}`}
                 >
@@ -388,8 +379,12 @@ function PostDetailPageInner() {
                 )}
               </div>
 
+              {videoUrls.length > 0 &&
+                <div className={`${videoUrls.length > 0 ? "block" : "hidden"} pb-2`} >
+                  <h1 className={`text-xl`}>{post.title}</h1>
+                </div>
+              }
 
-              {/* 正文（纯文本 + 保留换行，点击文字本身可收起） */}
               <CollapsibleText
                 text={post.content ?? ""}
                 mobileChars={200}
