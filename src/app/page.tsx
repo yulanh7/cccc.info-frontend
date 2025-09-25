@@ -21,7 +21,7 @@ import Button from "@/components/ui/Button";
 
 export default function HomePage() {
   return (
-    <Suspense fallback={<LoadingOverlay show text="Loading groups…" />}>
+    <Suspense fallback={<LoadingOverlay show text="Loading home…" />}>
       <HomePageInner />
     </Suspense>
   );
