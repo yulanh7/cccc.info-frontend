@@ -57,6 +57,7 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
 
   const userGroups = useAppSelector((s) => s.groups.userGroups);
   const subscribedGroups = useAppSelector((s) => s.groups.subscribedGroups);
+  const userMembership = useAppSelector((s) => s.groups.userMembership);
 
   const userPagination = useAppSelector((s) => s.groups.userGroupsPagination);
   const subscribedPagination = useAppSelector((s) => s.groups.subscribedGroupsPagination);
@@ -200,8 +201,13 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
 
   // ===== 权限/订阅/编辑/删除
   const canEditGroup = useCallback((g: GroupApi) => g.is_creator, []);
-  const isUserSubscribed = useCallback((g: GroupApi) => g.is_member === true, []);
-
+  const isUserSubscribed = (group: GroupApi) => {
+    const membershipFromStore = userMembership[group.id];
+    if (typeof membershipFromStore === 'boolean') {
+      return membershipFromStore;
+    }
+    return group.is_member ?? false;
+  };
   const toggleSubscription = useCallback(async (group: GroupApi) => {
     setToggling(true);
     const action = group.is_member ? await dispatch(leaveGroup(group.id)) : await dispatch(joinGroup(group.id));
