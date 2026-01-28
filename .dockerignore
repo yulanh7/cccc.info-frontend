@@ -1,0 +1,11 @@
+.git
+.gitignore
+node_modules
+.next
+.env.local          # 只忽略本地开发 env
+.env.development
+*.log
+coverage
+dist
+build
+.DS_Store
