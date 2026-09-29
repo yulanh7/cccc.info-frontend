@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/app/features/hooks';
-import { rehydrateAuth } from '@/app/features/auth/slice';
+import { rehydrateAuth, fetchProfileThunk } from '@/app/features/auth/slice';
+import { getToken } from '@/app/features/auth/token';
 import Header from './Header';
 import BottomNav from './BottomNav';
 
@@ -26,6 +27,8 @@ export default function LayoutClient({ children }: { children: React.ReactNode }
     didBootstrap.current = true;
 
     dispatch(rehydrateAuth());
+    // permissions 可能被 admin 随时修改：有 token 就拉一次 profile 刷新本地用户信息
+    if (getToken()) dispatch(fetchProfileThunk());
     setBootstrapped(true);
   }, [dispatch]);
 

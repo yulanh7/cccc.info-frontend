@@ -17,6 +17,7 @@ import {
   clearSearch as clearSearchAction,
 } from "@/app/features/groups/slice";
 import type { GroupApi } from "@/app/types";
+import { canCreateGroup } from "@/app/types/user";
 import type { CreateOrUpdateGroupBody, GroupListPaginationApi } from "@/app/types/group";
 import { mapApiErrorToFields } from "@/app/ultility";
 
@@ -47,7 +48,7 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
 
   // ===== 从 Redux 取需要的 state
   const user = useAppSelector((s) => s.auth.user);
-  const canCreate = !!user?.admin;
+  const canCreate = canCreateGroup(user);
 
   const visibleGroups = useAppSelector((s) => s.groups.visibleGroups);
   const visibleGroupsPagination = useAppSelector((s) => s.groups.visibleGroupsPagination);
@@ -226,7 +227,7 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
 
   const openNew = useCallback(() => {
     if (!canCreate) {
-      alert("Only admins can create groups.");
+      alert("You do not have permission to create groups");
       return;
     }
     setSelectedGroup(undefined);
