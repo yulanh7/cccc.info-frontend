@@ -11,6 +11,7 @@ import type {
   AddMemberResponseApi,
   KickMemberResponseApi,
   AddLeaderResponseApi,
+  TransferOwnershipResponseApi,
 } from '@/app/types/group';
 import type {
   PostListItemApi,
@@ -177,6 +178,46 @@ export const removeGroupLeader = createAsyncThunk<
   }
 });
 
+// ===== 组长名单：没有单独接口，拉全部成员页后按 is_leader 过滤（供转让创建者选人）
+export const fetchGroupLeaders = createAsyncThunk<
+  GroupSubscriberUi[],
+  { groupId: number }
+>('groupDetail/fetchGroupLeaders', async ({ groupId }, { rejectWithValue }) => {
+  try {
+    const leaders: GroupSubscriberUi[] = [];
+    let page = 1;
+    let pages = 1;
+    do {
+      const res = await apiRequest<MembersListData>('GET', `/groups/${groupId}/members?page=${page}&per_page=50`);
+      const data = unwrapData(res);
+      (data.members ?? []).forEach((m) => {
+        if (m.is_leader) {
+          leaders.push({ id: m.id, firstName: m.firstName ?? '', email: m.email ?? '', is_creator: m.is_creator, is_leader: true });
+        }
+      });
+      pages = data.pagination?.pages ?? 1;
+      page += 1;
+    } while (page <= pages);
+    return leaders;
+  } catch (e: any) {
+    return rejectWithValue(e.message || 'Fetch leaders failed') as any;
+  }
+});
+
+// ===== 转让创建者：POST /api/groups/{group_id}/transfer-ownership（仅 admin / 当前创建者，目标必须已是组长）
+export const transferGroupOwnership = createAsyncThunk<
+  { group: GroupApi; message?: string },
+  { groupId: number; userId: number }
+>('groupDetail/transferGroupOwnership', async ({ groupId, userId }, { rejectWithValue }) => {
+  try {
+    const res = await apiRequest<TransferOwnershipResponseApi['data']>('POST', `/groups/${groupId}/transfer-ownership`, { user_id: userId });
+    if (!res.success || !res.data?.group) throw new Error(res.message || 'Transfer ownership failed');
+    return { group: res.data.group, message: res.message };
+  } catch (e: any) {
+    return rejectWithValue(e.message || 'Transfer ownership failed') as any;
+  }
+});
+
 const patchPostById = (
   arr: PostListItemApi[] | undefined,
   postId: number,
@@ -333,6 +374,13 @@ const groupDetailSlice = createSlice({
       .addCase(removeGroupLeader.rejected, (s, a) => {
         s.status.leader = 'failed';
         s.error.leader = (a.payload as string) || 'Remove leader failed';
+      });
+
+    // ===== transfer ownership：用返回的 group 覆盖（creator / is_creator 已更新）
+    builder
+      .addCase(transferGroupOwnership.fulfilled, (s, a) => {
+        if (s.currentGroupId !== a.payload.group.id) return;
+        s.group = { ...s.group, ...a.payload.group } as GroupApi;
       });
 
     // like覆盖当前 group 页面的post列表项（无需整页刷新）

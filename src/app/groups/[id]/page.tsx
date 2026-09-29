@@ -8,6 +8,8 @@ import LoadingOverlay from "@/components/feedback/LoadingOverLay";
 import PostModal from "@/components/posts/PostModal";
 import GroupModal from "@/components/groups/GroupModal";
 import SubscribersModal from "@/components/groups/SubscribersModal";
+import type { Subscriber } from "@/components/groups/SubscribersModal";
+import TransferOwnershipModal from "@/components/groups/TransferOwnershipModal";
 import ConfirmModal from "@/components/ConfirmModal";
 import GroupInfoBar from "@/components/groups/GroupInfoBar";
 import PostListSection from "@/components/posts/PostListSection";
@@ -21,11 +23,13 @@ import {
   kickGroupMember,
   addGroupLeader,
   removeGroupLeader,
+  fetchGroupLeaders,
+  transferGroupOwnership,
 } from "@/app/features/groups/detailSlice";
 import { fetchGroupPostsList, createPost, deletePost as deletePostThunk } from "@/app/features/posts/slice";
 import { updateGroup, deleteGroup } from "@/app/features/groups/slice";
 import type { CreateOrUpdateGroupBody } from "@/app/types/group";
-import { isPostAuthor, canEditPost, canDeletePost, canWritePosts, canEditGroup, canDeleteGroup } from "@/app/types";
+import { isPostAuthor, canEditPost, canDeletePost, canWritePosts, canEditGroup, canDeleteGroup, canTransferOwnership } from "@/app/types";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { useConfirm } from "@/hooks/useConfirm";
 import { POSTS_PER_PAGE, MEMBERS_PER_PAGE } from "@/app/constants";
@@ -67,12 +71,17 @@ function GroupDetailPageInner() {
   const [showSubsModal, setShowSubsModal] = useState(false);
   const [modalSaving, setModalSaving] = useState(false);
   const [modalErrors, setModalErrors] = useState<{ title?: string; description?: string } | null>(null);
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferCandidates, setTransferCandidates] = useState<Subscriber[]>([]);
+  const [transferLoading, setTransferLoading] = useState(false);
+  const [transferring, setTransferring] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   // Confirm modals
   const confirmGroupDelete = useConfirm("Are you sure you want to delete this group?");
   const confirmBulkDelete = useConfirm<number[]>("Delete selected posts?");
+  const confirmTransfer = useConfirm<Subscriber>("Transfer group ownership?");
   const confirmOwnDelete = useConfirm<number>("Delete this post?");
   const confirmOtherDelete = useConfirm<number>("This post was created by someone else. You are a group owner or leader and have permission to delete it. Delete anyway?");
 
@@ -85,6 +94,7 @@ function GroupDetailPageInner() {
   const canManageGroup = safeGroup ? canEditGroup(safeGroup, user) : false;
   const canRemoveGroup = safeGroup ? canDeleteGroup(safeGroup, user) : false;
   const canPost = canWritePosts(safeGroup, user);
+  const canTransfer = safeGroup ? canTransferOwnership(safeGroup, user) : false;
   const membersLoading = status.members === 'loading';
   const headerItem = safeGroup ? { id: safeGroup.id, author: safeGroup.creator_name } : undefined;
   const totalPages = safePagination?.total_pages ?? 1;
@@ -262,6 +272,40 @@ function GroupDetailPageInner() {
     }
   }, [safeGroup, dispatch]);
 
+  // 转让创建者：关闭成员弹窗 → 拉组长名单（排除当前创建者）→ 选人
+  const openTransfer = useCallback(async () => {
+    if (!safeGroup) return;
+    setShowSubsModal(false);
+    setTransferCandidates([]);
+    setShowTransferModal(true);
+    setTransferLoading(true);
+    try {
+      const leaders = await dispatch(fetchGroupLeaders({ groupId: safeGroup.id })).unwrap();
+      setTransferCandidates(leaders.filter((u) => !u.is_creator));
+    } catch (e: any) {
+      alert(e?.message || "Fetch leaders failed");
+    } finally {
+      setTransferLoading(false);
+    }
+  }, [safeGroup, dispatch]);
+
+  const handleTransfer = useCallback(async (target: Subscriber | null) => {
+    if (!safeGroup || !target) return;
+    const wasCreator = safeGroup.is_creator;
+    setTransferring(true);
+    try {
+      await dispatch(transferGroupOwnership({ groupId: safeGroup.id, userId: target.id })).unwrap();
+      setShowTransferModal(false);
+      alert(wasCreator
+        ? "You are no longer the group owner, but you are still a leader."
+        : `Group ownership transferred to ${target.firstName}.`);
+    } catch (e: any) {
+      alert(e?.message || "Transfer ownership failed");
+    } finally {
+      setTransferring(false);
+    }
+  }, [safeGroup, dispatch]);
+
   const buildHref = useCallback((p: number) => `/groups/${groupId}?page=${p}`, [groupId]);
 
   if (pageLoading) {
@@ -353,7 +397,22 @@ function GroupDetailPageInner() {
         onKick={canManageGroup ? handleKickMember : undefined}
         onToggleLeader={canManageGroup ? handleToggleLeader : undefined}
         currentUserId={user?.id}
+        onTransferOwnership={canTransfer ? openTransfer : undefined}
         title="Subscribers"
+      />
+
+      <TransferOwnershipModal
+        open={showTransferModal}
+        onClose={() => { if (!transferring) setShowTransferModal(false); }}
+        leaders={transferCandidates}
+        loading={transferLoading}
+        transferring={transferring}
+        onTransfer={(leader) => confirmTransfer.ask(
+          leader,
+          safeGroup?.is_creator
+            ? `Transfer ownership of this group to ${leader.firstName}? You will remain a leader, but you will no longer be able to delete the group or transfer ownership.`
+            : `Transfer ownership of this group to ${leader.firstName}?`
+        )}
       />
 
       {showEditModal && (
@@ -402,6 +461,15 @@ function GroupDetailPageInner() {
         message={confirmBulkDelete.message}
         onCancel={confirmBulkDelete.cancel}
         onConfirm={confirmBulkDelete.confirm(onBulkDelete)}
+      />
+
+      <ConfirmModal
+        isOpen={confirmTransfer.open}
+        message={confirmTransfer.message}
+        onCancel={confirmTransfer.cancel}
+        onConfirm={confirmTransfer.confirm(handleTransfer)}
+        confirmLabel="Transfer"
+        title="Transfer ownership"
       />
 
       <ConfirmModal

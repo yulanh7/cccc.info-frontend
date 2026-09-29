@@ -91,6 +91,7 @@ export type AddMemberResponseApi = ApiResponseProps<{
   member: { id: number; firstName: string; email: string; is_creator?: boolean };
 }>;
 export type KickMemberResponseApi = ApiResponseProps<{}>;
+export type TransferOwnershipResponseApi = ApiResponseProps<{ group: GroupApi }>;
 export type AddLeaderResponseApi = ApiResponseProps<{
   leader: { id: number; firstName: string; email: string };
 }>;
@@ -100,6 +101,10 @@ export type GroupStatsResponseApi = ApiResponseProps<GroupStats>;
 /** 编辑小组设置 / 管理成员 / 加撤组长：admin、创建者、任一组长 */
 export const canEditGroup = (group: GroupApi, user?: UserProps | null): boolean =>
   !!user?.admin || group.is_creator || !!group.is_leader;
+
+/** 转让创建者：仅 admin、当前创建者 */
+export const canTransferOwnership = (group: GroupApi, user?: UserProps | null): boolean =>
+  !!user?.admin || group.is_creator;
 
 /** 删除小组：仅 admin、创建者（组长不行） */
 export const canDeleteGroup = (group: GroupApi, user?: UserProps | null): boolean =>

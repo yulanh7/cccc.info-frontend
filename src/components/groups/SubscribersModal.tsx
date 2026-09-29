@@ -27,13 +27,15 @@ interface SubscribersModalProps {
   onToggleLeader?: (userId: number, makeLeader: boolean) => void | Promise<void>;
   /** 当前登录用户 id：自己这一行不显示踢出 / 取消组长 */
   currentUserId?: number;
+  /** 转让创建者入口（仅创建者 / admin 传入） */
+  onTransferOwnership?: () => void;
 
   title?: string;
 }
 
 export default function SubscribersModal({
   open, onClose, members, pagination, loading = false,
-  canManage = false, onPageChange, onAdd, onKick, onToggleLeader, currentUserId, title = 'Subscribers'
+  canManage = false, onPageChange, onAdd, onKick, onToggleLeader, currentUserId, onTransferOwnership, title = 'Subscribers'
 }: SubscribersModalProps) {
   const [input, setInput] = useState('');
   const [adding, setAdding] = useState(false);
@@ -84,6 +86,14 @@ export default function SubscribersModal({
           </h3>
           <button onClick={onClose} className="text-3xl text-dark-gray hover:text-foreground -mt-2">×</button>
         </div>
+
+        {onTransferOwnership && (
+          <div className="mb-3 flex justify-end">
+            <Button variant="outline" tone="danger" size="sm" onClick={onTransferOwnership}>
+              Transfer ownership
+            </Button>
+          </div>
+        )}
 
         {/* 顶部：添加成员（仅可管理时显示） */}
         {canManage && (
