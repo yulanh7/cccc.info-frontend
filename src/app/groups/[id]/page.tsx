@@ -268,7 +268,7 @@ function GroupDetailPageInner() {
       const thunk = makeLeader ? addGroupLeader : removeGroupLeader;
       await dispatch(thunk({ groupId: safeGroup.id, userId })).unwrap();
     } catch (e: any) {
-      alert(e?.message || (makeLeader ? "Set leader failed" : "Remove leader failed"));
+      alert(typeof e === "string" ? e : e?.message || (makeLeader ? "Set leader failed" : "Remove leader failed"));
     }
   }, [safeGroup, dispatch]);
 
@@ -283,7 +283,7 @@ function GroupDetailPageInner() {
       const leaders = await dispatch(fetchGroupLeaders({ groupId: safeGroup.id })).unwrap();
       setTransferCandidates(leaders.filter((u) => !u.is_creator));
     } catch (e: any) {
-      alert(e?.message || "Fetch leaders failed");
+      alert(typeof e === "string" ? e : e?.message || "Fetch leaders failed");
     } finally {
       setTransferLoading(false);
     }
@@ -300,7 +300,7 @@ function GroupDetailPageInner() {
         ? "You are no longer the group owner, but you are still a leader."
         : `Group ownership transferred to ${target.firstName}.`);
     } catch (e: any) {
-      alert(e?.message || "Transfer ownership failed");
+      alert(typeof e === "string" ? e : e?.message || "Transfer ownership failed");
     } finally {
       setTransferring(false);
     }
@@ -437,7 +437,7 @@ function GroupDetailPageInner() {
               await onCreatePost(form);
               setIsPostModalOpen(false);
             } catch (e: any) {
-              alert(e?.message || "Create post failed");
+              alert(typeof e === "string" ? e : e?.message || "Create post failed");
             } finally {
               setCreating(false);
             }

@@ -200,7 +200,12 @@ export function usePostListController<
   const onDeleteSingle = useCallback(
     async (postId: number extends DArg ? number : DArg) => {
       if (!deletePost) return;
-      await dispatch(deletePost(postId)).unwrap();
+      try {
+        await dispatch(deletePost(postId)).unwrap();
+      } catch (e: any) {
+        // 例如 leaders_only 组被拒：后端 403 文案原样展示
+        alert(typeof e === "string" ? e : e?.message || "Delete post failed");
+      }
       refreshCurrentPage();
     },
     [deletePost, dispatch, refreshCurrentPage]

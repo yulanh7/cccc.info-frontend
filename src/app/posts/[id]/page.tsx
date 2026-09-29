@@ -161,7 +161,7 @@ function PostDetailPageInner() {
       await dispatch(deletePost(id)).unwrap();
       history.back();
     } catch (e: any) {
-      alert(e?.message || "Delete post failed");
+      alert(typeof e === "string" ? e : e?.message || "Delete post failed");
     }
   };
 
@@ -230,7 +230,7 @@ function PostDetailPageInner() {
       handleEditClose();
 
     } catch (e: any) {
-      alert(e?.message || "Update post failed");
+      alert(typeof e === "string" ? e : e?.message || "Update post failed");
       // ❌ 失败则不关闭，保持在编辑态
       throw e; // 抛给 PostModal 的 try/catch，避免“保存并关闭”把弹窗关掉
     } finally {
