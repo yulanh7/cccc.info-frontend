@@ -24,6 +24,7 @@ type Props = {
   onDeleteGroup: () => void;
   formatDate: (timestamp: string, showTime?: boolean) => string;
   canManageGroup: boolean;
+  canDeleteGroup?: boolean;
   canShowCreateFab: boolean;
   selectMode: boolean;
   selectedCount: number;
@@ -42,6 +43,7 @@ export default function GroupInfoBar({
   selectedCount,
   onBulkDeleteSelected,
   canManageGroup = false,
+  canDeleteGroup = false,
   canShowCreateFab = false,
 }: Props) {
 
@@ -70,11 +72,15 @@ export default function GroupInfoBar({
                   </span>
                 )}
 
-                {canManageGroup && (
+                {group.is_creator ? (
                   <span className="text-[10px] px-1.5 py-0.5 rounded border border-yellow text-yellow">
                     Owner
                   </span>
-                )}
+                ) : group.is_leader ? (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded border border-yellow text-yellow">
+                    Leader
+                  </span>
+                ) : null}
               </div>
 
               {group.description && (
@@ -87,31 +93,32 @@ export default function GroupInfoBar({
             {/* 右侧：操作按钮（小屏隐藏，大屏单行显示并贴右） */}
             <div className="hidden md:flex items-center gap-2 flex-shrink-0">
               {canManageGroup && (
-                <>
-                  <IconButton
-                    className="text-white"
-                    title="Edit group"
-                    aria-label="Edit group"
-                    variant="ghost"
-                    size="md"
-                    onClick={onEditGroup}
-                  >
-                    <PencilSquareIcon className="h-5 w-5" />
-                  </IconButton>
-
-                  <IconButton
-                    title="Delete group"
-                    aria-label="Delete group"
-                    variant="ghost"
-                    className="text-white"
-                    size="md"
-                    onClick={onDeleteGroup}
-                  >
-                    <TrashIcon className="h-5 w-5" />
-                  </IconButton>
-                </>
+                <IconButton
+                  className="text-white"
+                  title="Edit group"
+                  aria-label="Edit group"
+                  variant="ghost"
+                  size="md"
+                  onClick={onEditGroup}
+                >
+                  <PencilSquareIcon className="h-5 w-5" />
+                </IconButton>
               )}
-              {!canManageGroup && (
+              {/* 删除小组：仅 admin / 创建者，组长不行 */}
+              {canDeleteGroup && (
+                <IconButton
+                  title="Delete group"
+                  aria-label="Delete group"
+                  variant="ghost"
+                  className="text-white"
+                  size="md"
+                  onClick={onDeleteGroup}
+                >
+                  <TrashIcon className="h-5 w-5" />
+                </IconButton>
+              )}
+              {/* 创建者不能退出；组长和普通成员保留订阅/退出按钮 */}
+              {!group.is_creator && (
                 <SubscribeToggleButton
                   groupId={group.id}
                   mode="follow"

@@ -13,7 +13,7 @@ import ConfirmModal from "@/components/ConfirmModal";
 import PageTitle from '@/components/layout/PageTitle';
 import { fetchMyPosts, deletePost as deletePostThunk } from "@/app/features/posts/slice";
 import type { PostListItemApi } from "@/app/types";
-import { isPostAuthor, isGroupCreatorOfPost } from "@/app/types";
+import { canEditPost, canDeletePost } from "@/app/types";
 import Button from "@/components/ui/Button";
 import { POSTS_PER_PAGE } from "@/app/constants";
 import CustomHeader from "@/components/layout/CustomHeader";
@@ -88,8 +88,8 @@ function MyPostsPageInner() {
       append: false,
     }),
     deletePost: deletePostThunk,
-    canEdit: (p) => isPostAuthor(p, user),
-    canDelete: (p) => isPostAuthor(p, user) || isGroupCreatorOfPost(p, user),
+    canEdit: (p) => canEditPost(p, user),
+    canDelete: (p) => canDeletePost(p, user),
     postsStatus,
   });
 

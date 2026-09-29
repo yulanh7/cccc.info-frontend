@@ -27,6 +27,7 @@ type Props = {
   onEdit?: (g: GroupApi) => void;
   onDelete?: (id: number) => void;
   canEdit?: (g: GroupApi) => boolean;
+  canDelete?: (g: GroupApi) => boolean;
 
   isUserSubscribed: (g: GroupApi) => boolean;
   onToggleSubscription?: (g: GroupApi) => Promise<boolean> | boolean;
@@ -51,6 +52,7 @@ export default function GroupListView({
   onEdit,
   onDelete,
   canEdit,
+  canDelete,
   isUserSubscribed,
   onToggleSubscription,
   saving = false,
@@ -172,7 +174,7 @@ export default function GroupListView({
                             </IconButton>
                           </div>
                         )}
-                        {onDelete && (
+                        {onDelete && (canDelete ? canDelete(group) : true) && (
                           <div onClick={(e) => e.stopPropagation()}>
                             <IconButton
                               title="Delete group"

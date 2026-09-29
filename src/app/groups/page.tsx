@@ -54,6 +54,7 @@ function GroupsPageInner() {
     // perms & actions
     canCreate,
     canEditGroup,
+    canDeleteGroup,
     isUserSubscribed,
     toggleSubscription,
     // modal
@@ -300,6 +301,7 @@ function GroupsPageInner() {
           onEdit={openEdit}
           onDelete={(id) => confirmGroupDelete.ask(id)}
           canEdit={canEditGroup}
+          canDelete={canDeleteGroup}
           isUserSubscribed={isUserSubscribed}
           onToggleSubscription={toggleSubscription}
           saving={saving}

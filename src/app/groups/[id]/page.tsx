@@ -23,7 +23,7 @@ import {
 import { fetchGroupPostsList, createPost, deletePost as deletePostThunk } from "@/app/features/posts/slice";
 import { updateGroup, deleteGroup } from "@/app/features/groups/slice";
 import type { CreateOrUpdateGroupBody } from "@/app/types/group";
-import { isPostAuthor, isGroupCreatorOfPost, canEditGroup } from "@/app/types";
+import { isPostAuthor, canEditPost, canDeletePost, canWritePosts, canEditGroup, canDeleteGroup } from "@/app/types";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { useConfirm } from "@/hooks/useConfirm";
 import { POSTS_PER_PAGE, MEMBERS_PER_PAGE } from "@/app/constants";
@@ -71,9 +71,8 @@ function GroupDetailPageInner() {
   // Confirm modals
   const confirmGroupDelete = useConfirm("Are you sure you want to delete this group?");
   const confirmBulkDelete = useConfirm<number[]>("Delete selected posts?");
-  const confirmPrivateGroupPermission = useConfirm("This is a private group. You don't have permission to create posts here.");
   const confirmOwnDelete = useConfirm<number>("Delete this post?");
-  const confirmOtherDelete = useConfirm<number>("This post was created by someone else. You are a group owner and have permission to delete it. Delete anyway?");
+  const confirmOtherDelete = useConfirm<number>("This post was created by someone else. You are a group owner or leader and have permission to delete it. Delete anyway?");
 
   // Computed values
   const groupMatchesRoute = group?.id === groupId;
@@ -81,8 +80,9 @@ function GroupDetailPageInner() {
   const safePosts = groupMatchesRoute ? posts : [];
   const safePagination = groupMatchesRoute ? postsPagination : null;
   const pageLoading = !groupMatchesRoute || status.group === "loading" || !mounted;
-  const canManageGroup = safeGroup ? canEditGroup(safeGroup) : false;
-  const isPrivateGroup = !!(safeGroup && ((safeGroup as any).isPrivate ?? (safeGroup as any).is_private));
+  const canManageGroup = safeGroup ? canEditGroup(safeGroup, user) : false;
+  const canRemoveGroup = safeGroup ? canDeleteGroup(safeGroup, user) : false;
+  const canPost = canWritePosts(safeGroup, user);
   const membersLoading = status.members === 'loading';
   const headerItem = safeGroup ? { id: safeGroup.id, author: safeGroup.creator_name } : undefined;
   const totalPages = safePagination?.total_pages ?? 1;
@@ -113,8 +113,8 @@ function GroupDetailPageInner() {
       authorNameHint: safeGroup?.creator_name || "",
     }),
     deletePost: deletePostThunk,
-    canEdit: (p) => isPostAuthor(p, user),
-    canDelete: (p) => isPostAuthor(p, user) || isGroupCreatorOfPost(p, user),
+    canEdit: (p) => canEditPost(p, user),
+    canDelete: (p) => canDeletePost(p, user),
     postsStatus: status.posts as any,
   });
 
@@ -130,15 +130,9 @@ function GroupDetailPageInner() {
   }, [safeGroup, dispatch, router]);
 
   const handleCreatePostClick = useCallback(() => {
-    if (!safeGroup) return;
-
-    if (isPrivateGroup && !canManageGroup) {
-      confirmPrivateGroupPermission.ask();
-      return;
-    }
-
+    if (!safeGroup || !canPost) return;
     setIsPostModalOpen(true);
-  }, [safeGroup, isPrivateGroup, canManageGroup, confirmPrivateGroupPermission]);
+  }, [safeGroup, canPost]);
 
   const handleEditGroup = useCallback(() => setShowEditModal(true), []);
 
@@ -148,7 +142,7 @@ function GroupDetailPageInner() {
 
     if (isPostAuthor(post, user)) {
       confirmOwnDelete.ask(postId);
-    } else if (isGroupCreatorOfPost(post, user)) {
+    } else if (canDeletePost(post, user)) {
       confirmOtherDelete.ask(postId);
     }
   }, [safePosts, user, confirmOwnDelete, confirmOtherDelete]);
@@ -194,6 +188,7 @@ function GroupDetailPageInner() {
       name: updatedGroup.name.trim(),
       description: (updatedGroup.description ?? "").replace(/\r\n/g, "\n"),
       isPrivate: updatedGroup.isPrivate,
+      ...(updatedGroup.post_policy ? { post_policy: updatedGroup.post_policy } : {}),
     };
 
     try {
@@ -268,11 +263,11 @@ function GroupDetailPageInner() {
         pageTitle={safeGroup?.name || "Group"}
         showAdd={false}
         showEdit={canManageGroup}
-        showDelete={canManageGroup}
+        showDelete={canRemoveGroup}
         onEdit={handleEditGroup}
         onDelete={() => confirmGroupDelete.ask()}
         rightSlot={
-          safeGroup && !canManageGroup ? (
+          safeGroup && !safeGroup.is_creator ? (
             <SubscribeToggleButton
               groupId={safeGroup.id}
               mode="follow"
@@ -292,7 +287,8 @@ function GroupDetailPageInner() {
           onNewPost={handleCreatePostClick}
           onEditGroup={handleEditGroup}
           canManageGroup={canManageGroup}
-          canShowCreateFab={true}
+          canDeleteGroup={canRemoveGroup}
+          canShowCreateFab={canPost}
           onDeleteGroup={() => confirmGroupDelete.ask()}
           selectMode={selectMode}
           selectedCount={selectedIds.size}
@@ -328,7 +324,7 @@ function GroupDetailPageInner() {
           onEditSingle={(id) => ctrl.goEdit(id)}
           onDeleteSingle={askDeleteWithContext}
           buildHref={buildHref}
-          emptyText={isPrivateGroup ? "No posts yet" : "No posts here yet. Be the first to post."}
+          emptyText={canPost ? "No posts here yet. Be the first to post." : "No posts yet"}
         />
       </div>
 
@@ -395,16 +391,6 @@ function GroupDetailPageInner() {
       />
 
       <ConfirmModal
-        isOpen={confirmPrivateGroupPermission.open}
-        message={confirmPrivateGroupPermission.message}
-        onCancel={confirmPrivateGroupPermission.cancel}
-        onConfirm={confirmPrivateGroupPermission.confirm(() => { })}
-        confirmLabel="Got it"
-        title="Permission Required"
-        confirmVariant="primary"
-      />
-
-      <ConfirmModal
         isOpen={confirmOwnDelete.open}
         message={confirmOwnDelete.message}
         onCancel={confirmOwnDelete.cancel}
@@ -418,8 +404,8 @@ function GroupDetailPageInner() {
         onConfirm={confirmOtherDelete.confirm(onDeleteSingle)}
       />
 
-      {/* FAB */}
-      {safeGroup && (
+      {/* FAB：按 post_policy 判断能否发帖 */}
+      {safeGroup && canPost && (
         <button
           onClick={handleCreatePostClick}
           className="fixed bottom-20 z-10 right-10 bg-yellow p-2 rounded-[50%]"

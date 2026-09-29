@@ -13,7 +13,7 @@ import ConfirmModal from "@/components/ConfirmModal";
 import PageTitle from '@/components/layout/PageTitle';
 import { fetchSubscribedPosts, deletePost as deletePostThunk } from "@/app/features/posts/slice";
 import type { PostListItemApi } from "@/app/types";
-import { isPostAuthor, isGroupCreatorOfPost } from "@/app/types";
+import { isPostAuthor, canEditPost, canDeletePost } from "@/app/types";
 import { POSTS_PER_PAGE } from "@/app/constants";
 import Link from 'next/link';
 import Button from "@/components/ui/Button";
@@ -76,8 +76,8 @@ function HomePageInner() {
       append: false,
     }),
     deletePost: deletePostThunk,
-    canEdit: (p) => isPostAuthor(p, user),
-    canDelete: (p) => isPostAuthor(p, user) || isGroupCreatorOfPost(p, user),
+    canEdit: (p) => canEditPost(p, user),
+    canDelete: (p) => canDeletePost(p, user),
     postsStatus,
   });
 
@@ -86,7 +86,7 @@ function HomePageInner() {
   // 1) 增加两个确认框实例
   const confirmOwnDelete = useConfirm<number>("Delete this post?");
   const confirmOtherDelete = useConfirm<number>(
-    "This post was created by someone else. You are a group owner and have permission to delete it. Delete anyway?"
+    "This post was created by someone else. You are a group owner or leader and have permission to delete it. Delete anyway?"
   );
 
   // 2) 点删除时根据身份弹不同提示
@@ -97,7 +97,7 @@ function HomePageInner() {
     if (isPostAuthor(p, user)) {
       // 自己的帖子
       confirmOwnDelete.ask(postId);
-    } else if (isGroupCreatorOfPost(p, user)) {
+    } else if (canDeletePost(p, user)) {
       // 别人的帖子，但你是该帖所属小组的创建者/组长
       confirmOtherDelete.ask(postId);
     } else {

@@ -2,7 +2,8 @@
 
 import { useState, useRef, useMemo, useEffect } from "react";
 import { mockUsers } from '@/app/data/mockData';
-import type { GroupApi } from '@/app/types/group';
+import type { GroupApi, PostPolicy } from '@/app/types/group';
+import { DEFAULT_POST_POLICY } from '@/app/types/group';
 import { XMarkIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 import Button from "@/components/ui/Button";
 import SaveConfirmModal from "../SaveConfirmModal";
@@ -39,8 +40,13 @@ export default function GroupEditModal({
     is_member: false,
     is_creator: true,
     isPrivate: false,
+    post_policy: DEFAULT_POST_POLICY,
   };
   const privacyHelpId = "group-privacy-help";
+  const postPolicyOptions: Array<{ value: PostPolicy; label: string }> = [
+    { value: "members", label: "All members can post" },
+    { value: "leaders_only", label: "Only group leaders can post, edit and delete posts" },
+  ];
 
   const [editedItem, setEditedItem] = useState<GroupApi>(
     isNew ? defaultItem : { ...(group as GroupApi) }
@@ -129,6 +135,7 @@ export default function GroupEditModal({
       name: (it.name ?? "").trim(),
       description: (it.description ?? ""),
       isPrivate: !!it.isPrivate,
+      post_policy: it.post_policy ?? null,
     });
 
   const initialSnapshotRef = useRef<string>(serialize(baseItem));
@@ -286,12 +293,29 @@ export default function GroupEditModal({
                   <ul className="list-disc pl-5 space-y-1">
                     <li>Invite-only — members must be invited by an admin.</li>
                     <li>Not discoverable — registered users can’t search or follow it.</li>
-                    <li>Only group admins can create posts.</li>
                   </ul>
                 </div>
               </div>
             )}
           </div>
+
+          {/* Post permission */}
+          <fieldset className="mb-4">
+            <legend className="block text-sm font-medium mb-1">Who can post</legend>
+            {postPolicyOptions.map((opt) => (
+              <label key={opt.value} className="flex items-center mb-1">
+                <input
+                  type="radio"
+                  name="group-post-policy"
+                  value={opt.value}
+                  checked={editedItem.post_policy === opt.value}
+                  onChange={() => handleChange("post_policy", opt.value)}
+                  className="mr-2"
+                />
+                <span className="text-sm text-dark-gray">{opt.label}</span>
+              </label>
+            ))}
+          </fieldset>
 
         </div>
 

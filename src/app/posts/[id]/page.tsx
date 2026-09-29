@@ -35,7 +35,7 @@ import type {
   UpdatePostRequest,
   PostFileApi,
 } from "@/app/types";
-import { isPostAuthor, isGroupCreatorOfPost } from "@/app/types";
+import { isPostAuthor, canEditPost, canDeletePost } from "@/app/types";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useConfirm } from "@/hooks/useConfirm";
 import CollapsibleText from "@/components/ui/CollapsibleText";
@@ -112,14 +112,14 @@ function PostDetailPageInner() {
 
   const confirmOwnDelete = useConfirm<number>("Delete this post?");
   const confirmOtherDelete = useConfirm<number>(
-    "This post was created by someone else. You are a group owner and have permission to delete it. Delete anyway?"
+    "This post was created by someone else. You are a group owner or leader and have permission to delete it. Delete anyway?"
   );
 
   const askDeleteWithContext = (p: PostDetailData | null) => {
     if (!p) return;
     if (isPostAuthor(p, user)) {
       confirmOwnDelete.ask(p.id);
-    } else if (isGroupCreatorOfPost(p, user)) {
+    } else if (canDeletePost(p, user)) {
       confirmOtherDelete.ask(p.id);
     } else {
       // 正常不会走到这里（按钮本就不可见），留作兜底
@@ -292,8 +292,8 @@ function PostDetailPageInner() {
         <>
           <CustomHeader
             item={{ id: post.id, author: post.author?.firstName }}
-            showEdit={!!(post && isPostAuthor(post, user))}
-            showDelete={!!(post && (isPostAuthor(post, user) || isGroupCreatorOfPost(post, user)))}
+            showEdit={canEditPost(post, user)}
+            showDelete={canDeletePost(post, user)}
             onDelete={() => askDeleteWithContext(post)}
             onEdit={handleEditOpen}
             showAdd={false}
@@ -322,8 +322,8 @@ function PostDetailPageInner() {
                 </span>
                 {!!post && (
                   <div className="hidden md:flex items-center gap-2">
-                    {/* 编辑：只能帖子作者 */}
-                    {isPostAuthor(post, user) && (
+                    {/* 编辑：members 组仅作者；leaders_only 组仅 admin / 创建者 / 组长 */}
+                    {canEditPost(post, user) && (
                       <IconButton
                         className="text-white"
                         title="Edit post"
@@ -337,8 +337,8 @@ function PostDetailPageInner() {
                       </IconButton>
                     )}
 
-                    {/* 删除：帖子作者 或 小组创建者 */}
-                    {(isPostAuthor(post, user) || isGroupCreatorOfPost(post, user)) && (
+                    {/* 删除：members 组为作者 / 创建者 / 组长；leaders_only 组仅 admin / 创建者 / 组长 */}
+                    {canDeletePost(post, user) && (
                       <IconButton
                         title="Delete post"
                         aria-label="Delete post"
@@ -450,7 +450,7 @@ function PostDetailPageInner() {
 
             </div>
             {/* 编辑弹窗（传入与 API 对齐的数据） */}
-            {isEdit && post && (
+            {isEdit && post && canEditPost(post, user) && (
               <PostModal
                 item={{
                   title: post.title,

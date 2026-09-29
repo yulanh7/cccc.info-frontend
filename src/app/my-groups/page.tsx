@@ -37,6 +37,7 @@ function MyGroupsPageInner() {
     // 权限 & 操作
     canCreate,
     canEditGroup,
+    canDeleteGroup,
     isUserSubscribed,
     toggleSubscription,
 
@@ -103,6 +104,7 @@ function MyGroupsPageInner() {
           onEdit={openEdit}
           onDelete={(id) => confirmGroupDelete.ask(id)}
           canEdit={canEditGroup}
+          canDelete={canDeleteGroup}
           isUserSubscribed={isUserSubscribed}              // 已订阅列表里恒为 true，但保持一致接口
           onToggleSubscription={toggleSubscription}        // 允许在此页退订
           saving={saving}

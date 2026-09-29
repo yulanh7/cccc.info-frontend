@@ -18,6 +18,7 @@ import {
 } from "@/app/features/groups/slice";
 import type { GroupApi } from "@/app/types";
 import { canCreateGroup } from "@/app/types/user";
+import { canEditGroup as canEditGroupOf, canDeleteGroup as canDeleteGroupOf } from "@/app/types/group";
 import type { CreateOrUpdateGroupBody, GroupListPaginationApi } from "@/app/types/group";
 import { mapApiErrorToFields } from "@/app/ultility";
 
@@ -201,7 +202,8 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
   }, [dispatch, searchParams, router, basePath]);
 
   // ===== 权限/订阅/编辑/删除
-  const canEditGroup = useCallback((g: GroupApi) => g.is_creator, []);
+  const canEditGroup = useCallback((g: GroupApi) => canEditGroupOf(g, user), [user]);
+  const canDeleteGroup = useCallback((g: GroupApi) => canDeleteGroupOf(g, user), [user]);
   const isUserSubscribed = (group: GroupApi) => {
     const membershipFromStore = userMembership[group.id];
     if (typeof membershipFromStore === 'boolean') {
@@ -253,6 +255,7 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
       name: updated.name.trim(),
       description: updated.description,
       isPrivate: !!updated.isPrivate,
+      ...(updated.post_policy ? { post_policy: updated.post_policy } : {}),
     };
 
     if (isNew) {
@@ -350,6 +353,7 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
     // 权限/操作
     canCreate,
     canEditGroup,
+    canDeleteGroup,
     isUserSubscribed,
     toggleSubscription,
 

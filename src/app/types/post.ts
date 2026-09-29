@@ -1,4 +1,5 @@
 import { ApiResponseProps, UserProps } from '@/app/types'
+import type { PostPolicy } from './group'
 
 export type postsPagination = {
   current_page: number;
@@ -23,6 +24,9 @@ export type PostGroupApi = {
   isPrivate: boolean;
   creator: number;
   is_member?: boolean;
+  is_creator?: boolean;
+  is_leader?: boolean;
+  post_policy?: PostPolicy;
 };
 
 
@@ -187,4 +191,55 @@ export function isGroupCreatorOfPost(
   // group.creator 现在是 number
   const creatorId = (post as any).group?.creator ?? null;
   return creatorId != null && Number(creatorId) === Number(user.id);
+}
+
+/* ======================================================
+ *          按小组 post_policy 判断发帖 / 改帖 / 删帖
+ * ====================================================== */
+
+/** 判断所需的小组字段：GroupApi 和帖子内嵌的 post.group 都满足 */
+type GroupPostAccess = {
+  creator?: number;
+  is_creator?: boolean;
+  is_leader?: boolean;
+  post_policy?: PostPolicy;
+};
+
+/** 创建者 / 组长。帖子内嵌的 group 没有 is_creator，用 creator id 兜底 */
+function isGroupCreatorOrLeader(group: GroupPostAccess | null | undefined, user?: UserProps | null): boolean {
+  if (!user || !group) return false;
+  const isCreator = group.is_creator ?? (group.creator != null && Number(group.creator) === Number(user.id));
+  return isCreator || !!group.is_leader;
+}
+
+/** admin / 创建者 / 组长 */
+function isGroupPrivileged(group: GroupPostAccess | null | undefined, user?: UserProps | null): boolean {
+  return !!user?.admin || isGroupCreatorOrLeader(group, user);
+}
+
+/** 能否在该组发帖：leaders_only 组仅 admin / 创建者 / 组长 */
+export function canWritePosts(group: GroupPostAccess | null | undefined, user?: UserProps | null): boolean {
+  if (!user || !group) return false;
+  if (isGroupPrivileged(group, user)) return true;
+  return group.post_policy !== 'leaders_only';
+}
+
+/** 能否编辑帖子：leaders_only 组仅 admin / 创建者 / 组长（旧帖子也不例外）；members 组仅作者本人 */
+export function canEditPost(
+  post: PostListItemApi | PostDetailData | null | undefined,
+  user?: UserProps | null
+): boolean {
+  if (!post || !user) return false;
+  if (post.group?.post_policy === 'leaders_only') return isGroupPrivileged(post.group, user);
+  return isPostAuthor(post, user);
+}
+
+/** 能否删除帖子：leaders_only 组仅 admin / 创建者 / 组长；members 组为作者本人 / 创建者 / 组长（与后端一致，不含 admin） */
+export function canDeletePost(
+  post: PostListItemApi | PostDetailData | null | undefined,
+  user?: UserProps | null
+): boolean {
+  if (!post || !user) return false;
+  if (post.group?.post_policy === 'leaders_only') return isGroupPrivileged(post.group, user);
+  return isPostAuthor(post, user) || isGroupCreatorOrLeader(post.group, user);
 }

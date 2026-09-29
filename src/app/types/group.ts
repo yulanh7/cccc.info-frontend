@@ -1,6 +1,10 @@
 import type { ApiResponseProps } from "./api";
 import type { UserProps } from "./user";
 
+/** 发帖权限：members = 所有成员可发帖；leaders_only = 仅组长可发帖/编辑/删帖 */
+export type PostPolicy = "members" | "leaders_only";
+export const DEFAULT_POST_POLICY: PostPolicy = "members";
+
 
 export type PaginationProps = {
   currentPage: number;
@@ -23,6 +27,8 @@ export interface GroupApi {
   subscriber_count: number;
   is_member: boolean;
   is_creator: boolean;
+  is_leader?: boolean;
+  post_policy?: PostPolicy;
   post_count?: number;
 }
 
@@ -52,6 +58,7 @@ export interface MembersListData {
     firstName: string;
     email: string;
     is_creator: boolean;
+    is_leader?: boolean;
   }>;
   pagination: GroupListPaginationApi;
 }
@@ -69,6 +76,7 @@ export interface CreateOrUpdateGroupBody {
   name: string;
   description: string;
   isPrivate: boolean;
+  post_policy?: PostPolicy;
 }
 
 /** ===================== API Response Wrappers ===================== */
@@ -84,9 +92,13 @@ export type KickMemberResponseApi = ApiResponseProps<{}>;
 export type MembersListResponseApi = ApiResponseProps<MembersListData>;
 export type GroupStatsResponseApi = ApiResponseProps<GroupStats>;
 
-/** 群组编辑权限：必须是群组创建者 */
-export const canEditGroup = (group: GroupApi): boolean =>
-  group.is_creator;
+/** 编辑小组设置 / 管理成员 / 加撤组长：admin、创建者、任一组长 */
+export const canEditGroup = (group: GroupApi, user?: UserProps | null): boolean =>
+  !!user?.admin || group.is_creator || !!group.is_leader;
+
+/** 删除小组：仅 admin、创建者（组长不行） */
+export const canDeleteGroup = (group: GroupApi, user?: UserProps | null): boolean =>
+  !!user?.admin || group.is_creator;
 
 
 export type RawUserGroup = {
@@ -98,6 +110,8 @@ export type RawUserGroup = {
   isPrivate: boolean;
   subscriber_count: number;
   post_count: number;
+  post_policy?: PostPolicy;
+  is_leader?: boolean;
 };
 
 export type RawAllGroup = {
@@ -111,6 +125,8 @@ export type RawAllGroup = {
   subscriber_count: number;
   is_member?: boolean;
   is_creator?: boolean;
+  is_leader?: boolean;
+  post_policy?: PostPolicy;
 };
 
 export const normalizeFromUserGroups = (
@@ -128,6 +144,8 @@ export const normalizeFromUserGroups = (
   post_count: g.post_count,
   is_member: true, // 已订阅列表，恒为 true
   is_creator: currentUserId ? g.creator.id === Number(currentUserId) : false,
+  is_leader: g.is_leader,
+  post_policy: g.post_policy,
 });
 
 export const normalizeFromAllGroups = (
@@ -143,4 +161,6 @@ export const normalizeFromAllGroups = (
   subscriber_count: g.subscriber_count,
   is_member: Boolean(g.is_member),
   is_creator: Boolean(g.is_creator),
+  is_leader: Boolean(g.is_leader),
+  post_policy: g.post_policy,
 });
