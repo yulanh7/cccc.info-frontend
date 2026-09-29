@@ -137,7 +137,7 @@ function GroupDetailPageInner() {
       await dispatch(deleteGroup(safeGroup.id)).unwrap();
       router.push("/groups");
     } catch (e: any) {
-      alert(e?.message || "Delete group failed");
+      alert(typeof e === "string" ? e : e?.message || "Delete group failed");
     }
   }, [safeGroup, dispatch, router]);
 
@@ -208,11 +208,11 @@ function GroupDetailPageInner() {
       await dispatch(fetchGroupDetail(updated.id));
       setShowEditModal(false);
     } catch (e: any) {
-      const fieldErrors = mapApiErrorToFields(e?.message);
+      const fieldErrors = mapApiErrorToFields(typeof e === "string" ? e : e?.message);
       if (fieldErrors.title || fieldErrors.description) {
         setModalErrors(fieldErrors);
       } else {
-        alert(e?.message || "Update group failed");
+        alert(typeof e === "string" ? e : e?.message || "Update group failed");
       }
     } finally {
       setModalSaving(false);
@@ -247,7 +247,7 @@ function GroupDetailPageInner() {
       await dispatch(addGroupMember(payload)).unwrap();
       dispatch(fetchGroupMembers({ groupId: safeGroup.id, page: 1, per_page: MEMBERS_PER_PAGE }));
     } catch (e: any) {
-      alert(e?.message || "Add member failed");
+      alert(typeof e === "string" ? e : e?.message || "Add member failed");
     }
   }, [safeGroup, dispatch]);
 
@@ -258,7 +258,7 @@ function GroupDetailPageInner() {
       const page = membersPagination?.page ?? 1;
       dispatch(fetchGroupMembers({ groupId: safeGroup.id, page, per_page: MEMBERS_PER_PAGE }));
     } catch (e: any) {
-      alert(e?.message || "Kick member failed");
+      alert(typeof e === "string" ? e : e?.message || "Kick member failed");
     }
   }, [safeGroup, dispatch, membersPagination?.page]);
 

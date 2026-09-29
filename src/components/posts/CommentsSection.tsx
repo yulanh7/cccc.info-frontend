@@ -92,7 +92,7 @@ export default function CommentsSection({
       setInputValue("");
       setReplyTo(null);
     } catch (e: any) {
-      alert(e?.message || "Send comment failed");
+      alert(typeof e === "string" ? e : e?.message || "Send comment failed");
     }
   };
 
@@ -140,7 +140,7 @@ export default function CommentsSection({
                   try {
                     await dispatch(deleteComment({ commentId, parent_id: parentId })).unwrap();
                   } catch (e: any) {
-                    alert(e?.message || "Delete comment failed");
+                    alert(typeof e === "string" ? e : e?.message || "Delete comment failed");
                   }
                 }}
                 fetchChildren={(parentId, page) =>

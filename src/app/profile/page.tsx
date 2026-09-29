@@ -77,7 +77,7 @@ export default function ProfilePage() {
       setProfileMsg('Profile updated successfully.');
       setIsEditing(false);
     } catch (e: any) {
-      setNameErr(e?.message || 'Update failed.');
+      setNameErr((typeof e === 'string' ? e : e?.message) || 'Update failed.');
     }
   };
 
