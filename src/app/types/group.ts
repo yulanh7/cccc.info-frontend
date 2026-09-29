@@ -49,6 +49,8 @@ export interface GroupDetailData extends GroupApi {
     id: number;
     firstName: string;
     email: string;
+    is_creator?: boolean;
+    is_leader?: boolean;
   }>;
 }
 
@@ -89,6 +91,9 @@ export type AddMemberResponseApi = ApiResponseProps<{
   member: { id: number; firstName: string; email: string; is_creator?: boolean };
 }>;
 export type KickMemberResponseApi = ApiResponseProps<{}>;
+export type AddLeaderResponseApi = ApiResponseProps<{
+  leader: { id: number; firstName: string; email: string };
+}>;
 export type MembersListResponseApi = ApiResponseProps<MembersListData>;
 export type GroupStatsResponseApi = ApiResponseProps<GroupStats>;
 

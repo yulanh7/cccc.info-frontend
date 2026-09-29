@@ -9,7 +9,8 @@ import type {
   MembersListData,
   AddMemberRequest,
   AddMemberResponseApi,
-  KickMemberResponseApi
+  KickMemberResponseApi,
+  AddLeaderResponseApi,
 } from '@/app/types/group';
 import type {
   PostListItemApi,
@@ -18,7 +19,7 @@ import { fetchGroupPostsList } from '@/app/features/posts/slice';
 import { likePost, unlikePost } from "@/app/features/posts/likeSlice";
 
 // 简单的订阅者 UI 形状（与后端 subscribers 项一致）
-type GroupSubscriberUi = { id: number; firstName: string; email: string };
+type GroupSubscriberUi = { id: number; firstName: string; email: string; is_creator?: boolean; is_leader?: boolean };
 
 interface GroupDetailState {
   currentGroupId: number | null;
@@ -34,6 +35,7 @@ interface GroupDetailState {
     members: LoadStatus;
     addMember: LoadStatus;
     kickMember: LoadStatus;
+    leader: LoadStatus;
   };
   error: {
     group: string | null;
@@ -41,6 +43,7 @@ interface GroupDetailState {
     members: string | null;
     addMember: string | null;
     kickMember: string | null;
+    leader: string | null;
   };
 }
 
@@ -52,8 +55,8 @@ const initialState: GroupDetailState = {
   posts: [],
   postsPagination: null,
   membersPagination: null,
-  status: { group: 'idle', posts: 'idle', members: 'idle', addMember: 'idle', kickMember: 'idle' },
-  error: { group: null, posts: null, members: null, addMember: null, kickMember: null },
+  status: { group: 'idle', posts: 'idle', members: 'idle', addMember: 'idle', kickMember: 'idle', leader: 'idle' },
+  error: { group: null, posts: null, members: null, addMember: null, kickMember: null, leader: null },
 };
 
 // 获取单个群详情：/groups/:id
@@ -70,6 +73,8 @@ export const fetchGroupDetail = createAsyncThunk<
       id: s.id,
       firstName: s.firstName ?? '',
       email: s.email ?? '',
+      is_creator: s.is_creator,
+      is_leader: s.is_leader,
     }));
 
     return { group, subscriberCount, subscribers };
@@ -97,6 +102,8 @@ export const fetchGroupMembers = createAsyncThunk<
         id: m.id,
         firstName: m.firstName ?? "",
         email: m.email ?? "",
+        is_creator: m.is_creator,
+        is_leader: m.is_leader,
       }));
 
       return { members, pagination: data.pagination };
@@ -139,6 +146,34 @@ export const kickGroupMember = createAsyncThunk<
     return { userId, message: res.message };
   } catch (e: any) {
     return rejectWithValue(e.message || 'Kick member failed') as any;
+  }
+});
+
+// ===== 设为组长：POST /api/groups/{group_id}/leaders（admin / 创建者 / 任一组长）
+export const addGroupLeader = createAsyncThunk<
+  { userId: number; message?: string },
+  { groupId: number; userId: number }
+>('groupDetail/addGroupLeader', async ({ groupId, userId }, { rejectWithValue }) => {
+  try {
+    const res = await apiRequest<AddLeaderResponseApi['data']>('POST', `/groups/${groupId}/leaders`, { user_id: userId });
+    if (!res.success) throw new Error(res.message || 'Set leader failed');
+    return { userId, message: res.message };
+  } catch (e: any) {
+    return rejectWithValue(e.message || 'Set leader failed') as any;
+  }
+});
+
+// ===== 取消组长：DELETE /api/groups/{group_id}/leaders（不能取消创建者）
+export const removeGroupLeader = createAsyncThunk<
+  { userId: number; message?: string },
+  { groupId: number; userId: number }
+>('groupDetail/removeGroupLeader', async ({ groupId, userId }, { rejectWithValue }) => {
+  try {
+    const res = await apiRequest<{}>('DELETE', `/groups/${groupId}/leaders`, { user_id: userId });
+    if (!res.success) throw new Error(res.message || 'Remove leader failed');
+    return { userId, message: res.message };
+  } catch (e: any) {
+    return rejectWithValue(e.message || 'Remove leader failed') as any;
   }
 });
 
@@ -269,6 +304,35 @@ const groupDetailSlice = createSlice({
       .addCase(kickGroupMember.rejected, (s, a) => {
         s.status.kickMember = 'failed';
         s.error.kickMember = (a.payload as string) || 'Kick member failed';
+      });
+
+    // ===== set / remove leader =====
+    builder
+      .addCase(addGroupLeader.pending, (s) => {
+        s.status.leader = 'loading';
+        s.error.leader = null;
+      })
+      .addCase(addGroupLeader.fulfilled, (s, a) => {
+        s.status.leader = 'succeeded';
+        const m = s.subscribers.find((x) => x.id === a.payload.userId);
+        if (m) m.is_leader = true;
+      })
+      .addCase(addGroupLeader.rejected, (s, a) => {
+        s.status.leader = 'failed';
+        s.error.leader = (a.payload as string) || 'Set leader failed';
+      })
+      .addCase(removeGroupLeader.pending, (s) => {
+        s.status.leader = 'loading';
+        s.error.leader = null;
+      })
+      .addCase(removeGroupLeader.fulfilled, (s, a) => {
+        s.status.leader = 'succeeded';
+        const m = s.subscribers.find((x) => x.id === a.payload.userId);
+        if (m) m.is_leader = false;
+      })
+      .addCase(removeGroupLeader.rejected, (s, a) => {
+        s.status.leader = 'failed';
+        s.error.leader = (a.payload as string) || 'Remove leader failed';
       });
 
     // like覆盖当前 group 页面的post列表项（无需整页刷新）

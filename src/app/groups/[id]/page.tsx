@@ -19,6 +19,8 @@ import {
   fetchGroupMembers,
   addGroupMember,
   kickGroupMember,
+  addGroupLeader,
+  removeGroupLeader,
 } from "@/app/features/groups/detailSlice";
 import { fetchGroupPostsList, createPost, deletePost as deletePostThunk } from "@/app/features/posts/slice";
 import { updateGroup, deleteGroup } from "@/app/features/groups/slice";
@@ -250,6 +252,16 @@ function GroupDetailPageInner() {
     }
   }, [safeGroup, dispatch, membersPagination?.page]);
 
+  const handleToggleLeader = useCallback(async (userId: number, makeLeader: boolean) => {
+    if (!safeGroup) return;
+    try {
+      const thunk = makeLeader ? addGroupLeader : removeGroupLeader;
+      await dispatch(thunk({ groupId: safeGroup.id, userId })).unwrap();
+    } catch (e: any) {
+      alert(e?.message || (makeLeader ? "Set leader failed" : "Remove leader failed"));
+    }
+  }, [safeGroup, dispatch]);
+
   const buildHref = useCallback((p: number) => `/groups/${groupId}?page=${p}`, [groupId]);
 
   if (pageLoading) {
@@ -339,6 +351,8 @@ function GroupDetailPageInner() {
         onPageChange={onMembersPageChange}
         onAdd={canManageGroup ? handleAddMember : undefined}
         onKick={canManageGroup ? handleKickMember : undefined}
+        onToggleLeader={canManageGroup ? handleToggleLeader : undefined}
+        currentUserId={user?.id}
         title="Subscribers"
       />
 

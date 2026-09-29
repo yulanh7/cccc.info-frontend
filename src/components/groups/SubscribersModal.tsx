@@ -8,6 +8,7 @@ export interface Subscriber {
   firstName: string;
   email: string;
   is_creator?: boolean;
+  is_leader?: boolean;
 }
 
 interface SubscribersModalProps {
@@ -22,17 +23,22 @@ interface SubscribersModalProps {
   onPageChange?: (page: number) => void;
   onAdd?: (input: string) => void; // user id 或 email
   onKick?: (userId: number) => void;
+  /** 设为 / 取消组长；makeLeader=true 表示设为组长 */
+  onToggleLeader?: (userId: number, makeLeader: boolean) => void | Promise<void>;
+  /** 当前登录用户 id：自己这一行不显示踢出 / 取消组长 */
+  currentUserId?: number;
 
   title?: string;
 }
 
 export default function SubscribersModal({
   open, onClose, members, pagination, loading = false,
-  canManage = false, onPageChange, onAdd, onKick, title = 'Subscribers'
+  canManage = false, onPageChange, onAdd, onKick, onToggleLeader, currentUserId, title = 'Subscribers'
 }: SubscribersModalProps) {
   const [input, setInput] = useState('');
   const [adding, setAdding] = useState(false);
   const [kickingId, setKickingId] = useState<number | null>(null);
+  const [leaderBusyId, setLeaderBusyId] = useState<number | null>(null);
 
   if (!open) return null;
 
@@ -54,6 +60,16 @@ export default function SubscribersModal({
       await onKick(id);
     } finally {
       setKickingId(null);
+    }
+  };
+
+  const handleToggleLeader = async (u: Subscriber) => {
+    if (!onToggleLeader) return;
+    try {
+      setLeaderBusyId(u.id);
+      await onToggleLeader(u.id, !u.is_leader);
+    } finally {
+      setLeaderBusyId(null);
     }
   };
 
@@ -111,20 +127,39 @@ export default function SubscribersModal({
                     {(u.firstName?.[0] || "?").toUpperCase()}
                   </span>
                   <span>{u.firstName}</span>
+                  {u.is_creator ? (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded border border-yellow text-yellow">Owner</span>
+                  ) : u.is_leader ? (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded border border-dark-green text-dark-green">Leader</span>
+                  ) : null}
                 </span>
                 {/* <div className="text-xs text-dark-gray">{u.email}</div> */}
               </div>
-              {canManage && (
-                <Button
-                  variant="outline"
-                  tone="danger"
-                  size="sm"
-                  loading={kickingId === u.id}
-                  loadingText="Kicking…"
-                  onClick={() => handleKick(u.id)}
-                >
-                  Kick
-                </Button>
+              {/* 创建者、自己这一行不提供组长 / 踢出操作 */}
+              {canManage && !u.is_creator && u.id !== currentUserId && (
+                <div className="flex items-center gap-2">
+                  {onToggleLeader && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      loading={leaderBusyId === u.id}
+                      loadingText="Saving…"
+                      onClick={() => handleToggleLeader(u)}
+                    >
+                      {u.is_leader ? 'Remove leader' : 'Make leader'}
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    tone="danger"
+                    size="sm"
+                    loading={kickingId === u.id}
+                    loadingText="Kicking…"
+                    onClick={() => handleKick(u.id)}
+                  >
+                    Kick
+                  </Button>
+                </div>
               )}
             </div>
           ))}
