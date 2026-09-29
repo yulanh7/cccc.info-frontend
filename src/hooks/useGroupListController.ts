@@ -49,7 +49,10 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
 
   // ===== 从 Redux 取需要的 state
   const user = useAppSelector((s) => s.auth.user);
-  const canCreate = canCreateGroup(user);
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+  // user 由 LayoutClient 在客户端从 localStorage 恢复；挂载前不渲染建组按钮，避免 SSR/hydration 不一致
+  const canCreate = mounted && canCreateGroup(user);
 
   const visibleGroups = useAppSelector((s) => s.groups.visibleGroups);
   const visibleGroupsPagination = useAppSelector((s) => s.groups.visibleGroupsPagination);
@@ -326,8 +329,6 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
         toggling ? "Updating membership…" :
           undefined;
 
-  const [mounted, setMounted] = React.useState(false);
-  React.useEffect(() => setMounted(true), []);
   const pageLoading = !mounted;
 
   return {
