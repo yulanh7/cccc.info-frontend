@@ -61,7 +61,7 @@ export default function SignUpForm() {
         })
       ).unwrap(); // <-- 关键
 
-      alert(`${firstName} 注册成功`);
+      alert(`Welcome, ${firstName}! Your account has been created.`);
       router.push('/groups');
     } catch (e: any) {
       // e 会是 rejectWithValue(...) 的字符串/对象，或 Error

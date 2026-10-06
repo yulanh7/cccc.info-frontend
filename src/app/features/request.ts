@@ -35,7 +35,7 @@ const promptLoginRedirect = (msg?: string) => {
 
   const next =
     window.location.pathname + window.location.search + window.location.hash;
-  const tip = msg ?? '请先登录后再继续操作。现在前往登录页？';
+  const tip = msg ?? 'Please log in to continue. Go to the login page now?';
 
   const ok = window.confirm(tip);
   if (ok) {
@@ -122,7 +122,7 @@ api.interceptors.response.use(
     const refreshToken = typeof window !== 'undefined' ? getRefreshToken() : null;
     if (!refreshToken) {
       clearAuth();
-      promptLoginRedirect('登录已过期或未登录，需要先登录。现在去登录？');
+      promptLoginRedirect('You are not logged in or your session has expired. Log in now?');
       throw error;
     }
 
@@ -164,7 +164,7 @@ api.interceptors.response.use(
     } catch (err) {
       processQueue(err, null);
       clearAuth();
-      promptLoginRedirect('登录已过期，需要重新登录。现在去登录？');
+      promptLoginRedirect('Your session has expired. Log in again now?');
       throw err;
     } finally {
       isRefreshing = false;
@@ -188,8 +188,8 @@ export const apiRequest = async <T>(
     if (requireAuth && typeof window !== 'undefined') {
       const token = getToken();
       if (!token) {
-        promptLoginRedirect('该操作需要登录。现在前往登录页？');
-        throw { code: 401, message: '未登录或会话已过期' };
+        promptLoginRedirect('You need to log in to do this. Go to the login page now?');
+        throw { code: 401, message: 'Not logged in or session expired' };
       }
       config.headers = { ...(config.headers || {}), Authorization: `Bearer ${token}` };
     }
