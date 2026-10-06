@@ -3,13 +3,14 @@ import { Suspense } from "react";
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { PlusIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, ArrowsRightLeftIcon } from "@heroicons/react/24/outline";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import {
   fetchLibraryItems,
   fetchLibraryCategories,
   deactivateLibraryItem,
   restoreLibraryItem,
+  returnLibraryBorrow,
 } from "@/app/features/library/slice";
 import { canManageLibrary } from "@/app/types/library";
 import type { LibraryItem } from "@/app/types/library";
@@ -24,6 +25,7 @@ import Button from "@/components/ui/Button";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useConfirm } from "@/hooks/useConfirm";
 import LibraryItemFormModal from "@/components/library/LibraryItemFormModal";
+import LendItemModal from "@/components/library/LendItemModal";
 
 const MANAGE_PATH = "/library/manage";
 const SEARCH_DEBOUNCE_MS = 400;
@@ -131,6 +133,27 @@ function LibraryManagePageInner() {
     }
   };
 
+  // ===== 代借 / 代还
+  const [lending, setLending] = useState<LibraryItem | null>(null);
+  const confirmReturn = useConfirm<LibraryItem>("Register this return?");
+
+  const doReturn = async (item: LibraryItem | null) => {
+    const borrow = item?.current_borrow;
+    if (!item || !borrow) return;
+    setBusyId(item.id);
+    setActionError(null);
+    setNotice(null);
+    try {
+      await dispatch(returnLibraryBorrow(borrow.id)).unwrap();
+      setNotice(`Registered the return of "${item.title}".`);
+    } catch (e: any) {
+      setActionError(typeof e === "string" ? e : e?.message || "Return failed");
+    } finally {
+      setBusyId(null);
+      load();
+    }
+  };
+
   const listLoading = adminItems.status === "loading";
   const totalPages = adminItems.pagination?.pages ?? 1;
   const total = adminItems.pagination?.total ?? 0;
@@ -159,6 +182,13 @@ function LibraryManagePageInner() {
               >
                 Add item
               </Button>
+              <Link
+                href="/library/manage/borrows"
+                className="inline-flex items-center gap-1 rounded-sm border border-dark-green px-3 py-1 text-sm text-dark-green hover:bg-dark-green/5"
+              >
+                <ArrowsRightLeftIcon className="h-4 w-4" />
+                Borrows
+              </Link>
             </div>
 
             <SearchBar
@@ -247,6 +277,27 @@ function LibraryManagePageInner() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
+                      {borrow ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          tone="brand"
+                          loading={busyId === it.id}
+                          onClick={() => confirmReturn.ask(it, `Register the return of "${it.title}" from ${borrow.user.firstName}?`)}
+                        >
+                          Return
+                        </Button>
+                      ) : it.is_active ? (
+                        <Button size="sm" variant="outline" tone="brand" onClick={() => setLending(it)}>
+                          Lend
+                        </Button>
+                      ) : null}
+                      <Link
+                        href={`/library/manage/borrows?item_id=${it.id}&item_label=${encodeURIComponent(it.call_number || it.title)}`}
+                        className="text-xs text-dark-gray underline hover:text-dark-green"
+                      >
+                        History
+                      </Link>
                       <Button
                         size="sm"
                         variant="outline"
@@ -308,6 +359,32 @@ function LibraryManagePageInner() {
           }}
         />
       )}
+
+      {lending && (
+        <LendItemModal
+          item={lending}
+          onClose={() => setLending(null)}
+          onLent={(res) => {
+            setLending(null);
+            setActionError(null);
+            setNotice(`Lent ${res.item.call_number ?? `"${res.item.title}"`} to ${res.borrow.user.firstName}.`);
+            load();
+          }}
+        />
+      )}
+
+      <ConfirmModal
+        isOpen={confirmReturn.open}
+        title="Register return"
+        message={confirmReturn.message}
+        confirmLabel="Return"
+        confirmVariant="primary"
+        cancelLabel="Cancel"
+        cancelVariant="outline"
+        onCancel={confirmReturn.cancel}
+        onClose={confirmReturn.cancel}
+        onConfirm={confirmReturn.confirm(doReturn)}
+      />
 
       <ConfirmModal
         isOpen={confirmWithdraw.open}
