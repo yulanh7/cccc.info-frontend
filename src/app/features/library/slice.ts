@@ -130,6 +130,7 @@ export const fetchLibraryItem = createAsyncThunk<LibraryItemDetail, number>(
 );
 
 // ===== 按编号 / 条码查找：GET /api/library/items/lookup?code=（不区分大小写）
+// 目前没有页面使用（主页搜索框已能搜编号）；保留给以后的扫码功能
 export const lookupLibraryItem = createAsyncThunk<LibraryItemDetail, string>(
   'library/lookupItem',
   async (code, { rejectWithValue }) => {
@@ -332,7 +333,11 @@ export const exportLibrary = createAsyncThunk<void, void>(
       const res = await api.get<Blob>(LIBRARY_ENDPOINTS.EXPORT, { responseType: 'blob' });
       const disposition = String(res.headers['content-disposition'] ?? '');
       const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(disposition);
-      const filename = match ? decodeURIComponent(match[1]) : 'library.xlsx';
+      // 跨域时后端未暴露 Content-Disposition，按后端同样的规则兜底：library-YYYY-MM-DD.xlsx
+      const today = new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const fallback = `library-${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}.xlsx`;
+      const filename = match ? decodeURIComponent(match[1]) : fallback;
 
       const url = URL.createObjectURL(res.data);
       const a = document.createElement('a');

@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { PlusIcon, ArrowsRightLeftIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, ArrowsRightLeftIcon, ArrowUpTrayIcon } from "@heroicons/react/24/outline";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import {
   fetchLibraryItems,
@@ -188,6 +188,13 @@ function LibraryManagePageInner() {
               >
                 <ArrowsRightLeftIcon className="h-4 w-4" />
                 Borrows
+              </Link>
+              <Link
+                href="/library/manage/import"
+                className="inline-flex items-center gap-1 rounded-sm border border-dark-green px-3 py-1 text-sm text-dark-green hover:bg-dark-green/5"
+              >
+                <ArrowUpTrayIcon className="h-4 w-4" />
+                Import / export
               </Link>
             </div>
 
