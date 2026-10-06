@@ -42,3 +42,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# 后端发来的对接文档（原件在后端仓库 docs/private/），只在本地保留
+/doc/
