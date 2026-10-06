@@ -8,7 +8,8 @@ import {
   CalendarIcon,
   UserPlusIcon,
   LockOpenIcon,
-  LockClosedIcon
+  LockClosedIcon,
+  MegaphoneIcon
 } from "@heroicons/react/24/outline";
 import Button from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
@@ -69,6 +70,17 @@ export default function GroupInfoBar({
                   <span className="inline-flex items-center gap-1 text-white">
                     <LockOpenIcon className="h-4 w-4 text-green" />
                     <span className="text-[11px]">Public</span>
+                  </span>
+                )}
+
+                {/* 发帖权限：仅 leaders_only 时提示，members 为默认不显示 */}
+                {group.post_policy === "leaders_only" && (
+                  <span
+                    className="inline-flex items-center gap-1 text-white"
+                    title="Only group leaders can create posts in this group"
+                  >
+                    <MegaphoneIcon className="h-4 w-4 text-yellow" />
+                    <span className="text-[11px]">Leaders post only</span>
                   </span>
                 )}
 
