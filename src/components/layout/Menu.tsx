@@ -7,6 +7,7 @@ import { useAppDispatch, useAppSelector } from '@/app/features/hooks';
 import { logoutThunk } from '@/app/features/auth/slice';
 import { ellipsize } from "@/app/ultility";
 import { isAdmin } from '@/app/types/user';
+import { canManageLibrary } from '@/app/types/library';
 
 interface TopNavItem {
   href: string;
@@ -96,6 +97,15 @@ export default function Menu({
                 My Groups
               </Link>
 
+              {/* 我借的书 */}
+              <Link
+                href="/library/my-borrows"
+                className={`block px-4 py-2 text-sm hover:bg-gray-100 ${isActiveHref('/library/my-borrows') ? 'text-dark-green' : 'text-dark-gray'
+                  }`}
+              >
+                My Borrows
+              </Link>
+
               {/* 用户权限管理：仅 admin */}
               {isAdmin(user) && (
                 <Link
@@ -104,6 +114,17 @@ export default function Menu({
                     }`}
                 >
                   User Permissions
+                </Link>
+              )}
+
+              {/* 图书馆管理：admin 或图书管理员 */}
+              {canManageLibrary(user) && (
+                <Link
+                  href="/library/manage"
+                  className={`block px-4 py-2 text-sm hover:bg-gray-100 ${isActiveHref('/library/manage') ? 'text-dark-green' : 'text-dark-gray'
+                    }`}
+                >
+                  Library management
                 </Link>
               )}
 

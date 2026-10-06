@@ -6,6 +6,7 @@ import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import { fetchAdminUsers, setUserPermission } from "@/app/features/admin/usersSlice";
 import { isAdmin, PERMISSION_CREATE_GROUP } from "@/app/types/user";
+import { PERMISSION_MANAGE_LIBRARY } from "@/app/types/library";
 import type { UserProps } from "@/app/types/user";
 import { formatDate } from "@/app/ultility";
 import { ADMIN_USERS_PER_PAGE } from "@/app/constants";
@@ -61,9 +62,9 @@ function AdminUsersPageInner() {
     router.push(qs ? `${ADMIN_USERS_PATH}?${qs}` : ADMIN_USERS_PATH);
   };
 
-  const togglePermission = async (u: UserProps, granted: boolean) => {
+  const togglePermission = async (u: UserProps, permission: string, granted: boolean) => {
     try {
-      await dispatch(setUserPermission({ userId: u.id, permission: PERMISSION_CREATE_GROUP, granted })).unwrap();
+      await dispatch(setUserPermission({ userId: u.id, permission, granted })).unwrap();
     } catch (e: any) {
       alert(typeof e === "string" ? e : e?.message || "Update permission failed");
     }
@@ -111,6 +112,7 @@ function AdminUsersPageInner() {
                 <p className="p-4 text-sm text-dark-gray">No users found.</p>
               ) : users.map((u) => {
                 const hasCreateGroup = !!u.permissions?.includes(PERMISSION_CREATE_GROUP);
+                const hasManageLibrary = !!u.permissions?.includes(PERMISSION_MANAGE_LIBRARY);
                 const updating = updatingIds.includes(u.id);
                 return (
                   <div key={u.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-border last:border-b-0 p-3 text-sm">
@@ -131,19 +133,35 @@ function AdminUsersPageInner() {
                     </div>
 
                     {/* admin 隐含拥有全部权限，开关只读 */}
-                    <label
-                      className={`flex items-center gap-2 ${u.admin || updating ? "opacity-60" : "cursor-pointer"}`}
-                      title={u.admin ? "Admins can always create groups" : undefined}
-                    >
-                      <input
-                        type="checkbox"
-                        aria-label={`Allow ${u.firstName} to create groups`}
-                        checked={u.admin || hasCreateGroup}
-                        disabled={u.admin || updating}
-                        onChange={(e) => togglePermission(u, e.target.checked)}
-                      />
-                      <span className="text-dark-gray">{updating ? "Saving…" : "Can create groups"}</span>
-                    </label>
+                    <div className="flex flex-col gap-1">
+                      <label
+                        className={`flex items-center gap-2 ${u.admin || updating ? "opacity-60" : "cursor-pointer"}`}
+                        title={u.admin ? "Admins can always create groups" : undefined}
+                      >
+                        <input
+                          type="checkbox"
+                          aria-label={`Allow ${u.firstName} to create groups`}
+                          checked={u.admin || hasCreateGroup}
+                          disabled={u.admin || updating}
+                          onChange={(e) => togglePermission(u, PERMISSION_CREATE_GROUP, e.target.checked)}
+                        />
+                        <span className="text-dark-gray">Can create groups</span>
+                      </label>
+                      <label
+                        className={`flex items-center gap-2 ${u.admin || updating ? "opacity-60" : "cursor-pointer"}`}
+                        title={u.admin ? "Admins can always manage the library" : undefined}
+                      >
+                        <input
+                          type="checkbox"
+                          aria-label={`Make ${u.firstName} a library manager`}
+                          checked={u.admin || hasManageLibrary}
+                          disabled={u.admin || updating}
+                          onChange={(e) => togglePermission(u, PERMISSION_MANAGE_LIBRARY, e.target.checked)}
+                        />
+                        <span className="text-dark-gray">Library manager</span>
+                      </label>
+                      {updating && <span className="text-xs text-dark-gray/70">Saving…</span>}
+                    </div>
                   </div>
                 );
               })}

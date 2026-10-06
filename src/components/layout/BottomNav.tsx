@@ -10,6 +10,8 @@ import {
   DocumentTextIcon,
   ArrowRightStartOnRectangleIcon,
   ShieldCheckIcon,
+  BuildingLibraryIcon,
+  BookmarkIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as SolidHomeIcon,
@@ -21,6 +23,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/app/features/hooks';
 import { logoutThunk } from '@/app/features/auth/slice';
 import { isAdmin } from '@/app/types/user';
+import { canManageLibrary } from '@/app/types/library';
 
 interface NavItem {
   href: string;
@@ -38,7 +41,11 @@ export default function BottomNav({ unreadCount }: BottomNavProps) {
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const showAdmin = isAdmin(useAppSelector((s) => s.auth.user));
+  const authUser = useAppSelector((s) => s.auth.user);
+  const showAdmin = isAdmin(authUser);
+  const showLibraryManage = canManageLibrary(authUser);
+  // 2 列网格：Logout 之前的格子数为偶数时，Logout 占满一行
+  const logoutFullRow = (4 + Number(showAdmin) + Number(showLibraryManage)) % 2 === 0;
 
   const hideBottomNav =
     pathname.startsWith('/messages/') ||
@@ -177,6 +184,15 @@ export default function BottomNav({ unreadCount }: BottomNavProps) {
                   <span className="text-sm">My Groups</span>
                 </Link>
 
+                <Link
+                  href="/library/my-borrows"
+                  onClick={() => setSheetOpen(false)}
+                  className="flex flex-col items-center rounded-xl border border-border p-4 active:scale-[0.98] transition"
+                >
+                  <BookmarkIcon className="h-7 w-7 mb-1.5" />
+                  <span className="text-sm">My Borrows</span>
+                </Link>
+
                 {/* 用户权限管理：仅 admin */}
                 {showAdmin && (
                   <Link
@@ -189,10 +205,22 @@ export default function BottomNav({ unreadCount }: BottomNavProps) {
                   </Link>
                 )}
 
-                {/* admin 多一项时 Logout 占满一行，保持网格整齐 */}
+                {/* 图书馆管理：admin 或图书管理员 */}
+                {showLibraryManage && (
+                  <Link
+                    href="/library/manage"
+                    onClick={() => setSheetOpen(false)}
+                    className="flex flex-col items-center rounded-xl border border-border p-4 active:scale-[0.98] transition"
+                  >
+                    <BuildingLibraryIcon className="h-7 w-7 mb-1.5" />
+                    <span className="text-sm">Library management</span>
+                  </Link>
+                )}
+
+                {/* Logout 前的格子数为偶数时占满一行，保持网格整齐 */}
                 <button
                   onClick={handleLogout}
-                  className={`flex flex-col items-center rounded-xl border border-border p-4 active:scale-[0.98] transition text-red ${showAdmin ? 'col-span-2' : ''}`}
+                  className={`flex flex-col items-center rounded-xl border border-border p-4 active:scale-[0.98] transition text-red ${logoutFullRow ? 'col-span-2' : ''}`}
                 >
                   <ArrowRightStartOnRectangleIcon className="h-7 w-7 mb-1.5" />
                   <span className="text-sm">Logout</span>
