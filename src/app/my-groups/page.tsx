@@ -38,8 +38,6 @@ function MyGroupsPageInner() {
     canCreate,
     canEditGroup,
     canDeleteGroup,
-    isUserSubscribed,
-    toggleSubscription,
 
     // 新建/编辑 Modal
     isModalOpen,
@@ -58,7 +56,6 @@ function MyGroupsPageInner() {
     // 状态文案
     saving,
     deleting,
-    toggling,
     overlayText,
   } = useGroupListController({
     mode: "user",         // ✅ 只拉取用户订阅的群组
@@ -105,11 +102,8 @@ function MyGroupsPageInner() {
           onDelete={(id) => confirmGroupDelete.ask(id)}
           canEdit={canEditGroup}
           canDelete={canDeleteGroup}
-          isUserSubscribed={isUserSubscribed}              // 已订阅列表里恒为 true，但保持一致接口
-          onToggleSubscription={toggleSubscription}        // 允许在此页退订
           saving={saving}
           deleting={deleting}
-          toggling={toggling}
           formatDate={formatDate}
         />
       </div>

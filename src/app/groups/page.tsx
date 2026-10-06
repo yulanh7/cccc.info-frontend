@@ -55,8 +55,6 @@ function GroupsPageInner() {
     canCreate,
     canEditGroup,
     canDeleteGroup,
-    isUserSubscribed,
-    toggleSubscription,
     // modal
     isModalOpen,
     saveGroup: innerSaveGroup,
@@ -73,7 +71,6 @@ function GroupsPageInner() {
     // states
     saving,
     deleting,
-    toggling,
     buildHref,
 
   } = useGroupListController({
@@ -302,11 +299,8 @@ function GroupsPageInner() {
           onDelete={(id) => confirmGroupDelete.ask(id)}
           canEdit={canEditGroup}
           canDelete={canDeleteGroup}
-          isUserSubscribed={isUserSubscribed}
-          onToggleSubscription={toggleSubscription}
           saving={saving}
           deleting={deleting}
-          toggling={toggling}
           formatDate={formatDate}
         />
       </div>

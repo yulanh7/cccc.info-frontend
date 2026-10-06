@@ -11,8 +11,6 @@ import {
   fetchUserSubscribedGroups,
   updateGroup as updateGroupThunk,
   deleteGroup as deleteGroupThunk,
-  joinGroup,
-  leaveGroup,
   setSearchQuery as setSearchQueryAction,
   clearSearch as clearSearchAction,
 } from "@/app/features/groups/slice";
@@ -62,7 +60,6 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
 
   const userGroups = useAppSelector((s) => s.groups.userGroups);
   const subscribedGroups = useAppSelector((s) => s.groups.subscribedGroups);
-  const userMembership = useAppSelector((s) => s.groups.userMembership);
 
   const userPagination = useAppSelector((s) => s.groups.userGroupsPagination);
   const subscribedPagination = useAppSelector((s) => s.groups.subscribedGroupsPagination);
@@ -71,7 +68,6 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
   // ===== 本地 UI 状态
   const [listLoading, setListLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [toggling, setToggling] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   // modal 状态（新建/编辑）
@@ -207,28 +203,6 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
   // ===== 权限/订阅/编辑/删除
   const canEditGroup = useCallback((g: GroupApi) => canEditGroupOf(g, user), [user]);
   const canDeleteGroup = useCallback((g: GroupApi) => canDeleteGroupOf(g, user), [user]);
-  const isUserSubscribed = (group: GroupApi) => {
-    const membershipFromStore = userMembership[group.id];
-    if (typeof membershipFromStore === 'boolean') {
-      return membershipFromStore;
-    }
-    return group.is_member ?? false;
-  };
-  const toggleSubscription = useCallback(async (group: GroupApi) => {
-    setToggling(true);
-    const action = group.is_member ? await dispatch(leaveGroup(group.id)) : await dispatch(joinGroup(group.id));
-    setToggling(false);
-
-    if (leaveGroup.rejected.match(action) || joinGroup.rejected.match(action)) {
-      alert(
-        (action.payload as string) ||
-        (group.is_member ? "Leave group failed" : "Join group failed")
-      );
-      return false;
-    }
-    void refreshPage(currentPage);
-    return true;
-  }, [dispatch, currentPage, refreshPage]);
 
   const openNew = useCallback(() => {
     if (!canCreate) {
@@ -326,7 +300,6 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
   const overlayText =
     saving ? "Saving…" :
       deleting ? "Deleting…" :
-        toggling ? "Updating membership…" :
           undefined;
 
   const pageLoading = !mounted;
@@ -355,8 +328,6 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
     canCreate,
     canEditGroup,
     canDeleteGroup,
-    isUserSubscribed,
-    toggleSubscription,
 
     // Modal（新建/编辑）
     isModalOpen,
@@ -375,7 +346,6 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
     // 其他状态
     saving,
     deleting,
-    toggling,
     overlayText,
   };
 }

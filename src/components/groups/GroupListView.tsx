@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { useRouter } from "next/navigation";
 import { PencilSquareIcon, TrashIcon, CalendarIcon, LockClosedIcon, LockOpenIcon, PlusIcon } from "@heroicons/react/24/outline";
 import CardSkeleton from "@/components/feedback/CardSkeleton";
@@ -9,7 +9,6 @@ import Pagination from "@/components/ui/Pagination";
 import { ellipsize } from "@/app/ultility";
 import IconButton from "@/components/ui/IconButton";
 import SubscribeToggleButton from "@/components/groups/SubscribeToggleButton";
-import ConfirmModal from "@/components/ConfirmModal";
 import Button from "@/components/ui/Button";
 
 type Props = {
@@ -29,13 +28,9 @@ type Props = {
   canEdit?: (g: GroupApi) => boolean;
   canDelete?: (g: GroupApi) => boolean;
 
-  isUserSubscribed: (g: GroupApi) => boolean;
-  onToggleSubscription?: (g: GroupApi) => Promise<boolean> | boolean;
-
   // 状态
   saving?: boolean;
   deleting?: boolean;
-  toggling?: boolean;
 
   // 工具
   formatDate: (timestamp: string, showTime?: boolean) => string;
@@ -53,42 +48,14 @@ export default function GroupListView({
   onDelete,
   canEdit,
   canDelete,
-  isUserSubscribed,
-  onToggleSubscription,
   saving = false,
   deleting = false,
-  toggling = false,
   formatDate,
 }: Props) {
   const router = useRouter();
-  const [pendingSubscribeGroup, setPendingSubscribeGroup] = useState<GroupApi | null>(null);
-
+  // 公开小组不需要先关注就能进入；关注用卡片 / 小组页上的 Follow 按钮
   const handleCardClick = (group: GroupApi) => {
-    if (isUserSubscribed(group)) {
-      router.push(`/groups/${group.id}`);
-    } else {
-      setPendingSubscribeGroup(group);
-    }
-  };
-
-  const confirmSubscribeAndEnter = async () => {
-    const g = pendingSubscribeGroup;
-    if (!g) return;
-    try {
-      const ok = (await onToggleSubscription?.(g)) ?? false;
-      if (ok) router.push(`/groups/${g.id}`);
-    } finally {
-      setPendingSubscribeGroup(null);
-    }
-  };
-  const cancelAndEnter = () => {
-    const g = pendingSubscribeGroup;
-    if (!g) {
-      setPendingSubscribeGroup(null);
-      return;
-    }
-    router.push(`/groups/${g.id}`);
-    setPendingSubscribeGroup(null);
+    router.push(`/groups/${group.id}`);
   };
 
   return (
@@ -125,8 +92,6 @@ export default function GroupListView({
       ) : (
         <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-[3px]">
           {rows.map((group) => {
-            const subbed = isUserSubscribed(group);
-
             return (
               <div key={group.id} className="mb-4" style={{ breakInside: "avoid" }}>
                 <div
@@ -252,26 +217,7 @@ export default function GroupListView({
         </div>
       )}
 
-      {/* 订阅确认弹窗（未订阅时点击卡片触发） */}
 
-      <ConfirmModal
-        isOpen={Boolean(pendingSubscribeGroup)}
-        title="Follow this group?"
-        message={"We’ll show new posts on your Home feed.\nYou can unfollow anytime."}
-        // 主按钮：关注并进入
-        onConfirm={confirmSubscribeAndEnter}
-        confirmLabel="Follow"
-        confirmVariant="primary"
-        // 次要按钮：不关注但进入
-        onCancel={cancelAndEnter}
-        cancelLabel="Continue without following"
-        cancelVariant="ghost"
-        // 纯关闭（✕ / 遮罩 / Esc）：仅关闭，不导航
-        onClose={() => setPendingSubscribeGroup(null)}
-        showCloseButton
-        closeOnBackdrop
-        closeOnEsc
-      />
 
 
     </div>
