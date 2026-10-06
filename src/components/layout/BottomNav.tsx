@@ -6,6 +6,7 @@ import {
   HomeIcon as OutlineHomeIcon,
   UsersIcon as OutlineUsersIcon,
   UserIcon as OutlineUserIcon,
+  BookOpenIcon as OutlineBookOpenIcon,
   DocumentTextIcon,
   ArrowRightStartOnRectangleIcon,
   ShieldCheckIcon,
@@ -14,6 +15,7 @@ import {
   HomeIcon as SolidHomeIcon,
   UsersIcon as SolidUsersIcon,
   UserIcon as SolidUserIcon,
+  BookOpenIcon as SolidBookOpenIcon,
 } from '@heroicons/react/24/solid';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/app/features/hooks';
@@ -77,6 +79,7 @@ export default function BottomNav({ unreadCount }: BottomNavProps) {
   const navItems: NavItem[] = [
     { href: '/', label: 'Home', outlineIcon: OutlineHomeIcon, solidIcon: SolidHomeIcon },
     { href: '/groups', label: 'Groups', outlineIcon: OutlineUsersIcon, solidIcon: SolidUsersIcon },
+    { href: '/library', label: 'Library', outlineIcon: OutlineBookOpenIcon, solidIcon: SolidBookOpenIcon },
     // { href: '/messages', label: 'Message', outlineIcon: OutlineBellIcon, solidIcon: SolidBellIcon, unreadCount },
   ];
 

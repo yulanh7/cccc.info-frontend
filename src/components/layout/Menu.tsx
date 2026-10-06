@@ -25,6 +25,7 @@ export default function Menu({
   const navItems: TopNavItem[] = [
     { href: '/', label: 'Home' },
     { href: '/groups', label: 'Groups' },
+    { href: '/library', label: 'Library' },
   ];
 
   const pathname = usePathname();
