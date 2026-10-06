@@ -2,8 +2,8 @@
 
 import { useState, useRef, useMemo, useEffect } from "react";
 import { mockUsers } from '@/app/data/mockData';
-import type { GroupApi, PostPolicy } from '@/app/types/group';
-import { DEFAULT_POST_POLICY } from '@/app/types/group';
+import type { GroupApi, PostPolicy, CommentPolicy } from '@/app/types/group';
+import { DEFAULT_POST_POLICY, DEFAULT_COMMENT_POLICY, COMMENT_POLICY_LABELS } from '@/app/types/group';
 import { XMarkIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 import Button from "@/components/ui/Button";
 import SaveConfirmModal from "../SaveConfirmModal";
@@ -41,12 +41,17 @@ export default function GroupEditModal({
     is_creator: true,
     isPrivate: false,
     post_policy: DEFAULT_POST_POLICY,
+    comment_policy: DEFAULT_COMMENT_POLICY,
   };
   const privacyHelpId = "group-privacy-help";
   const postPolicyOptions: Array<{ value: PostPolicy; label: string }> = [
     { value: "members", label: "All members can post" },
     { value: "leaders_only", label: "Only group leaders can post, edit and delete posts" },
   ];
+  const commentPolicyOptions = (Object.keys(COMMENT_POLICY_LABELS) as CommentPolicy[]).map((value) => ({
+    value,
+    label: COMMENT_POLICY_LABELS[value],
+  }));
 
   const [editedItem, setEditedItem] = useState<GroupApi>(
     isNew ? defaultItem : { ...(group as GroupApi) }
@@ -136,6 +141,7 @@ export default function GroupEditModal({
       description: (it.description ?? ""),
       isPrivate: !!it.isPrivate,
       post_policy: it.post_policy ?? null,
+      comment_policy: it.comment_policy ?? null,
     });
 
   const initialSnapshotRef = useRef<string>(serialize(baseItem));
@@ -310,6 +316,24 @@ export default function GroupEditModal({
                   value={opt.value}
                   checked={editedItem.post_policy === opt.value}
                   onChange={() => handleChange("post_policy", opt.value)}
+                  className="mr-2"
+                />
+                <span className="text-sm text-dark-gray">{opt.label}</span>
+              </label>
+            ))}
+          </fieldset>
+
+          {/* Comment permission：帖子可单独覆盖，这里是小组默认值 */}
+          <fieldset className="mb-4">
+            <legend className="block text-sm font-medium mb-1">Who can comment</legend>
+            {commentPolicyOptions.map((opt) => (
+              <label key={opt.value} className="flex items-center mb-1">
+                <input
+                  type="radio"
+                  name="group-comment-policy"
+                  value={opt.value}
+                  checked={editedItem.comment_policy === opt.value}
+                  onChange={() => handleChange("comment_policy", opt.value)}
                   className="mr-2"
                 />
                 <span className="text-sm text-dark-gray">{opt.label}</span>

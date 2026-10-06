@@ -5,6 +5,8 @@ import { XMarkIcon } from "@heroicons/react/24/outline";
 import Button from "@/components/ui/Button";
 import SaveConfirmModal from "../SaveConfirmModal";
 import type { PostFileApi } from "@/app/types";
+import type { CommentPolicy } from "@/app/types/group";
+import { COMMENT_POLICY_LABELS, DEFAULT_COMMENT_POLICY } from "@/app/types/group";
 import { compressImageFile } from "@/app/ultility/imageCompression";
 import BasicsPanel from "@/components/posts/BasicsPanel";
 import MediaPanel from "@/components/posts/MediaPanel";
@@ -46,6 +48,8 @@ type FormModel = {
   videos: string[];
   fileIds: number[];
   localFiles?: File[];
+  /** null = 跟随小组默认值 */
+  comment_policy?: CommentPolicy | null;
 };
 
 export type PostModalProps = {
@@ -56,6 +60,8 @@ export type PostModalProps = {
   saving?: boolean; // 外部创建/更新中的状态
   existingFiles?: PostFileApi[];
   uploadingPercent?: number; // 外部上传平均进度（用于显示 1~99%）
+  /** 小组当前的默认评论权限，用于“跟随小组”选项的文案 */
+  groupCommentPolicy?: CommentPolicy;
 };
 
 /* ======================= 组件 ======================= */
@@ -69,6 +75,7 @@ export default function PostModal({
   saving = false,
   existingFiles = [],
   uploadingPercent = 0,
+  groupCommentPolicy,
 }: PostModalProps) {
   const [step, setStep] = useState<Step>(1);
 
@@ -77,6 +84,7 @@ export default function PostModal({
   const [description, setDescription] = useState(item?.description ?? "");
   const [content, setContent] = useState(item?.content ?? "");
   const [videos, setVideos] = useState<string[]>(item?.videos ?? []);
+  const [commentPolicy, setCommentPolicy] = useState<CommentPolicy | null>(item?.comment_policy ?? null);
 
   // 文件
   const [fileIds, setFileIds] = useState<number[]>(
@@ -120,6 +128,7 @@ export default function PostModal({
     setDescription(item.description ?? "");
     setContent(item.content ?? "");
     setVideos(item.videos ?? []);
+    setCommentPolicy(item.comment_policy ?? null);
     setFileIds(
       item.fileIds ??
       (existingFiles?.map((f) => f.id).filter((v): v is number => typeof v === "number") ?? [])
@@ -157,6 +166,7 @@ export default function PostModal({
       fileIds: [...fileIds].sort((a, b) => a - b),
       localImages: projectFiles(localImages),
       localDocs: projectFiles(localDocs),
+      commentPolicy,
     });
 
   const initialStateRef = useRef<string>("");
@@ -172,7 +182,7 @@ export default function PostModal({
       return true;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, description, content, videos, fileIds, localImages, localDocs]);
+  }, [title, description, content, videos, fileIds, localImages, localDocs, commentPolicy]);
 
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
@@ -327,6 +337,7 @@ export default function PostModal({
     videos,
     fileIds,
     localFiles: [...localImages, ...localDocs],
+    comment_policy: commentPolicy,
   });
 
   const handleSave = async () => {
@@ -436,6 +447,28 @@ export default function PostModal({
               contentRef={contentRef}
               saving={saving}
               isCompressing={isCompressing}
+              afterTitle={
+                // 评论权限：null = 跟随小组；放在标题下、正文上，打开表单就能看到
+                <div className="mb-3 flex items-center gap-2">
+                  <label htmlFor="post-comment-policy" className="text-sm font-medium text-gray-900 shrink-0">
+                    Who can comment
+                  </label>
+                  <select
+                    id="post-comment-policy"
+                    value={commentPolicy ?? ""}
+                    onChange={(e) => setCommentPolicy((e.target.value || null) as CommentPolicy | null)}
+                    disabled={saving}
+                    className="min-w-0 flex-1 p-1.5 border border-border rounded-sm text-sm bg-white"
+                  >
+                    <option value="">
+                      Same as group ({COMMENT_POLICY_LABELS[groupCommentPolicy ?? DEFAULT_COMMENT_POLICY]})
+                    </option>
+                    {(Object.keys(COMMENT_POLICY_LABELS) as CommentPolicy[]).map((v) => (
+                      <option key={v} value={v}>{COMMENT_POLICY_LABELS[v]}</option>
+                    ))}
+                  </select>
+                </div>
+              }
             />
           ) : (
             <MediaPanel

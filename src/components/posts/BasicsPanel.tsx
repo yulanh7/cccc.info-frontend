@@ -17,6 +17,8 @@ type BasicsPanelProps = {
   contentRef?: React.RefObject<HTMLTextAreaElement> | React.MutableRefObject<HTMLTextAreaElement | null>;
   saving: boolean;
   isCompressing: boolean;
+  /** 插在标题和正文之间的额外字段（如评论权限） */
+  afterTitle?: React.ReactNode;
 };
 
 export default function BasicsPanel({
@@ -33,6 +35,7 @@ export default function BasicsPanel({
   contentRef,
   saving,
   isCompressing,
+  afterTitle,
 }: BasicsPanelProps) {
   return (
     <>
@@ -58,6 +61,7 @@ export default function BasicsPanel({
       </div>
       {errors.title && <p className="text-red-600 text-sm mb-3">{errors.title}</p>}
 
+      {afterTitle}
 
       {/* 正文 */}
       <label htmlFor="post-content" className="block text-sm font-medium mb-1 text-gray-900">

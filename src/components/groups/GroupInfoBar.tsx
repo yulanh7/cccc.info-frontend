@@ -9,7 +9,8 @@ import {
   UserPlusIcon,
   LockOpenIcon,
   LockClosedIcon,
-  MegaphoneIcon
+  MegaphoneIcon,
+  ChatBubbleLeftIcon
 } from "@heroicons/react/24/outline";
 import Button from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
@@ -81,6 +82,17 @@ export default function GroupInfoBar({
                   >
                     <MegaphoneIcon className="h-4 w-4 text-yellow" />
                     <span className="text-[11px]">Leaders post only</span>
+                  </span>
+                )}
+
+                {/* 评论权限：仅小组默认为 leaders_only 时提示 */}
+                {group.comment_policy === "leaders_only" && (
+                  <span
+                    className="inline-flex items-center gap-1 text-white"
+                    title="By default, only group leaders can comment on posts in this group"
+                  >
+                    <ChatBubbleLeftIcon className="h-4 w-4 text-yellow" />
+                    <span className="text-[11px]">Leaders comment only</span>
                   </span>
                 )}
 
