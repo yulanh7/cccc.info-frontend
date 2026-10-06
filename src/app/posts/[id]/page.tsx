@@ -417,7 +417,7 @@ function PostDetailPageInner() {
               {/* 底部文档 */}
               {documents.length > 0 && (
                 <div className="mt-4 shadow-md p-4">
-                  <h3 className="text-lg font-semibold text-dark-gray mb-2">「资料」</h3>
+                  <h3 className="text-lg font-semibold text-dark-gray mb-2">Attachments</h3>
                   <ul className="space-y-2">
                     {documents.map((file, index) => (
                       <li key={`${file.id ?? file.url}-${index}`} className="flex items-center space-x-4">

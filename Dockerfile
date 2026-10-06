@@ -38,8 +38,10 @@ USER nextjs
 
 EXPOSE 3000
 ENV PORT=3000
+# standalone 的 server.js 只监听 HOSTNAME；Docker 默认把 HOSTNAME 设成容器 ID，导致容器内 localhost 连不上
+ENV HOSTNAME=0.0.0.0
 
 # 可选：健康检查（生产推荐）
-HEALTHCHECK --interval=30s --timeout=3s CMD wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1
+HEALTHCHECK --interval=30s --timeout=3s CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000 || exit 1
 
 CMD ["node", "server.js"]
