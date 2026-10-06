@@ -2,6 +2,8 @@
 import { Suspense } from "react";
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { BookmarkIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import { fetchLibraryCatalog, fetchLibraryCategories } from "@/app/features/library/slice";
 import { LIBRARY_PER_PAGE } from "@/app/constants";
@@ -105,7 +107,17 @@ function LibraryPageInner() {
   return (
     <>
       <LoadingOverlay show={!mounted} text="Loading library…" />
-      <CustomHeader pageTitle="Library" showLogo={true} />
+      <CustomHeader
+        pageTitle="Library"
+        showLogo={true}
+        rightSlot={
+          // 手机顶部栏右侧的“我的借阅”快捷入口（电脑上在右上角用户菜单里）
+          <Link href="/library/my-borrows" aria-label="My borrows" className="inline-flex items-center gap-1 text-sm text-dark-green">
+            <BookmarkIcon className="h-5 w-5" />
+            My borrows
+          </Link>
+        }
+      />
       <PageTitle title="Library" showPageTitle />
 
       <div className="mx-auto w-full max-w-3xl p-4 min-h-screen mt-0 md:mt-16">
@@ -120,17 +132,20 @@ function LibraryPageInner() {
             setQInput("");
             pushQuery({ q: "" });
           }}
-          placeholder="Search by title, author or call number…"
+          placeholder="Title, author or call no. (e.g. C14)"
           sticky={false}
+          size="lg"
         />
 
         {/* 筛选：分类 + 只看可借 */}
         <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+          {/* 自绘箭头：原生箭头会紧贴右边框 */}
+          <div className="relative min-w-0 max-w-full">
           <select
             aria-label="Category"
             value={categoryParam}
             onChange={(e) => pushQuery({ category: e.target.value })}
-            className="min-w-0 max-w-full rounded-sm border border-border bg-white p-1.5"
+            className="h-10 w-full appearance-none rounded-sm border border-border bg-white pl-3 pr-9 text-[16px]"
           >
             <option value="">All categories</option>
             {bookCategories.length > 0 && (
@@ -152,6 +167,8 @@ function LibraryPageInner() {
               </optgroup>
             )}
           </select>
+          <ChevronDownIcon className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-dark-gray" aria-hidden />
+          </div>
 
           <label className="flex items-center gap-2 cursor-pointer text-dark-gray">
             <input
