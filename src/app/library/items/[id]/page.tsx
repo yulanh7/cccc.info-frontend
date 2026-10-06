@@ -144,7 +144,8 @@ export default function LibraryItemPage() {
                   <span>
                     {borrowedCallNumber
                       ? <>You borrowed <strong>{borrowedCallNumber}</strong>. Look for this call number on the shelf.</>
-                      : "You borrowed this item."}
+                      : "You borrowed this item."}{" "}
+                    <Link href="/library/my-borrows" className="underline">My borrows</Link>
                   </span>
                 </p>
               )}
