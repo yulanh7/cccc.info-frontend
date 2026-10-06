@@ -175,7 +175,7 @@ api.interceptors.response.use(
 
 // ====== Main API request function: returns ApiResponseProps<T> ======
 export const apiRequest = async <T>(
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   endpoint: string,
   data?: any,
   requireAuth: boolean = true

@@ -8,6 +8,7 @@ import {
   UserIcon as OutlineUserIcon,
   DocumentTextIcon,
   ArrowRightStartOnRectangleIcon,
+  ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as SolidHomeIcon,
@@ -15,8 +16,9 @@ import {
   UserIcon as SolidUserIcon,
 } from '@heroicons/react/24/solid';
 import { usePathname, useRouter } from 'next/navigation';
-import { useAppDispatch } from '@/app/features/hooks';
+import { useAppDispatch, useAppSelector } from '@/app/features/hooks';
 import { logoutThunk } from '@/app/features/auth/slice';
+import { isAdmin } from '@/app/types/user';
 
 interface NavItem {
   href: string;
@@ -34,6 +36,7 @@ export default function BottomNav({ unreadCount }: BottomNavProps) {
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const showAdmin = isAdmin(useAppSelector((s) => s.auth.user));
 
   const hideBottomNav =
     pathname.startsWith('/messages/') ||
@@ -171,9 +174,22 @@ export default function BottomNav({ unreadCount }: BottomNavProps) {
                   <span className="text-sm">My Groups</span>
                 </Link>
 
+                {/* 用户权限管理：仅 admin */}
+                {showAdmin && (
+                  <Link
+                    href="/admin/users"
+                    onClick={() => setSheetOpen(false)}
+                    className="flex flex-col items-center rounded-xl border border-border p-4 active:scale-[0.98] transition"
+                  >
+                    <ShieldCheckIcon className="h-7 w-7 mb-1.5" />
+                    <span className="text-sm">User Permissions</span>
+                  </Link>
+                )}
+
+                {/* admin 多一项时 Logout 占满一行，保持网格整齐 */}
                 <button
                   onClick={handleLogout}
-                  className="flex flex-col items-center rounded-xl border border-border p-4 active:scale-[0.98] transition text-red"
+                  className={`flex flex-col items-center rounded-xl border border-border p-4 active:scale-[0.98] transition text-red ${showAdmin ? 'col-span-2' : ''}`}
                 >
                   <ArrowRightStartOnRectangleIcon className="h-7 w-7 mb-1.5" />
                   <span className="text-sm">Logout</span>

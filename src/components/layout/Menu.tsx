@@ -3,9 +3,10 @@
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
-import { useAppDispatch } from '@/app/features/hooks';
+import { useAppDispatch, useAppSelector } from '@/app/features/hooks';
 import { logoutThunk } from '@/app/features/auth/slice';
 import { ellipsize } from "@/app/ultility";
+import { isAdmin } from '@/app/types/user';
 
 interface TopNavItem {
   href: string;
@@ -29,6 +30,7 @@ export default function Menu({
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const user = useAppSelector((s) => s.auth.user);
 
   const handleLogout = () => {
     dispatch(logoutThunk());
@@ -92,6 +94,17 @@ export default function Menu({
               >
                 My Groups
               </Link>
+
+              {/* 用户权限管理：仅 admin */}
+              {isAdmin(user) && (
+                <Link
+                  href="/admin/users"
+                  className={`block px-4 py-2 text-sm hover:bg-gray-100 ${isActiveHref('/admin/users') ? 'text-dark-green' : 'text-dark-gray'
+                    }`}
+                >
+                  User Permissions
+                </Link>
+              )}
 
               <button
                 onClick={handleLogout}

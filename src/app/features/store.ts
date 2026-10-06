@@ -5,6 +5,7 @@ import groupDetailReducer from './groups/detailSlice';
 import postsReducer from './posts/slice';
 import likesReducer from './posts/likeSlice';
 import commentsReducer from "@/app/features/posts/commentsSlice";
+import adminUsersReducer from "./admin/usersSlice";
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
     posts: postsReducer,
     likes: likesReducer,
     comments: commentsReducer,
+    adminUsers: adminUsersReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

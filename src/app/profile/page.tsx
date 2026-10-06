@@ -4,7 +4,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/app/features/hooks';
 import { rehydrateAuth } from '@/app/features/auth/slice';
 import { fetchProfileThunk, saveProfileNameThunk, changePasswordThunk } from '@/app/features/auth/slice';
-import { EyeIcon, EyeSlashIcon, ShieldCheckIcon, PencilSquareIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import Link from 'next/link';
+import { EyeIcon, EyeSlashIcon, ShieldCheckIcon, PencilSquareIcon, CheckIcon, XMarkIcon, UsersIcon } from '@heroicons/react/24/outline';
 import { isAdmin } from '@/app/types/user';
 import Button from '@/components/ui/Button'
 import PageTitle from '@/components/layout/PageTitle';
@@ -152,6 +153,16 @@ export default function ProfilePage() {
                     <ShieldCheckIcon className="h-4 w-4" />
                     Admin
                   </span>
+                )}
+                {/* 用户权限管理入口：仅 admin */}
+                {isAdmin(user) && (
+                  <Link
+                    href="/admin/users"
+                    className="ml-auto inline-flex items-center gap-1 rounded-full border border-white px-3 py-1 text-xs text-white hover:bg-white/10"
+                  >
+                    <UsersIcon className="h-4 w-4" />
+                    Manage users
+                  </Link>
                 )}
               </div>
             </div>

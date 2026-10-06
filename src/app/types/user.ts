@@ -19,6 +19,9 @@ export type AuthResponse = ApiResponseProps<AuthResponseData>;
 
 export const isAdmin = (user?: UserProps | null): boolean => !!user?.admin;
 
+/** 全局权限值：目前只有 create_group */
+export const PERMISSION_CREATE_GROUP = 'create_group';
+
 /** 能否创建小组：admin 或拥有 create_group 权限（admin 的 permissions 不会自动包含所有值） */
 export const canCreateGroup = (user?: UserProps | null): boolean =>
   !!user && (user.admin || !!user.permissions?.includes('create_group'));
@@ -40,3 +43,17 @@ export interface ProfileUpdateData {
   user?: UserProps;
 }
 export type ProfileUpdateResponse = ApiResponseProps<ProfileUpdateData>;
+
+/** ===== Admin 用户权限管理 API types ===== */
+export interface AdminUsersListData {
+  users: UserProps[];
+  pagination: { page: number; per_page: number; total: number; pages: number };
+}
+export type AdminUsersListResponse = ApiResponseProps<AdminUsersListData>;
+
+export interface UpdateUserPermissionBody {
+  permission: string;
+  granted: boolean;
+}
+/** PATCH 成功后 data 直接是更新后的 user */
+export type UpdateUserPermissionResponse = ApiResponseProps<UserProps>;
