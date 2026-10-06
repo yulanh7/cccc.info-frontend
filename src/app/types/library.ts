@@ -17,6 +17,8 @@ export type LibraryPagination = {
   per_page: number;
   total: number;
   pages: number;
+  /** 仅目录接口：符合筛选条件的总册数（available_only 时只算可借的）；total 是组数 */
+  total_items?: number;
 };
 
 /** 复本：目录分组的 items、详情 / 查找接口的 copies */

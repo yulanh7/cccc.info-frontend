@@ -173,6 +173,8 @@ function LibraryPageInner() {
 
   const listLoading = catalog.status === "loading";
   const totalPages = catalog.pagination?.pages ?? 1;
+  // 右上角显示册数，和分类下拉框的数字一致；后端没返回 total_items 时退回显示组数
+  const totalItems = catalog.pagination?.total_items;
   const totalGroups = catalog.pagination?.total ?? 0;
   const hasFilters = !!(qParam || categoryParam || availableOnly);
 
@@ -265,7 +267,9 @@ function LibraryPageInner() {
 
           {catalog.pagination && (
             <span className="ml-auto text-xs text-dark-gray/70">
-              {totalGroups} {totalGroups === 1 ? "title" : "titles"}
+              {totalItems !== undefined
+                ? `${totalItems} ${totalItems === 1 ? "item" : "items"}`
+                : `${totalGroups} ${totalGroups === 1 ? "result" : "results"}`}
             </span>
           )}
         </div>
