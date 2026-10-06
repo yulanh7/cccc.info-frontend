@@ -226,8 +226,17 @@ export default function GroupListView({
                       </span>
                     </span>
 
-                    <div onClick={(e) => e.stopPropagation()}>
-                      <SubscribeToggleButton groupId={group.id} isMemberHint={group.is_member} mode="follow" />
+                    {/* 创建者不能退出：置灰并提示先转让（title 放外层，禁用按钮在部分浏览器不显示 tooltip） */}
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      title={group.is_creator ? "You're the owner. Transfer ownership before leaving." : undefined}
+                    >
+                      <SubscribeToggleButton
+                        groupId={group.id}
+                        isMemberHint={group.is_member}
+                        mode="follow"
+                        disabled={group.is_creator}
+                      />
                     </div>
                   </div>
                 </div>
