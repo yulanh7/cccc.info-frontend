@@ -36,7 +36,6 @@ const emptyList = <T,>(): ListState<T> => ({ list: [], pagination: null, status:
 interface LibraryState {
   catalog: ListState<LibraryCatalogGroup>;
   categories: { list: LibraryCategory[]; status: LoadStatus; error: string | null };
-  detail: { item: LibraryItemDetail | null; status: LoadStatus; error: string | null };
   myBorrows: ListState<LibraryBorrow>;
   /** 以下仅图书管理员 */
   adminItems: ListState<LibraryItem>;
@@ -46,7 +45,6 @@ interface LibraryState {
 const initialState: LibraryState = {
   catalog: emptyList(),
   categories: { list: [], status: 'idle', error: null },
-  detail: { item: null, status: 'idle', error: null },
   myBorrows: emptyList(),
   adminItems: emptyList(),
   adminBorrows: emptyList(),
@@ -112,19 +110,6 @@ export const fetchLibraryCategories = createAsyncThunk<LibraryCategory[], void>(
       return unwrapData(res).categories ?? [];
     } catch (e: any) {
       return rejectWithValue(errMsg(e, 'Failed to load categories')) as any;
-    }
-  }
-);
-
-// ===== 详情：GET /api/library/items/<id>（含 copies）
-export const fetchLibraryItem = createAsyncThunk<LibraryItemDetail, number>(
-  'library/fetchItem',
-  async (id, { rejectWithValue }) => {
-    try {
-      const res = await apiRequest<LibraryItemDetail>('GET', LIBRARY_ENDPOINTS.ITEM(id));
-      return unwrapData(res);
-    } catch (e: any) {
-      return rejectWithValue(errMsg(e, 'Failed to load the item')) as any;
     }
   }
 );
@@ -374,11 +359,7 @@ const replaceById = <T extends { id: number }>(list: T[], next: T) => {
 const librarySlice = createSlice({
   name: 'library',
   initialState,
-  reducers: {
-    clearLibraryDetail: (s) => {
-      s.detail = { item: null, status: 'idle', error: null };
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
       .addCase(fetchLibraryCatalog.pending, (s) => {
@@ -407,21 +388,6 @@ const librarySlice = createSlice({
       .addCase(fetchLibraryCategories.rejected, (s, a) => {
         s.categories.status = 'failed';
         s.categories.error = (a.payload as string) || 'Failed to load categories';
-      });
-
-    builder
-      .addCase(fetchLibraryItem.pending, (s) => {
-        s.detail.status = 'loading';
-        s.detail.error = null;
-      })
-      .addCase(fetchLibraryItem.fulfilled, (s, a) => {
-        s.detail.status = 'succeeded';
-        s.detail.item = a.payload;
-      })
-      .addCase(fetchLibraryItem.rejected, (s, a) => {
-        s.detail.status = 'failed';
-        s.detail.item = null;
-        s.detail.error = (a.payload as string) || 'Failed to load the item';
       });
 
     builder
@@ -483,5 +449,4 @@ const librarySlice = createSlice({
   },
 });
 
-export const { clearLibraryDetail } = librarySlice.actions;
 export default librarySlice.reducer;

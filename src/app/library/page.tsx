@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { BookmarkIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
-import { fetchLibraryCatalog, fetchLibraryCategories } from "@/app/features/library/slice";
+import { fetchLibraryCatalog, fetchLibraryCategories, borrowLibraryItem } from "@/app/features/library/slice";
+import type { LibraryCatalogGroup } from "@/app/types/library";
 import { LIBRARY_PER_PAGE } from "@/app/constants";
 import PageTitle from "@/components/layout/PageTitle";
 import CustomHeader from "@/components/layout/CustomHeader";
@@ -13,6 +14,9 @@ import LoadingOverlay from "@/components/feedback/LoadingOverLay";
 import SearchBar from "@/components/SearchBar";
 import Pagination from "@/components/ui/Pagination";
 import CatalogGroupCard from "@/components/library/CatalogGroupCard";
+import type { CatalogBorrowResult } from "@/components/library/CatalogGroupCard";
+import ConfirmModal from "@/components/ConfirmModal";
+import { useConfirm } from "@/hooks/useConfirm";
 
 const LIBRARY_PATH = "/library";
 const SEARCH_DEBOUNCE_MS = 400;
@@ -34,6 +38,31 @@ function LibraryPageInner() {
   useEffect(() => setMounted(true), []);
 
   const { catalog, categories } = useAppSelector((s) => s.library);
+
+  // ===== 在列表上直接借：先确认，带 any_copy（这件被借走时后端自动换同一本书的另一个可借复本）
+  const groupKey = (g: LibraryCatalogGroup) => `${g.item_type}:${g.category}:${g.title}:${g.items[0]?.id ?? ""}`;
+  const confirmBorrow = useConfirm<LibraryCatalogGroup>("Borrow this item?");
+  const [borrowingKey, setBorrowingKey] = useState<string | null>(null);
+  const [borrowResults, setBorrowResults] = useState<Record<string, CatalogBorrowResult>>({});
+  const [reloadTick, setReloadTick] = useState(0);
+
+  const doBorrow = async (group: LibraryCatalogGroup | null) => {
+    if (!group) return;
+    const target = group.items.find((c) => c.available) ?? group.items[0];
+    if (!target) return;
+    const key = groupKey(group);
+    setBorrowingKey(key);
+    try {
+      const res = await dispatch(borrowLibraryItem({ itemId: target.id, any_copy: true })).unwrap();
+      setBorrowResults((m) => ({ ...m, [key]: { ok: true, callNumber: res.item.call_number } }));
+    } catch (e: any) {
+      setBorrowResults((m) => ({ ...m, [key]: { ok: false, message: typeof e === "string" ? e : e?.message || "Borrow failed" } }));
+    } finally {
+      setBorrowingKey(null);
+      // 成功或 409 都刷新可借数量
+      setReloadTick((t) => t + 1);
+    }
+  };
 
   // ===== URL 参数：q / category / available / page
   const qParam = (searchParams.get("q") || "").trim();
@@ -93,7 +122,7 @@ function LibraryPageInner() {
         per_page: LIBRARY_PER_PAGE,
       })
     );
-  }, [dispatch, mounted, qParam, categoryParam, availableOnly, currentPage]);
+  }, [dispatch, mounted, qParam, categoryParam, availableOnly, currentPage, reloadTick]);
 
   // 分类按书 / 影音分组显示
   const bookCategories = categories.list.filter((c) => c.item_type === "book");
@@ -121,6 +150,9 @@ function LibraryPageInner() {
       <PageTitle title="Library" showPageTitle />
 
       <div className="mx-auto w-full max-w-3xl p-4 min-h-screen mt-0 md:mt-16">
+        {/* 电脑上在搜索栏右边放“我的借阅”；手机上在顶部栏右侧 */}
+        <div className="flex items-center gap-2">
+        <div className="min-w-0 flex-1">
         <SearchBar
           value={qInput}
           onChange={setQInput}
@@ -132,10 +164,19 @@ function LibraryPageInner() {
             setQInput("");
             pushQuery({ q: "" });
           }}
-          placeholder="Title, author or call no. (e.g. C14)"
+          placeholder="Title, author, shelf no. (e.g. C14)"
           sticky={false}
           size="lg"
         />
+        </div>
+        <Link
+          href="/library/my-borrows"
+          className="hidden md:inline-flex h-10 shrink-0 items-center gap-1.5 rounded-sm border border-dark-green px-3 text-[16px] text-dark-green hover:bg-dark-green/5"
+        >
+          <BookmarkIcon className="h-5 w-5" />
+          My borrows
+        </Link>
+        </div>
 
         {/* 筛选：分类 + 只看可借 */}
         <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
@@ -202,8 +243,13 @@ function LibraryPageInner() {
           ) : (
             <ul className="space-y-2">
               {catalog.list.map((g) => (
-                <li key={`${g.item_type}:${g.category}:${g.title}:${g.items[0]?.id ?? ""}`}>
-                  <CatalogGroupCard group={g} />
+                <li key={groupKey(g)}>
+                  <CatalogGroupCard
+                    group={g}
+                    borrowing={borrowingKey === groupKey(g)}
+                    result={borrowResults[groupKey(g)]}
+                    onBorrow={(grp) => confirmBorrow.ask(grp, `Borrow "${grp.title}"?`)}
+                  />
                 </li>
               ))}
             </ul>
@@ -220,6 +266,19 @@ function LibraryPageInner() {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={confirmBorrow.open}
+        title="Borrow"
+        message={confirmBorrow.message}
+        confirmLabel="Borrow"
+        confirmVariant="primary"
+        cancelLabel="Cancel"
+        cancelVariant="outline"
+        onCancel={confirmBorrow.cancel}
+        onClose={confirmBorrow.cancel}
+        onConfirm={confirmBorrow.confirm(doBorrow)}
+      />
     </>
   );
 }

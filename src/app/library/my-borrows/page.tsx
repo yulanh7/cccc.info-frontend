@@ -141,9 +141,7 @@ function MyBorrowsPageInner() {
                 return (
                   <li key={b.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-white p-3 text-sm">
                     <div className="min-w-0">
-                      <Link href={`/library/items/${b.item.id}`} className="font-medium text-dark-gray hover:text-dark-green break-words">
-                        {b.item.title}
-                      </Link>
+                      <span className="font-medium text-dark-gray break-words">{b.item.title}</span>
                       <div className="mt-0.5 text-xs text-dark-gray/70">
                         {[b.item.call_number, b.item.category].filter(Boolean).join(" · ")}
                       </div>

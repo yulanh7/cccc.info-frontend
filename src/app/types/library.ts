@@ -24,6 +24,12 @@ export type LibraryCopy = {
   id: number;
   call_number: string | null;
   available: boolean;
+  /** 仅图书管理员的目录响应有：没人借为 null；普通用户的响应里没有这个键 */
+  current_borrow?: {
+    id: number;
+    user: { id: number; firstName: string; email?: string };
+    borrowed_at: string;
+  } | null;
 };
 
 /** 借阅里内嵌的精简馆藏 */

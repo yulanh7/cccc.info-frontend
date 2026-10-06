@@ -209,7 +209,7 @@ function LibraryManagePageInner() {
                 setQInput("");
                 pushQuery({ q: "" });
               }}
-              placeholder="Search by title, author, call number or barcode…"
+              placeholder="Search by title, author, shelf no. or barcode…"
               sticky={false}
             />
 
@@ -259,9 +259,7 @@ function LibraryManagePageInner() {
                     <div className="min-w-0 flex-1 basis-full sm:basis-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-mono text-xs text-dark-gray/80">{it.call_number ?? "—"}</span>
-                        <Link href={`/library/items/${it.id}`} className="font-medium text-dark-gray hover:text-dark-green break-words">
-                          {it.title}
-                        </Link>
+                        <span className="font-medium text-dark-gray break-words">{it.title}</span>
                         {!it.is_active && (
                           <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] text-dark-gray">Withdrawn</span>
                         )}
