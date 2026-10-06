@@ -5,8 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { BookmarkIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
-import { fetchLibraryCatalog, fetchLibraryCategories, borrowLibraryItem } from "@/app/features/library/slice";
-import type { LibraryCatalogGroup } from "@/app/types/library";
+import {
+  fetchLibraryCatalog,
+  fetchLibraryCategories,
+  fetchMyBorrows,
+  borrowLibraryItem,
+  returnLibraryBorrow,
+} from "@/app/features/library/slice";
+import type { LibraryCatalogGroup, LibraryCopy } from "@/app/types/library";
 import { LIBRARY_PER_PAGE } from "@/app/constants";
 import PageTitle from "@/components/layout/PageTitle";
 import CustomHeader from "@/components/layout/CustomHeader";
@@ -14,7 +20,7 @@ import LoadingOverlay from "@/components/feedback/LoadingOverLay";
 import SearchBar from "@/components/SearchBar";
 import Pagination from "@/components/ui/Pagination";
 import CatalogGroupCard from "@/components/library/CatalogGroupCard";
-import type { CatalogBorrowResult } from "@/components/library/CatalogGroupCard";
+import type { CatalogActionError, OwnBorrow } from "@/components/library/CatalogGroupCard";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useConfirm } from "@/hooks/useConfirm";
 
@@ -39,27 +45,58 @@ function LibraryPageInner() {
 
   const { catalog, categories } = useAppSelector((s) => s.library);
 
-  // ===== 在列表上直接借：先确认，带 any_copy（这件被借走时后端自动换同一本书的另一个可借复本）
+  const currentUser = useAppSelector((s) => s.auth.user);
+  const myActiveBorrows = useAppSelector((s) => s.library.myBorrows.list);
+
+  // 我借着的那几件：按馆藏 id 查，用来在列表上显示 "Borrowed by you" 和还书
+  const ownBorrows = useMemo(() => {
+    const m: Record<number, OwnBorrow> = {};
+    myActiveBorrows.forEach((b) => {
+      if (!b.returned_at) m[b.item.id] = { borrowId: b.id, borrowedAt: b.borrowed_at };
+    });
+    return m;
+  }, [myActiveBorrows]);
+
+  // ===== 每一件单独借 / 还（先确认）；借指定的那一件，不带 any_copy
   const groupKey = (g: LibraryCatalogGroup) => `${g.item_type}:${g.category}:${g.title}:${g.items[0]?.id ?? ""}`;
-  const confirmBorrow = useConfirm<LibraryCatalogGroup>("Borrow this item?");
-  const [borrowingKey, setBorrowingKey] = useState<string | null>(null);
-  const [borrowResults, setBorrowResults] = useState<Record<string, CatalogBorrowResult>>({});
+  type CopyAction = { group: LibraryCatalogGroup; copy: LibraryCopy; borrowId?: number };
+  const confirmBorrow = useConfirm<CopyAction>("Borrow this item?");
+  const confirmReturn = useConfirm<CopyAction>("Return this item?");
+  const [busyCopyId, setBusyCopyId] = useState<number | null>(null);
+  const [errors, setErrors] = useState<Record<string, CatalogActionError>>({});
   const [reloadTick, setReloadTick] = useState(0);
 
-  const doBorrow = async (group: LibraryCatalogGroup | null) => {
-    if (!group) return;
-    const target = group.items.find((c) => c.available) ?? group.items[0];
+  const errText = (e: any, fallback: string) => (typeof e === "string" ? e : e?.message || fallback);
+  const describe = ({ group, copy }: CopyAction) =>
+    `"${group.title}"${copy.call_number ? ` (No. ${copy.call_number})` : ""}`;
+
+  const doBorrow = async (target: CopyAction | null) => {
     if (!target) return;
-    const key = groupKey(group);
-    setBorrowingKey(key);
+    const key = groupKey(target.group);
+    setBusyCopyId(target.copy.id);
+    setErrors(({ [key]: _, ...rest }) => rest);
     try {
-      const res = await dispatch(borrowLibraryItem({ itemId: target.id, any_copy: true })).unwrap();
-      setBorrowResults((m) => ({ ...m, [key]: { ok: true, callNumber: res.item.call_number } }));
+      await dispatch(borrowLibraryItem({ itemId: target.copy.id })).unwrap();
     } catch (e: any) {
-      setBorrowResults((m) => ({ ...m, [key]: { ok: false, message: typeof e === "string" ? e : e?.message || "Borrow failed" } }));
+      setErrors((m) => ({ ...m, [key]: { message: errText(e, "Borrow failed") } }));
     } finally {
-      setBorrowingKey(null);
-      // 成功或 409 都刷新可借数量
+      setBusyCopyId(null);
+      // 成功或 409 都刷新状态
+      setReloadTick((t) => t + 1);
+    }
+  };
+
+  const doReturn = async (target: CopyAction | null) => {
+    if (!target?.borrowId) return;
+    const key = groupKey(target.group);
+    setBusyCopyId(target.copy.id);
+    setErrors(({ [key]: _, ...rest }) => rest);
+    try {
+      await dispatch(returnLibraryBorrow(target.borrowId)).unwrap();
+    } catch (e: any) {
+      setErrors((m) => ({ ...m, [key]: { message: errText(e, "Return failed") } }));
+    } finally {
+      setBusyCopyId(null);
       setReloadTick((t) => t + 1);
     }
   };
@@ -110,6 +147,12 @@ function LibraryPageInner() {
     if (!mounted) return;
     dispatch(fetchLibraryCategories());
   }, [dispatch, mounted]);
+
+  // 我借着的书（借 / 还之后也刷新）
+  useEffect(() => {
+    if (!mounted) return;
+    dispatch(fetchMyBorrows({ status: "active", per_page: 100 }));
+  }, [dispatch, mounted, reloadTick]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -164,7 +207,7 @@ function LibraryPageInner() {
             setQInput("");
             pushQuery({ q: "" });
           }}
-          placeholder="Title, author, shelf no. (e.g. C14)"
+          placeholder="Title, author or no. (e.g. C14)"
           sticky={false}
           size="lg"
         />
@@ -246,9 +289,14 @@ function LibraryPageInner() {
                 <li key={groupKey(g)}>
                   <CatalogGroupCard
                     group={g}
-                    borrowing={borrowingKey === groupKey(g)}
-                    result={borrowResults[groupKey(g)]}
-                    onBorrow={(grp) => confirmBorrow.ask(grp, `Borrow "${grp.title}"?`)}
+                    ownBorrows={ownBorrows}
+                    currentUserId={currentUser?.id ?? null}
+                    busyCopyId={busyCopyId}
+                    error={errors[groupKey(g)]}
+                    onBorrow={(group, copy) => confirmBorrow.ask({ group, copy }, `Borrow ${describe({ group, copy })}?`)}
+                    onReturn={(group, copy, borrowId) =>
+                      confirmReturn.ask({ group, copy, borrowId }, `Return ${describe({ group, copy })}?`)
+                    }
                   />
                 </li>
               ))}
@@ -278,6 +326,19 @@ function LibraryPageInner() {
         onCancel={confirmBorrow.cancel}
         onClose={confirmBorrow.cancel}
         onConfirm={confirmBorrow.confirm(doBorrow)}
+      />
+
+      <ConfirmModal
+        isOpen={confirmReturn.open}
+        title="Return"
+        message={confirmReturn.message}
+        confirmLabel="Return"
+        confirmVariant="primary"
+        cancelLabel="Cancel"
+        cancelVariant="outline"
+        onCancel={confirmReturn.cancel}
+        onClose={confirmReturn.cancel}
+        onConfirm={confirmReturn.confirm(doReturn)}
       />
     </>
   );

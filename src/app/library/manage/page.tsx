@@ -209,7 +209,7 @@ function LibraryManagePageInner() {
                 setQInput("");
                 pushQuery({ q: "" });
               }}
-              placeholder="Search by title, author, shelf no. or barcode…"
+              placeholder="Search by title, author, no. or barcode…"
               sticky={false}
             />
 

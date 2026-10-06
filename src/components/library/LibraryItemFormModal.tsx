@@ -15,7 +15,7 @@ type FieldDef = { key: FieldKey; label: string; required?: boolean; type?: strin
 const COMMON_HEAD: FieldDef[] = [
   { key: "title", label: "Title", required: true },
   { key: "category", label: "Category", required: true },
-  { key: "call_number", label: "Shelf no.", placeholder: "e.g. C200" },
+  { key: "call_number", label: "No.", placeholder: "e.g. C200" },
 ];
 const BOOK_FIELDS: FieldDef[] = [
   { key: "creator", label: "Author" },
