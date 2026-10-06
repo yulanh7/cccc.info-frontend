@@ -1,5 +1,5 @@
 import { ApiResponseProps, UserProps } from '@/app/types'
-import type { PostPolicy } from './group'
+import type { PostPolicy, CommentPolicy } from './group'
 
 export type postsPagination = {
   current_page: number;
@@ -27,6 +27,7 @@ export type PostGroupApi = {
   is_creator?: boolean;
   is_leader?: boolean;
   post_policy?: PostPolicy;
+  comment_policy?: CommentPolicy;
 };
 
 
@@ -42,6 +43,8 @@ export type CreatePostRequest = {
   description: string;
   video_urls?: string[];
   file_ids?: number[];
+  /** null = 跟随小组；不传 = 不改（仅更新时） */
+  comment_policy?: CommentPolicy | null;
 };
 
 export type CreatedPostData = {
@@ -75,6 +78,12 @@ export type PostListItemApi = {
   files: string[];
   clicked_like: boolean;
   group: PostGroupApi;
+  /** 帖子自己的评论设置，null = 跟随小组 */
+  comment_policy?: CommentPolicy | null;
+  /** 实际生效的评论规则 */
+  effective_comment_policy?: CommentPolicy;
+  /** 当前用户能否发评论/回复（后端已算好，前端只看这个） */
+  can_comment?: boolean;
 };
 
 export type PostListData = {
@@ -99,6 +108,12 @@ export type PostDetailData = {
   like_count: number;
   clicked_like: boolean;
   group: PostGroupApi;
+  /** 帖子自己的评论设置，null = 跟随小组 */
+  comment_policy?: CommentPolicy | null;
+  /** 实际生效的评论规则 */
+  effective_comment_policy?: CommentPolicy;
+  /** 当前用户能否发评论/回复（后端已算好，前端只看这个） */
+  can_comment?: boolean;
 };
 
 export type PostDetailResponse = ApiResponseProps<PostDetailData>;

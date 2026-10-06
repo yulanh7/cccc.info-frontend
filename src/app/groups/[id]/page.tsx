@@ -201,6 +201,7 @@ function GroupDetailPageInner() {
       description: (updatedGroup.description ?? "").replace(/\r\n/g, "\n"),
       isPrivate: updatedGroup.isPrivate,
       ...(updatedGroup.post_policy ? { post_policy: updatedGroup.post_policy } : {}),
+      ...(updatedGroup.comment_policy ? { comment_policy: updatedGroup.comment_policy } : {}),
     };
 
     try {
@@ -431,6 +432,7 @@ function GroupDetailPageInner() {
           item={undefined}
           isNew={true}
           saving={creating}
+          groupCommentPolicy={safeGroup?.comment_policy}
           onSave={async (form) => {
             setCreating(true);
             try {

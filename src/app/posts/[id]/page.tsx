@@ -30,6 +30,7 @@ import YouTubeList from "@/components/ui/YouTubeList";
 import { uploadAllFiles } from "@/app/ultility/uploadAllFiles";
 import CommentsSection from "@/components/posts/CommentsSection";
 import type { UserProps } from "@/app/types";
+import type { CommentPolicy } from "@/app/types/group";
 import type {
   PostDetailData,
   UpdatePostRequest,
@@ -50,6 +51,7 @@ type EditForm = {
   videos: string[];
   fileIds: number[];
   localFiles?: File[];
+  comment_policy?: CommentPolicy | null;
 };
 
 // —— 把 PostFileApi 按用途拆分（图片/文档/其他）
@@ -222,6 +224,8 @@ function PostDetailPageInner() {
         description: form.description ?? "",
         video_urls: form.videos ?? [],
         file_ids: fileIds,
+        // null = 改回跟随小组
+        comment_policy: form.comment_policy ?? null,
       };
 
       await dispatch(updatePost({ postId: post.id, body })).unwrap();
@@ -442,6 +446,7 @@ function PostDetailPageInner() {
                 postId={post.id}
                 postAuthorId={post.author.id}
                 currentUserId={user?.id ?? null}
+                canComment={post.can_comment !== false}
                 likeCount={likeCount}
                 liked={liked}
                 likeBusy={likeBusy}
@@ -460,8 +465,10 @@ function PostDetailPageInner() {
                   fileIds: (post.files || [])
                     .map((f) => f.id)
                     .filter((id): id is number => typeof id === "number"),
+                  comment_policy: post.comment_policy ?? null,
                 }}
                 isNew={false}
+                groupCommentPolicy={post.group?.comment_policy}
                 onSave={handleEditSave as any}    // 你的 PostModal 若有专门类型，可调整此处
                 onClose={handleEditClose}
                 existingFiles={post.files as any}

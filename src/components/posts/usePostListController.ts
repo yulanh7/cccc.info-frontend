@@ -13,6 +13,8 @@ import type {
 type Status = "idle" | "loading" | "succeeded" | "failed";
 
 /** 与 PostModal 对齐的表单类型（本 Hook 内部用） */
+import type { CommentPolicy } from "@/app/types/group";
+
 export type CreatePostForm = {
   title: string;
   description: string;
@@ -20,6 +22,7 @@ export type CreatePostForm = {
   videos: string[];
   fileIds: number[];
   localFiles?: File[];
+  comment_policy?: CommentPolicy | null;
 };
 
 /**
@@ -179,6 +182,8 @@ export function usePostListController<
           description: form.description ?? "",
           video_urls: form.videos ?? [],
           file_ids: fileIds,
+          // 不传 = 跟随小组
+          ...(form.comment_policy ? { comment_policy: form.comment_policy } : {}),
         };
 
         await dispatch(createPost(buildCreateArgs(body))).unwrap();

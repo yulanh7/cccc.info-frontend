@@ -5,6 +5,14 @@ import type { UserProps } from "./user";
 export type PostPolicy = "members" | "leaders_only";
 export const DEFAULT_POST_POLICY: PostPolicy = "members";
 
+/** 评论权限：everyone = 所有人可评论；leaders_only = 仅 admin / 创建者 / 组长可评论 */
+export type CommentPolicy = "everyone" | "leaders_only";
+export const DEFAULT_COMMENT_POLICY: CommentPolicy = "everyone";
+export const COMMENT_POLICY_LABELS: Record<CommentPolicy, string> = {
+  everyone: "Everyone can comment",
+  leaders_only: "Only leaders can comment",
+};
+
 
 export type PaginationProps = {
   currentPage: number;
@@ -29,6 +37,7 @@ export interface GroupApi {
   is_creator: boolean;
   is_leader?: boolean;
   post_policy?: PostPolicy;
+  comment_policy?: CommentPolicy;
   post_count?: number;
 }
 
@@ -79,6 +88,7 @@ export interface CreateOrUpdateGroupBody {
   description: string;
   isPrivate: boolean;
   post_policy?: PostPolicy;
+  comment_policy?: CommentPolicy;
 }
 
 /** ===================== API Response Wrappers ===================== */
@@ -121,6 +131,7 @@ export type RawUserGroup = {
   subscriber_count: number;
   post_count: number;
   post_policy?: PostPolicy;
+  comment_policy?: CommentPolicy;
   is_leader?: boolean;
 };
 
@@ -137,6 +148,7 @@ export type RawAllGroup = {
   is_creator?: boolean;
   is_leader?: boolean;
   post_policy?: PostPolicy;
+  comment_policy?: CommentPolicy;
 };
 
 export const normalizeFromUserGroups = (
@@ -156,6 +168,7 @@ export const normalizeFromUserGroups = (
   is_creator: currentUserId ? g.creator.id === Number(currentUserId) : false,
   is_leader: g.is_leader,
   post_policy: g.post_policy,
+  comment_policy: g.comment_policy,
 });
 
 export const normalizeFromAllGroups = (
@@ -173,4 +186,5 @@ export const normalizeFromAllGroups = (
   is_creator: Boolean(g.is_creator),
   is_leader: Boolean(g.is_leader),
   post_policy: g.post_policy,
+  comment_policy: g.comment_policy,
 });

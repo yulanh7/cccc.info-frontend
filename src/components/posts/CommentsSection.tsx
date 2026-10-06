@@ -18,7 +18,8 @@ import {
   TrashIcon,
   ArrowUturnLeftIcon,
   HandThumbUpIcon as HandThumbUpOutline,
-  ChatBubbleLeftIcon
+  ChatBubbleLeftIcon,
+  LockClosedIcon
 } from "@heroicons/react/24/outline";
 import { HandThumbUpIcon as HandThumbUpSolid } from "@heroicons/react/24/solid";
 import { MAX_COMMENT_LEN } from '@/app/constants';
@@ -38,6 +39,9 @@ type Props = {
   liked?: boolean;
   likeBusy?: boolean;
   onToggleLike?: () => void;
+
+  /** 当前用户能否发评论/回复（post.can_comment）；false 时隐藏输入框和 Reply */
+  canComment?: boolean;
 };
 
 /* ======================= Main Component ======================= */
@@ -50,6 +54,7 @@ export default function CommentsSection({
   liked = false,
   likeBusy = false,
   onToggleLike,
+  canComment = true,
 }: Props) {
   const dispatch = useAppDispatch();
 
@@ -132,10 +137,10 @@ export default function CommentsSection({
                 c={c}
                 postAuthorId={postAuthorId}
                 currentUserId={currentUserId}
-                onReply={(target) => {
+                onReply={canComment ? (target) => {
                   setReplyTo(target);
                   openComposer(true); // 点“Reply”时自动展开底部 Composer
-                }}
+                } : undefined}
                 onDelete={async (commentId, parentId) => {
                   try {
                     await dispatch(deleteComment({ commentId, parent_id: parentId })).unwrap();
@@ -176,14 +181,24 @@ export default function CommentsSection({
       >
         <div className="mx-auto max-w-4xl px-3 py-2">
           <div className="flex items-center gap-2">
-            {/* 只负责触发底部 Composer 的“假输入框” */}
-            <input
-              className="flex-1 rounded-full border border-border bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-dark-green/30"
-              placeholder="Write a comment…"
-              readOnly
-              onFocus={() => openComposer(true)}
-              onClick={() => openComposer(true)}
-            />
+            {/* 只负责触发底部 Composer 的“假输入框”；无评论权限时换成提示 */}
+            {canComment ? (
+              <input
+                className="flex-1 rounded-full border border-border bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-dark-green/30"
+                placeholder="Write a comment…"
+                readOnly
+                onFocus={() => openComposer(true)}
+                onClick={() => openComposer(true)}
+              />
+            ) : (
+              <div
+                role="note"
+                className="flex-1 min-w-0 inline-flex items-center gap-1.5 rounded-full border border-border bg-gray-100 px-3 py-2 text-sm text-dark-gray"
+              >
+                <LockClosedIcon className="h-4 w-4 shrink-0" />
+                <span className="truncate">Only group leaders can comment on this post.</span>
+              </div>
+            )}
 
             {onToggleLike && (
               <button
@@ -215,7 +230,7 @@ export default function CommentsSection({
       </div>
 
       {/* === 真正的底部 Composer：更高 z-index 以覆盖紧凑栏 === */}
-      {(composerOpen || !!replyTo?.nickname) && (
+      {canComment && (composerOpen || !!replyTo?.nickname) && (
         <CommentComposer
           value={inputValue}
           onChange={setInputValue}
@@ -247,7 +262,7 @@ type ItemProps = {
   c: CommentItemApi;
   postAuthorId: number;
   currentUserId?: number | null;
-  onReply: (t: { commentId: number; nickname: string }) => void;
+  onReply?: (t: { commentId: number; nickname: string }) => void;
   onDelete: (commentId: number, parentId: number | null) => void;
   fetchChildren: (parentId: number, page: number) => any;
   selectChildren: (state: unknown, parentId: number) => {
@@ -322,14 +337,16 @@ function CommentItem({
           </div>
           {/* 操作行：回复 / 删除（自己的评论才显示删除） */}
           <div className="mt-1 flex items-center gap-3 text-xs text-gray-500">
-            <button
-              className="inline-flex items-center gap-1 hover:text-dark-green"
-              onClick={() => onReply({ commentId: c.id, nickname: c.user.firstName || "User" })}
-              title="Reply"
-            >
-              <ArrowUturnLeftIcon className="h-4 w-4" />
-              Reply
-            </button>
+            {onReply && (
+              <button
+                className="inline-flex items-center gap-1 hover:text-dark-green"
+                onClick={() => onReply({ commentId: c.id, nickname: c.user.firstName || "User" })}
+                title="Reply"
+              >
+                <ArrowUturnLeftIcon className="h-4 w-4" />
+                Reply
+              </button>
+            )}
 
             {isMine && (
               <button
@@ -404,7 +421,7 @@ function ChildCommentItem({
   c: CommentItemApi;
   postAuthorId: number;
   currentUserId?: number | null;
-  onReply: (t: { commentId: number; nickname: string }) => void;
+  onReply?: (t: { commentId: number; nickname: string }) => void;
   onDelete: (commentId: number, parentId: number | null) => void;
 }) {
   const isMine = currentUserId != null && Number(currentUserId) === Number(c.user.id);

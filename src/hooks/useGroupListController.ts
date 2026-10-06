@@ -233,6 +233,7 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
       description: updated.description,
       isPrivate: !!updated.isPrivate,
       ...(updated.post_policy ? { post_policy: updated.post_policy } : {}),
+      ...(updated.comment_policy ? { comment_policy: updated.comment_policy } : {}),
     };
 
     if (isNew) {
