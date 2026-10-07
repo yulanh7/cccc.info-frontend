@@ -7,8 +7,44 @@ import { changePasswordThunk, logoutThunk } from "@/app/features/auth/slice";
 import PageTitle from "@/components/layout/PageTitle";
 import CustomHeader from "@/components/layout/CustomHeader";
 import Button from "@/components/ui/Button";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 
 const MIN_PASSWORD = 6;
+
+/** 密码输入框 + 眼睛按钮（和登录页一样，点一下显示 / 隐藏） */
+function PasswordInput({
+  value,
+  onChange,
+  autoComplete,
+  className,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  autoComplete: string;
+  className: string;
+}) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative">
+      <input
+        type={show ? "text" : "password"}
+        autoComplete={autoComplete}
+        className={`${className} pr-10`}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required
+      />
+      <button
+        type="button"
+        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-dark-gray hover:bg-gray-100"
+        onClick={() => setShow((v) => !v)}
+        aria-label={show ? "Hide password" : "Show password"}
+      >
+        {show ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+      </button>
+    </div>
+  );
+}
 
 /** 必须先改密码（管理员重置过密码）。也可以从这里登出 */
 export default function ChangePasswordPage() {
@@ -59,15 +95,15 @@ export default function ChangePasswordPage() {
         <form onSubmit={submit} className="space-y-3 rounded-md border border-border bg-white p-4">
           <label className="block text-sm">
             <span className="mb-1 block font-medium text-dark-gray">{forced ? "Initial password" : "Current password"}</span>
-            <input type="password" autoComplete="current-password" className={input} value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} required />
+            <PasswordInput autoComplete="current-password" className={input} value={oldPassword} onChange={setOldPassword} />
           </label>
           <label className="block text-sm">
             <span className="mb-1 block font-medium text-dark-gray">New password</span>
-            <input type="password" autoComplete="new-password" className={input} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+            <PasswordInput autoComplete="new-password" className={input} value={newPassword} onChange={setNewPassword} />
           </label>
           <label className="block text-sm">
             <span className="mb-1 block font-medium text-dark-gray">Confirm new password</span>
-            <input type="password" autoComplete="new-password" className={input} value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
+            <PasswordInput autoComplete="new-password" className={input} value={confirm} onChange={setConfirm} />
           </label>
           {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
           <div className="flex items-center justify-between gap-2 pt-1">
