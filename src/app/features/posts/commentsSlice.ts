@@ -5,6 +5,7 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { apiRequest } from "../request";
 import type { LoadStatus } from "@/app/types";
 import { unwrapData } from "@/app/types/api";
+import { insertReplyInOrder, applyLikeResult } from "./commentThread";
 import type {
   CommentItemApi,
   CommentListData,
@@ -44,6 +45,7 @@ const COMMENTS_ENDPOINTS = {
   DELETE_COMMENT: (commentId: number) => `/comments/${commentId}`,
 
   REPLY_TO_COMMENT: (commentId: number) => `/comments/${commentId}/comments`,
+  LIKE_COMMENT: (commentId: number) => `/comments/${commentId}/like`,
 } as const;
 
 /* ======================================================
@@ -244,6 +246,20 @@ const patchCommentInAllFeeds = (
  *                      Slice
  * ====================================================== */
 
+// ===== 点赞 / 取消点赞：POST / DELETE /api/comments/<id>/like（不受评论策略限制）
+type LikeResult = { like_count: number; clicked_like: boolean };
+export const likeComment = createAsyncThunk<LikeResult, { commentId: number; like: boolean }>(
+  "comments/likeComment",
+  async ({ commentId, like }, { rejectWithValue }) => {
+    try {
+      const res = await apiRequest<LikeResult>(like ? "POST" : "DELETE", COMMENTS_ENDPOINTS.LIKE_COMMENT(commentId));
+      return unwrapData(res);
+    } catch (e: any) {
+      return rejectWithValue(e?.message || "Like failed") as any;
+    }
+  }
+);
+
 const commentsSlice = createSlice({
   name: "comments",
   initialState,
@@ -328,7 +344,8 @@ const commentsSlice = createSlice({
         if (c.parent_id) {
           const childKey = sourceKeyOf.children(c.parent_id);
           const childFeed = ensureFeed(s, childKey);
-          childFeed.items = [c, ...childFeed.items];
+          // 一串回复按时间先后排（旧的在前）
+          childFeed.items = insertReplyInOrder(childFeed.items, c);
           childFeed.pagination.total_comments += 1;
 
           const parent = s.byId[c.parent_id];
@@ -364,7 +381,8 @@ const commentsSlice = createSlice({
         if (c.parent_id) {
           const childKey = sourceKeyOf.children(c.parent_id);
           const childFeed = ensureFeed(s, childKey);
-          childFeed.items = [c, ...childFeed.items];
+          // 一串回复按时间先后排（旧的在前）
+          childFeed.items = insertReplyInOrder(childFeed.items, c);
           childFeed.pagination.total_comments += 1;
 
           const parent = s.byId[c.parent_id];
@@ -380,6 +398,13 @@ const commentsSlice = createSlice({
         setStatus(s, "replyToComment", "failed");
         setError(s, "replyToComment", (a.payload as string) || "Reply comment failed");
       });
+
+    // 点赞：只更新这一条，不重新排序（顶层排序下次加载时才变，避免评论跳动）
+    builder.addCase(likeComment.fulfilled, (s, a) => {
+      const id = a.meta.arg.commentId;
+      if (s.byId[id]) s.byId[id] = applyLikeResult(s.byId[id], a.payload);
+      patchCommentInAllFeeds(s, id, { like_count: a.payload.like_count, clicked_like: a.payload.clicked_like });
+    });
 
     // 详情
     builder

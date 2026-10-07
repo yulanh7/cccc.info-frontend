@@ -28,6 +28,10 @@ export type CommentItemApi = {
   is_edited: boolean;
   edit_count: number;
   like_count: number;
+  /** 当前用户是否赞过 */
+  clicked_like?: boolean;
+  /** 被回复的人；顶层评论为 null。回复都挂在顶层评论下（只有两层） */
+  reply_to?: CommentUser | null;
   children_count: number;
 };
 

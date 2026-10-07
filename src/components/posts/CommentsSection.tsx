@@ -9,6 +9,7 @@ import {
   createComment,
   replyToComment,
   deleteComment,
+  likeComment,
   selectRootCommentsFeed,
   selectChildCommentsFeed,
 } from "@/app/features/posts/commentsSlice";
@@ -19,8 +20,10 @@ import {
   ArrowUturnLeftIcon,
   HandThumbUpIcon as HandThumbUpOutline,
   ChatBubbleLeftIcon,
-  LockClosedIcon
+  LockClosedIcon,
+  HeartIcon as HeartOutline,
 } from "@heroicons/react/24/outline";
+import { HeartIcon as HeartSolid } from "@heroicons/react/24/solid";
 import { HandThumbUpIcon as HandThumbUpSolid } from "@heroicons/react/24/solid";
 import { MAX_COMMENT_LEN } from '@/app/constants';
 import CollapsibleText from "@/components/ui/CollapsibleText";
@@ -260,6 +263,40 @@ export default function CommentsSection({
   );
 }
 
+/* ======================= 子组件：评论点赞 ======================= */
+
+/** 心形 + 点赞数；用后端返回的数字更新这一条，不重新排序。点赞不受评论策略限制 */
+function CommentLikeButton({ c }: { c: CommentItemApi }) {
+  const dispatch = useAppDispatch();
+  const [busy, setBusy] = useState(false);
+  const liked = !!c.clicked_like;
+  const toggle = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await dispatch(likeComment({ commentId: c.id, like: !liked })).unwrap();
+    } catch (e: any) {
+      alert(typeof e === "string" ? e : e?.message || "Like failed");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <button
+      type="button"
+      className={`inline-flex items-center gap-1 ${liked ? "text-red" : "hover:text-red"} disabled:opacity-60`}
+      onClick={toggle}
+      disabled={busy}
+      aria-pressed={liked}
+      aria-label={liked ? "Unlike comment" : "Like comment"}
+      title={liked ? "Unlike" : "Like"}
+    >
+      {liked ? <HeartSolid className="h-4 w-4" /> : <HeartOutline className="h-4 w-4" />}
+      <span>{c.like_count ?? 0}</span>
+    </button>
+  );
+}
+
 /* ======================= 子组件：单条评论（含子评论） ======================= */
 
 type ItemProps = {
@@ -341,8 +378,9 @@ function CommentItem({
             {c.created_at ? formatDate(c.created_at) : "—"}
 
           </div>
-          {/* 操作行：回复 / 删除（自己的评论才显示删除） */}
+          {/* 操作行：点赞 / 回复 / 删除（自己的评论或小组管理员才显示删除） */}
           <div className="mt-1 flex items-center gap-3 text-xs text-gray-500">
+            <CommentLikeButton c={c} />
             {onReply && (
               <button
                 className="inline-flex items-center gap-1 hover:text-dark-green"
@@ -446,6 +484,10 @@ function ChildCommentItem({
           <span className="text-sm  text-gray-500">
             {ellipsize(c.user.firstName, 10)}
           </span>
+          {/* 回复某条回复时显示被回复的人；回复都平铺在顶层评论下 */}
+          {c.reply_to && (
+            <span className="text-xs text-dark-green">@{ellipsize(c.reply_to.firstName, 10)}</span>
+          )}
           {isAuthor && (
             <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
               author
@@ -465,6 +507,18 @@ function ChildCommentItem({
 
         </div>
         <div className="mt-1 flex items-center gap-3 text-xs text-gray-500">
+          <CommentLikeButton c={c} />
+          {/* 回复这条回复：后端会挂到同一个顶层评论下，reply_to = 这条的作者 */}
+          {onReply && (
+            <button
+              className="inline-flex items-center gap-1 hover:text-dark-green"
+              onClick={() => onReply({ commentId: c.id, nickname: c.user.firstName || "User" })}
+              title="Reply"
+            >
+              <ArrowUturnLeftIcon className="h-4 w-4" />
+              Reply
+            </button>
+          )}
           {(isMine || canModerate) && (
             <button
               className="inline-flex items-center gap-1 hover:text-red-600"
