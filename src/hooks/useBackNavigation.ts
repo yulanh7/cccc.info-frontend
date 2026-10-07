@@ -76,6 +76,15 @@ export function useBackNavigation(fallbackHref: string) {
   );
 }
 
+/** 这一页是不是通过“返回”进来的（在挂载时判断一次）：无限滚动列表用来决定沿用已加载的内容，而不是从第 1 页重新加载 */
+export function useCameBack(): boolean {
+  const ref = useRef<boolean | null>(null);
+  if (ref.current === null && typeof window !== "undefined") {
+    ref.current = Date.now() - Number(read(RETURN_AT_KEY) || 0) < RETURN_WINDOW_MS;
+  }
+  return !!ref.current;
+}
+
 /** 列表页用：ready = 列表已加载完。记下当前网址和滚动位置；通过返回回到这一页时滚回原来的位置 */
 export function useScrollRestoration(ready: boolean) {
   const pathname = usePathname();

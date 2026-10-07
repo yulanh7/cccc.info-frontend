@@ -41,8 +41,10 @@ function GroupsPageInner() {
     rows,
     listLoading,
     pageLoading,
-    currentPage,
-    totalPages,
+    hasMore,
+    loadMore,
+    loadingMore,
+    loadError,
     // search
     qInput,
     setQInput,
@@ -50,7 +52,6 @@ function GroupsPageInner() {
     submitSearch,
     clearSearch,
     // paging
-    onPageChange,
     // perms & actions
     canCreate,
     canEditGroup,
@@ -71,7 +72,6 @@ function GroupsPageInner() {
     // states
     saving,
     deleting,
-    buildHref,
 
   } = useGroupListController({
     mode,
@@ -290,9 +290,10 @@ function GroupsPageInner() {
           rows={rows}
           listLoading={listLoading}
           pageLoading={pageLoading}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={onPageChange}
+          hasMore={hasMore}
+          loadingMore={loadingMore}
+          loadError={loadError}
+          onLoadMore={loadMore}
           onAdd={openNew}
           canCreate={canCreate}
           onEdit={openEdit}

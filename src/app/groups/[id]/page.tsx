@@ -32,6 +32,7 @@ import type { CreateOrUpdateGroupBody } from "@/app/types/group";
 import { isPostAuthor, canEditPost, canDeletePost, canWritePosts, canEditGroup, canDeleteGroup, canTransferOwnership } from "@/app/types";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { useConfirm } from "@/hooks/useConfirm";
+import { useScrollRestoration } from "@/hooks/useBackNavigation";
 import { POSTS_PER_PAGE, MEMBERS_PER_PAGE } from "@/app/constants";
 import SubscribeToggleButton from "@/components/groups/SubscribeToggleButton";
 
@@ -51,10 +52,6 @@ function GroupDetailPageInner() {
 
   // Memoized values
   const groupId = useMemo(() => Number(id), [id]);
-  const currentPage = useMemo(() => {
-    const p = Number(searchParams.get("page"));
-    return Number.isFinite(p) && p > 0 ? p : 1;
-  }, [searchParams]);
 
   // Mount state
   const [mounted, setMounted] = useState(false);
@@ -89,6 +86,8 @@ function GroupDetailPageInner() {
   const groupMatchesRoute = group?.id === groupId;
   const safeGroup: GroupApi | null = groupMatchesRoute ? group : null;
   const safePosts = groupMatchesRoute ? posts : [];
+  // 通过返回回到这一页时，滚回离开前的位置
+  useScrollRestoration(status.posts === "succeeded");
   const safePagination = groupMatchesRoute ? postsPagination : null;
   const pageLoading = !groupMatchesRoute || status.group === "loading" || !mounted;
   const canManageGroup = safeGroup ? canEditGroup(safeGroup, user) : false;
@@ -110,13 +109,15 @@ function GroupDetailPageInner() {
   const ctrl = usePostListController({
     dispatch,
     perPage: POSTS_PER_PAGE,
-    currentPage,
+    loadedPage: safePagination?.current_page ?? 0,
+    totalPages: totalPages,
+    hasItems: (safePosts?.length ?? 0) > 0,
     fetchPosts: fetchGroupPostsList,
-    buildFetchArgs: (page) => ({
+    buildFetchArgs: (page, append) => ({
       groupId,
       page,
       per_page: POSTS_PER_PAGE,
-      append: false,
+      append,
     }),
     createPost: createPost,
     buildCreateArgs: (body) => ({
@@ -307,7 +308,6 @@ function GroupDetailPageInner() {
     }
   }, [safeGroup, dispatch]);
 
-  const buildHref = useCallback((p: number) => `/groups/${groupId}?page=${p}`, [groupId]);
 
   if (pageLoading) {
     return <LoadingOverlay show text="Loading group…" />;
@@ -365,8 +365,9 @@ function GroupDetailPageInner() {
       <div className="container mx-auto md:p-6 p-1">
         <PostListSection
           rows={safePosts}
-          totalPages={totalPages}
-          currentPage={currentPage}
+          hasMore={ctrl.hasMore}
+          loadingMore={ctrl.loadingMore}
+          onLoadMore={ctrl.loadMore}
           formatDate={formatDate}
           initialPostsLoading={ctrl.initialPostsLoading}
           showUpdatingTip={ctrl.showUpdatingTip}
@@ -380,7 +381,6 @@ function GroupDetailPageInner() {
           canDelete={ctrl.canDelete}
           onEditSingle={(id) => ctrl.goEdit(id)}
           onDeleteSingle={askDeleteWithContext}
-          buildHref={buildHref}
           emptyText={canPost ? "No posts here yet. Be the first to post." : "No posts yet"}
         />
       </div>

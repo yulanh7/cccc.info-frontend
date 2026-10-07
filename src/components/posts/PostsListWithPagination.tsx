@@ -5,7 +5,7 @@ import Link from "next/link";
 import CardSkeleton from "@/components/feedback/CardSkeleton";
 import type { PostListItemApi } from "@/app/types";
 import PostCardSimple from "./PostCardSimple";
-import Pagination from "@/components/ui/Pagination";
+import InfiniteSentinel from "@/components/ui/InfiniteSentinel";
 import { useRouter } from "next/navigation";
 
 type Props = {
@@ -28,14 +28,10 @@ type Props = {
   // 工具
   formatDate: (timestamp: string, showTime?: boolean) => string;
 
-  // 分页（统一放在内部渲染）
-  currentPage: number;
-  totalPages: number;
-  /** 构造 href 的函数（推荐用它，保证 URL 里有 page，刷新/返回能记住） */
-  buildHref?: (page: number) => string;
-  /** 或者回调式（不走 URL 的场景可用） */
-  onPageChange?: (page: number) => void;
-  siblingCount?: number;
+  // 无限滚动：滚到底自动加载下一页
+  hasMore: boolean;
+  loadingMore: boolean;
+  onLoadMore: () => void;
 
   // 空态文案（可选）
   emptyText?: string;
@@ -56,11 +52,9 @@ export default function PostsListWithPagination({
   onEditSingle,
   deleting = false,
   formatDate,
-  currentPage,
-  totalPages,
-  buildHref,
-  onPageChange,
-  siblingCount = 1,
+  hasMore,
+  loadingMore,
+  onLoadMore,
   emptyText = "No posts yet.",
   className = "",
 }: Props) {
@@ -133,17 +127,9 @@ export default function PostsListWithPagination({
       {/* 列表 */}
       {grid}
 
-      {/* 分页（统一放这里） */}
-      {totalPages > 1 && (
-        <div className="mt-6 flex justify-center">
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            siblingCount={siblingCount}
-            buildHref={buildHref}
-            onPageChange={onPageChange}
-          />
-        </div>
+      {/* 无限滚动 */}
+      {rows.length > 0 && (
+        <InfiniteSentinel hasMore={hasMore} loading={loadingMore} onLoadMore={onLoadMore} endText="No more posts" />
       )}
     </div>
   );

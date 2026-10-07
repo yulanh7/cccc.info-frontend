@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { appendUnique } from '@/app/lib/infiniteList';
 import type { RootState } from "@/app/features/store";
 import { apiRequest } from "../request";
 import type {
@@ -293,7 +294,8 @@ const postsSlice = createSlice({
     ) => {
       if (!state.lists[sourceKey]) state.lists[sourceKey] = initFeed();
       const feed = state.lists[sourceKey];
-      feed.items = payload.append ? [...feed.items, ...payload.posts] : payload.posts;
+      // 追加时按 id 去重（浏览期间有新帖子，后面的页会后移）
+      feed.items = payload.append ? appendUnique(feed.items, payload.posts, (p) => p.id) : payload.posts;
       feed.current_page = payload.current_page;
       feed.total_pages = payload.total_pages;
       feed.total_posts = payload.total_posts;

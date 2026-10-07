@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { AxiosResponse } from 'axios';
 import api, { apiRequest } from '../request';
 import { unwrapData } from '@/app/types';
+import { appendUnique, catalogGroupKey } from '@/app/lib/infiniteList';
 import type { LoadStatus, ApiResponseRaw } from '@/app/types';
 import type {
   LibraryPagination,
@@ -33,14 +34,15 @@ type ListState<T> = {
 const emptyList = <T,>(): ListState<T> => ({ list: [], pagination: null, status: 'idle', error: null });
 
 interface LibraryState {
-  catalog: ListState<LibraryCatalogGroup>;
+  /** queryKey：这份目录对应的筛选条件，返回时一样就沿用已加载的内容 */
+  catalog: ListState<LibraryCatalogGroup> & { queryKey: string | null };
   categories: { list: LibraryCategory[]; status: LoadStatus; error: string | null };
   myBorrows: ListState<LibraryBorrow>;
   adminBorrows: ListState<LibraryBorrow>;
 }
 
 const initialState: LibraryState = {
-  catalog: emptyList(),
+  catalog: { ...emptyList<LibraryCatalogGroup>(), queryKey: null },
   categories: { list: [], status: 'idle', error: null },
   myBorrows: emptyList(),
   adminBorrows: emptyList(),
@@ -85,14 +87,19 @@ const errMsg = (e: any, fallback: string) =>
  * ====================================================== */
 
 // ===== 目录：GET /api/library/catalog（复本合并为组）
+/** 目录筛选条件的键（不含分页） */
+export const catalogQueryKey = (p: LibraryCatalogParams) =>
+  JSON.stringify([p.q ?? '', p.category ?? '', !!p.item_type && p.item_type, !!p.available_only, !!p.include_inactive]);
+
 export const fetchLibraryCatalog = createAsyncThunk<LibraryCatalogData, LibraryCatalogParams>(
   'library/fetchCatalog',
-  async ({ page = 1, per_page = 20, ...rest }, { rejectWithValue }) => {
+  async ({ page = 1, per_page = 20, append: _append, refreshPages, ...rest }, { rejectWithValue }) => {
     try {
-      const res = await apiRequest<LibraryCatalogData>(
-        'GET',
-        LIBRARY_ENDPOINTS.CATALOG + toQuery({ ...rest, page, per_page })
-      );
+      // refreshPages：用一次大的 per_page 重新拿已加载的前 N 页（最多 100 条），列表不会跳回顶部
+      const query = refreshPages
+        ? { ...rest, page: 1, per_page: Math.min(per_page * refreshPages, 100) }
+        : { ...rest, page, per_page };
+      const res = await apiRequest<LibraryCatalogData>('GET', LIBRARY_ENDPOINTS.CATALOG + toQuery(query));
       return unwrapData(res);
     } catch (e: any) {
       return rejectWithValue(errMsg(e, 'Failed to load the catalog')) as any;
@@ -398,6 +405,23 @@ export const resetAccessLink = createAsyncThunk<LibraryAccessLink, void>(
  *                         Slice
  * ====================================================== */
 
+/** 在目录里找到某一件并修改，同时更新所在组的可借数（借 / 还 / 下架 / 恢复后就地更新，列表不跳动） */
+const patchCatalogCopy = (
+  s: LibraryState,
+  itemId: number,
+  next: { available: boolean; is_active?: boolean; current_borrow?: LibraryCatalogGroup['items'][number]['current_borrow'] }
+) => {
+  for (const g of s.catalog.list) {
+    const c = g.items.find((x) => x.id === itemId);
+    if (!c) continue;
+    if (c.available !== next.available) g.available += next.available ? 1 : -1;
+    c.available = next.available;
+    if (next.is_active !== undefined) c.is_active = next.is_active;
+    if (next.current_borrow !== undefined) c.current_borrow = next.current_borrow;
+    return;
+  }
+};
+
 /** 用返回的那一行替换列表里同 id 的行 */
 const replaceById = <T extends { id: number }>(list: T[], next: T) => {
   const idx = list.findIndex((x) => x.id === next.id);
@@ -415,9 +439,23 @@ const librarySlice = createSlice({
         s.catalog.error = null;
       })
       .addCase(fetchLibraryCatalog.fulfilled, (s, a) => {
+        const { append, refreshPages, per_page = 20 } = a.meta.arg;
+        const groups = a.payload.groups ?? [];
         s.catalog.status = 'succeeded';
-        s.catalog.list = a.payload.groups ?? [];
-        s.catalog.pagination = a.payload.pagination ?? null;
+        s.catalog.queryKey = catalogQueryKey(a.meta.arg);
+        if (append) {
+          s.catalog.list = appendUnique(s.catalog.list, groups, catalogGroupKey);
+          s.catalog.pagination = a.payload.pagination ?? null;
+        } else if (refreshPages && a.payload.pagination) {
+          // 换回正常的分页大小：已加载到第 refreshPages 页
+          const p = a.payload.pagination;
+          const loaded = Math.min(refreshPages, Math.ceil(100 / per_page));
+          s.catalog.list = groups;
+          s.catalog.pagination = { ...p, page: loaded, per_page, pages: Math.ceil(p.total / per_page) };
+        } else {
+          s.catalog.list = groups;
+          s.catalog.pagination = a.payload.pagination ?? null;
+        }
       })
       .addCase(fetchLibraryCatalog.rejected, (s, a) => {
         s.catalog.status = 'failed';
@@ -468,10 +506,28 @@ const librarySlice = createSlice({
         s.adminBorrows.error = (a.payload as string) || 'Failed to load borrows';
       });
 
+    // 目录就地更新：借出 / 归还 / 下架 / 恢复
+    builder
+      .addCase(borrowLibraryItem.fulfilled, (s, a) => {
+        const { borrow, item } = a.payload;
+        patchCatalogCopy(s, item.id, {
+          available: false,
+          current_borrow: { id: borrow.id, user: borrow.user, borrowed_at: borrow.borrowed_at },
+        });
+      })
+      .addCase(deactivateLibraryItem.fulfilled, (s, a) => {
+        patchCatalogCopy(s, a.payload.id, { available: false, is_active: false });
+      })
+      .addCase(restoreLibraryItem.fulfilled, (s, a) => {
+        patchCatalogCopy(s, a.payload.id, { available: a.payload.available, is_active: true });
+      });
+
     // 还书 / 代还：更新对应的借阅行（是否移到“历史”由页面重新拉取决定）
     builder.addCase(returnLibraryBorrow.fulfilled, (s, a) => {
       replaceById(s.myBorrows.list, a.payload);
       replaceById(s.adminBorrows.list, a.payload);
+      // 目录就地更新：这一件又可借了
+      patchCatalogCopy(s, a.payload.item.id, { available: true, current_borrow: null });
     });
   },
 });

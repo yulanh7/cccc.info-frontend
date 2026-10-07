@@ -28,11 +28,12 @@ function MyGroupsPageInner() {
     rows,
     listLoading,
     pageLoading,
-    currentPage,
-    totalPages,
+    hasMore,
+    loadMore,
+    loadingMore,
+    loadError,
 
     // 分页
-    onPageChange,
 
     // 权限 & 操作
     canCreate,
@@ -93,9 +94,10 @@ function MyGroupsPageInner() {
           rows={filteredRows}
           listLoading={listLoading}
           pageLoading={pageLoading}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={onPageChange}
+          hasMore={hasMore}
+          loadingMore={loadingMore}
+          loadError={loadError}
+          onLoadMore={loadMore}
           onAdd={openNew}
           canCreate={canCreate}
           onEdit={openEdit}

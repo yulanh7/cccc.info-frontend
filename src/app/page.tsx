@@ -9,6 +9,7 @@ import PostListSection from "@/components/posts/PostListSection";
 import { usePostListController } from "@/components/posts/usePostListController";
 import { formatDate } from "@/app/ultility";
 import { useConfirm } from "@/hooks/useConfirm";
+import { useScrollRestoration } from "@/hooks/useBackNavigation";
 import ConfirmModal from "@/components/ConfirmModal";
 import PageTitle from '@/components/layout/PageTitle';
 import { fetchSubscribedPosts, deletePost as deletePostThunk } from "@/app/features/posts/slice";
@@ -43,16 +44,14 @@ function useSourceListState(sourceKey: string) {
       ? Math.max(1, Math.ceil(Number(totalCount) / Number(perPageGuess)))
       : 1);
 
-  return { rows, totalPages, postsStatus };
+  // 无限滚动：已加载到第几页（还没加载为 0）
+  const loadedPage: number = feed?.current_page ?? 0;
+  return { rows, totalPages, postsStatus, loadedPage };
 }
 
 
 function HomePageInner() {
   const searchParams = useSearchParams();
-  const currentPage = useMemo(() => {
-    const p = Number(searchParams.get("page"));
-    return Number.isFinite(p) && p > 0 ? p : 1;
-  }, [searchParams]);
 
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
@@ -61,19 +60,22 @@ function HomePageInner() {
   const user = useAppSelector((s) => s.auth.user);
 
   const SRC = "subscribed";
-  const { rows, totalPages, postsStatus } = useSourceListState(SRC);
+  const { rows, totalPages, postsStatus, loadedPage } = useSourceListState(SRC);
+  // 通过返回回到这一页时，滚回离开前的位置
+  useScrollRestoration(postsStatus === "succeeded");
 
-  const buildHref = (p: number) => `/?page=${p}`;
 
   const ctrl = usePostListController({
     dispatch,
     perPage: POSTS_PER_PAGE,
-    currentPage,
+    loadedPage: loadedPage,
+    totalPages: Number(totalPages) || 1,
+    hasItems: rows.length > 0,
     fetchPosts: fetchSubscribedPosts,
-    buildFetchArgs: (page) => ({
+    buildFetchArgs: (page, append) => ({
       page,
       per_page: POSTS_PER_PAGE,
-      append: false,
+      append,
     }),
     deletePost: deletePostThunk,
     canEdit: (p) => canEditPost(p, user),
@@ -145,8 +147,9 @@ function HomePageInner() {
 
           <PostListSection
             rows={rows}
-            totalPages={totalPages}
-            currentPage={currentPage}
+            hasMore={ctrl.hasMore}
+            loadingMore={ctrl.loadingMore}
+            onLoadMore={ctrl.loadMore}
             formatDate={formatDate}
             initialPostsLoading={ctrl.initialPostsLoading}
             showUpdatingTip={ctrl.showUpdatingTip}
@@ -160,7 +163,6 @@ function HomePageInner() {
             canDelete={ctrl.canDelete}
             onEditSingle={(id) => ctrl.goEdit(id)}
             onDeleteSingle={(postId) => askDeleteWithContext(postId)}
-            buildHref={buildHref}
             emptyText={''}
           />}
       </div>

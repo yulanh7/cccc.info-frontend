@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { PencilSquareIcon, TrashIcon, CalendarIcon, LockClosedIcon, LockOpenIcon, PlusIcon } from "@heroicons/react/24/outline";
 import CardSkeleton from "@/components/feedback/CardSkeleton";
 import type { GroupApi } from "@/app/types";
-import Pagination from "@/components/ui/Pagination";
+import InfiniteSentinel from "@/components/ui/InfiniteSentinel";
 import { ellipsize } from "@/app/ultility";
 import IconButton from "@/components/ui/IconButton";
 import SubscribeToggleButton from "@/components/groups/SubscribeToggleButton";
@@ -16,11 +16,13 @@ type Props = {
   rows: GroupApi[];
   listLoading: boolean;
   pageLoading?: boolean;
-  currentPage: number;
-  totalPages: number;
+  /** 无限滚动 */
+  hasMore: boolean;
+  loadingMore: boolean;
+  loadError?: string | null;
+  onLoadMore: () => void;
 
   // 行为
-  onPageChange: (page: number) => void;
   onAdd?: () => void;
   canCreate?: boolean;
   onEdit?: (g: GroupApi) => void;
@@ -39,9 +41,10 @@ type Props = {
 export default function GroupListView({
   rows,
   listLoading,
-  currentPage,
-  totalPages,
-  onPageChange,
+  hasMore,
+  loadingMore,
+  loadError = null,
+  onLoadMore,
   onAdd,
   canCreate,
   onEdit,
@@ -210,11 +213,14 @@ export default function GroupListView({
           })}
         </div>
       )}
-
-      {!listLoading && (
-        <div className="mt-6 flex justify-center">
-          <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
-        </div>
+      {!listLoading && rows.length > 0 && (
+        <InfiniteSentinel
+          hasMore={hasMore}
+          loading={loadingMore}
+          error={loadError}
+          onLoadMore={onLoadMore}
+          endText="No more groups"
+        />
       )}
 
 

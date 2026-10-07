@@ -1,14 +1,15 @@
 "use client";
 import LibraryAccessGate from "@/components/library/LibraryAccessGate";
 import { Suspense } from "react";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { BookmarkIcon, ChevronDownIcon, PlusIcon, ArrowUpTrayIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
-import { useScrollRestoration } from "@/hooks/useBackNavigation";
+import { useScrollRestoration, useCameBack } from "@/hooks/useBackNavigation";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import {
   fetchLibraryCatalog,
+  catalogQueryKey,
   fetchLibraryCategories,
   fetchMyBorrows,
   borrowLibraryItem,
@@ -24,7 +25,7 @@ import PageTitle from "@/components/layout/PageTitle";
 import CustomHeader from "@/components/layout/CustomHeader";
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
 import SearchBar from "@/components/SearchBar";
-import Pagination from "@/components/ui/Pagination";
+import InfiniteSentinel from "@/components/ui/InfiniteSentinel";
 import CatalogGroupCard from "@/components/library/CatalogGroupCard";
 import type { CatalogActionError, OwnBorrow, CatalogManagerActions } from "@/components/library/CatalogGroupCard";
 import LibraryItemFormModal from "@/components/library/LibraryItemFormModal";
@@ -92,9 +93,10 @@ function LibraryPageInner() {
       await dispatch(borrowLibraryItem({ itemId: target.copy.id })).unwrap();
     } catch (e: any) {
       setErrors((m) => ({ ...m, [key]: { message: errText(e, "Borrow failed") } }));
+      refreshCatalog(); // 例如 409 别人刚借走：重新拿已加载的部分
     } finally {
       setBusyCopyId(null);
-      // 成功或 409 都刷新状态
+      // 成功时目录已在 store 里就地更新；这里只刷新“我借着的书”
       setReloadTick((t) => t + 1);
     }
   };
@@ -108,6 +110,7 @@ function LibraryPageInner() {
       await dispatch(returnLibraryBorrow(target.borrowId)).unwrap();
     } catch (e: any) {
       setErrors((m) => ({ ...m, [key]: { message: errText(e, "Return failed") } }));
+      refreshCatalog();
     } finally {
       setBusyCopyId(null);
       setReloadTick((t) => t + 1);
@@ -132,6 +135,7 @@ function LibraryPageInner() {
       await action();
     } catch (e: any) {
       setErrors((m) => ({ ...m, [key]: { message: errText(e, fallback) } }));
+      refreshCatalog();
     } finally {
       setBusyCopyId(null);
       setReloadTick((t) => t + 1);
@@ -179,31 +183,24 @@ function LibraryPageInner() {
   const categoryParam = searchParams.get("category") || "";
   const availableOnly = searchParams.get("available") === "1";
   const showWithdrawn = searchParams.get("withdrawn") === "1";
-  const currentPage = useMemo(() => {
-    const p = Number(searchParams.get("page"));
-    return Number.isFinite(p) && p > 0 ? p : 1;
-  }, [searchParams]);
 
   const [qInput, setQInput] = useState(qParam);
   useEffect(() => setQInput(qParam), [qParam]);
 
   /** 改筛选条件时回到第 1 页；搜索框输入用 replace，避免每个字都进历史记录 */
   const pushQuery = (
-    next: Partial<{ q: string; category: string; available: boolean; withdrawn: boolean; page: number }>,
+    next: Partial<{ q: string; category: string; available: boolean; withdrawn: boolean }>,
     replace = false
   ) => {
     const q = next.q ?? qParam;
     const category = next.category ?? categoryParam;
     const available = next.available ?? availableOnly;
     const withdrawn = next.withdrawn ?? showWithdrawn;
-    const page = next.page ?? 1;
-
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     if (category) params.set("category", category);
     if (available) params.set("available", "1");
     if (withdrawn) params.set("withdrawn", "1");
-    if (page > 1) params.set("page", String(page));
     const qs = params.toString();
     const href = qs ? `${LIBRARY_PATH}?${qs}` : LIBRARY_PATH;
     if (replace) router.replace(href);
@@ -230,26 +227,49 @@ function LibraryPageInner() {
     dispatch(fetchMyBorrows({ status: "active", per_page: 100 }));
   }, [dispatch, mounted, reloadTick]);
 
+  // ===== 无限滚动：筛选条件变了从第 1 页开始；通过“返回”回来且条件没变时沿用已加载的内容和位置
+  const baseParams = useMemo(
+    () => ({
+      q: qParam || undefined,
+      category: categoryParam || undefined,
+      available_only: availableOnly || undefined,
+      include_inactive: (isManager && showWithdrawn) || undefined,
+      per_page: LIBRARY_PER_PAGE,
+    }),
+    [qParam, categoryParam, availableOnly, isManager, showWithdrawn]
+  );
+  const queryKey = catalogQueryKey(baseParams);
+  const cameBack = useCameBack();
+  const firstLoad = useRef(true);
+  const [replacing, setReplacing] = useState(false);
+
   useEffect(() => {
     if (!mounted) return;
-    dispatch(
-      fetchLibraryCatalog({
-        q: qParam || undefined,
-        category: categoryParam || undefined,
-        available_only: availableOnly || undefined,
-        include_inactive: (isManager && showWithdrawn) || undefined,
-        page: currentPage,
-        per_page: LIBRARY_PER_PAGE,
-      })
-    );
-  }, [dispatch, mounted, qParam, categoryParam, availableOnly, isManager, showWithdrawn, currentPage, reloadTick]);
+    const reuse = firstLoad.current && cameBack && catalog.queryKey === queryKey && catalog.list.length > 0;
+    firstLoad.current = false;
+    if (reuse) return;
+    setReplacing(true);
+    dispatch(fetchLibraryCatalog({ ...baseParams, page: 1 })).finally(() => setReplacing(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch, mounted, queryKey]);
+
+  const loadedPage = catalog.pagination?.page ?? 0;
+  const hasMore = !!catalog.pagination && loadedPage < catalog.pagination.pages;
+  const loadMore = () => {
+    if (catalog.status === "loading" || !hasMore) return;
+    dispatch(fetchLibraryCatalog({ ...baseParams, page: loadedPage + 1, append: true }));
+  };
+  /** 编辑 / 新增 / 出错后：重新拿已加载的前几页，列表不跳回顶部 */
+  const refreshCatalog = () => {
+    dispatch(fetchLibraryCatalog({ ...baseParams, page: 1, refreshPages: Math.max(1, loadedPage) }));
+  };
 
   // 分类按书 / 影音分组显示
   const bookCategories = categories.list.filter((c) => c.item_type === "book");
   const mediaCategories = categories.list.filter((c) => c.item_type !== "book");
 
-  const listLoading = catalog.status === "loading";
-  const totalPages = catalog.pagination?.pages ?? 1;
+  // 整个列表重新加载时才盖遮罩；往下加载更多时只在底部显示 Loading
+  const listLoading = replacing && catalog.status === "loading";
   // 右上角显示册数，和分类下拉框的数字一致；后端没返回 total_items 时退回显示组数
   const totalItems = catalog.pagination?.total_items;
   const totalGroups = catalog.pagination?.total ?? 0;
@@ -439,14 +459,14 @@ function LibraryPageInner() {
           )}
         </div>
 
-        {totalPages > 1 && (
-          <div className="mt-4 flex justify-center">
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={(p) => pushQuery({ page: p })}
-            />
-          </div>
+        {catalog.list.length > 0 && (
+          <InfiniteSentinel
+            hasMore={hasMore}
+            loading={catalog.status === "loading" && !replacing}
+            error={catalog.status === "failed" ? catalog.error : null}
+            onLoadMore={loadMore}
+            endText="No more items"
+          />
         )}
       </div>
 
@@ -497,7 +517,7 @@ function LibraryPageInner() {
           onSaved={(saved) => {
             setFormOpen(false);
             setNotice(`${editing ? "Saved" : "Added"} "${saved.title}".`);
-            setReloadTick((t) => t + 1);
+            refreshCatalog();
             dispatch(fetchLibraryCategories());
           }}
         />

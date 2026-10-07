@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { uploadAllFiles } from "@/app/ultility/uploadAllFiles";
+import { useCameBack } from "@/hooks/useBackNavigation";
 
 // ✅ 使用“最新的帖子 API 类型”
 import type {
@@ -38,11 +39,15 @@ export type UsePostListControllerOptions<
   // 基础
   dispatch: any;
   perPage: number;
-  currentPage: number;
+
+  // —— 无限滚动：已加载到第几页、一共几页、现在有没有内容（来自页面读取的 store）
+  loadedPage: number;
+  totalPages: number;
+  hasItems: boolean;
 
   // —— 数据源策略（注入各页面不同的 thunk/参数）
   fetchPosts: (args: FArgs) => any;       // 例如 fetchGroupPosts
-  buildFetchArgs: (page: number) => FArgs;// 例如 ({ groupId, page, per_page, append: false })
+  buildFetchArgs: (page: number, append: boolean) => FArgs;// 例如 ({ groupId, page, per_page, append })
   createPost?: (args: CArgs) => any;      // 例如 createPost
   buildCreateArgs?: (body: CreatePostRequest) => CArgs;
   deletePost?: (postId: DArg) => any;     // 例如 deletePostThunk
@@ -63,7 +68,9 @@ export function usePostListController<
   const {
     dispatch,
     perPage,
-    currentPage,
+    loadedPage,
+    totalPages,
+    hasItems,
     fetchPosts,
     buildFetchArgs,
     createPost,
@@ -94,44 +101,41 @@ export function usePostListController<
     });
   }, []);
 
-  // —— 计算当前请求参数 & key（函数身份变也不影响，只认参数内容）
-  const args: FArgs = useMemo(() => buildFetchArgs(currentPage), [buildFetchArgs, currentPage]);
-  const key = useMemo(() => JSON.stringify(args), [args]);
+  // —— 无限滚动：第 1 页的参数决定“是不是同一个列表”（例如换了小组）
+  const firstArgs: FArgs = useMemo(() => buildFetchArgs(1, false), [buildFetchArgs]);
+  const key = useMemo(() => JSON.stringify(firstArgs), [firstArgs]);
+  const cameBack = useCameBack();
+  const firstLoad = useRef(true);
 
-  // —— 首次加载骨架 / 更新提示
-  const [fetchStarted, setFetchStarted] = useState(false);
-  const [everLoaded, setEverLoaded] = useState(false);
-  const lastKeyRef = useRef<string | null>(null);
-
-  // 当 key 变化时（参数真的变了），重置“首次加载”判定
+  // 列表变了（或第一次进来）：从第 1 页开始；通过“返回”回来且已有内容就沿用，不重新加载
   useEffect(() => {
-    if (lastKeyRef.current !== key) {
-      setFetchStarted(false);
-      setEverLoaded(false);
-    }
-  }, [key]);
-
-  // 仅当 key 变化时才发起请求；避免因为函数 identity 改变而重复请求
-  useEffect(() => {
-    if (lastKeyRef.current === key) return;
-    lastKeyRef.current = key;
-
-    dispatch(fetchPosts(args));
-    setFetchStarted(true);
+    const reuse = firstLoad.current && cameBack && hasItems;
+    firstLoad.current = false;
+    if (reuse) return;
+    dispatch(fetchPosts(firstArgs));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, dispatch]);
 
-  useEffect(() => {
-    if (fetchStarted && postsStatus !== "loading") setEverLoaded(true);
-  }, [fetchStarted, postsStatus]);
+  const loading = postsStatus === "loading";
+  const hasMore = loadedPage > 0 && loadedPage < totalPages;
+  const loadMore = useCallback(() => {
+    if (loading || !hasMore) return;
+    dispatch(fetchPosts(buildFetchArgs(loadedPage + 1, true)));
+  }, [loading, hasMore, dispatch, fetchPosts, buildFetchArgs, loadedPage]);
 
-  const initialPostsLoading = postsStatus === "loading" && !everLoaded && fetchStarted;
-  const showUpdatingTip = (postsStatus === "loading" && everLoaded) || uploading;
+  // 第一次加载（还没有内容）显示骨架；往下加载更多时只在底部显示 Loading
+  const initialPostsLoading = loading && !hasItems;
+  const loadingMore = loading && hasItems;
+  const showUpdatingTip = uploading;
 
-  // —— 刷新当前页：立即用当前参数强制拉取（即便 key 未变化）
-  const refreshCurrentPage = useCallback(() => {
-    dispatch(fetchPosts(args));
-  }, [dispatch, args, fetchPosts]);
+  // —— 刷新：重新拿已加载的那几页（新建 / 删除之后），列表不跳回顶部
+  const refreshCurrentPage = useCallback(async () => {
+    const upto = Math.max(1, loadedPage);
+    await dispatch(fetchPosts(buildFetchArgs(1, false)));
+    for (let p = 2; p <= upto; p++) {
+      await dispatch(fetchPosts(buildFetchArgs(p, true)));
+    }
+  }, [dispatch, fetchPosts, buildFetchArgs, loadedPage]);
 
   // —— 新建（可选）
   const onCreatePost = useCallback(
@@ -245,6 +249,11 @@ export function usePostListController<
     // 加载提示
     initialPostsLoading,
     showUpdatingTip,
+
+    // 无限滚动
+    hasMore,
+    loadMore,
+    loadingMore,
     uploadingPercent: uploading ? uploadingProgress : 0,
 
     // 动作

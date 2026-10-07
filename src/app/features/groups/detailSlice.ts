@@ -17,6 +17,7 @@ import type {
   PostListItemApi,
 } from '@/app/types';
 import { fetchGroupPostsList } from '@/app/features/posts/slice';
+import { appendUnique } from '@/app/lib/infiniteList';
 import { likePost, unlikePost } from "@/app/features/posts/likeSlice";
 import { setGroupInvite, resetGroupInvite } from './inviteSlice';
 
@@ -250,6 +251,7 @@ const groupDetailSlice = createSlice({
     builder
       .addCase(fetchGroupDetail.pending, (s, a) => {
         const id = a.meta.arg as number;
+        const sameGroup = s.currentGroupId === id;
         s.currentGroupId = id;
         s.status.group = 'loading';
         s.error.group = null;
@@ -258,11 +260,13 @@ const groupDetailSlice = createSlice({
         s.subscriberCount = null;
         s.subscribers = [];
 
-        // 重置帖子区域（由 posts slice 再填充）
-        s.posts = [];
-        s.postsPagination = null;
-        s.status.posts = 'idle';
-        s.error.posts = null;
+        // 换了小组才重置帖子区域；同一个小组（例如返回）保留已加载的帖子，无限滚动可以沿用
+        if (!sameGroup) {
+          s.posts = [];
+          s.postsPagination = null;
+          s.status.posts = 'idle';
+          s.error.posts = null;
+        }
       })
       .addCase(fetchGroupDetail.fulfilled, (s, a) => {
         const id = a.meta.arg as number;
@@ -291,7 +295,8 @@ const groupDetailSlice = createSlice({
         if (s.currentGroupId !== groupId) return;
         s.status.posts = 'succeeded';
         const { posts, current_page, total_pages, total_posts } = a.payload;
-        s.posts = append ? [...s.posts, ...posts] : posts;
+        // 追加时按 id 去重（浏览期间有新帖子，后面的页会后移）
+        s.posts = append ? appendUnique(s.posts, posts, (p) => p.id) : posts;
         s.postsPagination = { current_page, total_pages, total_posts };
       })
       .addCase(fetchGroupPostsList.rejected, (s, a) => {

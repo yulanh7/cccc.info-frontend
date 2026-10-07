@@ -9,8 +9,10 @@ import CardSkeleton from "@/components/feedback/CardSkeleton";
 type Props = {
   // 数据
   rows: PostListItemApi[];
-  totalPages: number;
-  currentPage: number;
+  /** 无限滚动 */
+  hasMore: boolean;
+  loadingMore: boolean;
+  onLoadMore: () => void;
   formatDate: (ts: string, showTime?: boolean) => string;
 
   // 加载与提示
@@ -30,8 +32,6 @@ type Props = {
   onEditSingle?: (id: number) => void;
 
   // 翻页
-  buildHref?: (page: number) => string;
-  onPageChange?: (page: number) => void;
 
   className?: string;
   emptyText?: string;
@@ -39,8 +39,9 @@ type Props = {
 
 export default function PostListSection({
   rows,
-  totalPages,
-  currentPage,
+  hasMore,
+  loadingMore,
+  onLoadMore,
   formatDate,
   initialPostsLoading,
   showUpdatingTip,
@@ -54,8 +55,6 @@ export default function PostListSection({
   canDelete,
   onDeleteSingle,
   onEditSingle,
-  buildHref,
-  onPageChange,
   className = "",
   emptyText = "No posts yet.",
 }: Props) {
@@ -97,10 +96,9 @@ export default function PostListSection({
           onEditSingle={onEditSingle}
           deleting={deleting}
           formatDate={formatDate}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          buildHref={buildHref}
-          onPageChange={onPageChange}
+          hasMore={hasMore}
+          loadingMore={loadingMore}
+          onLoadMore={onLoadMore}
           emptyText={emptyText}
         />
       )}

@@ -9,6 +9,7 @@ import PostListSection from "@/components/posts/PostListSection";
 import { usePostListController } from "@/components/posts/usePostListController";
 import { formatDate } from "@/app/ultility";
 import { useConfirm } from "@/hooks/useConfirm";
+import { useScrollRestoration } from "@/hooks/useBackNavigation";
 import ConfirmModal from "@/components/ConfirmModal";
 import PageTitle from '@/components/layout/PageTitle';
 import { fetchMyPosts, deletePost as deletePostThunk } from "@/app/features/posts/slice";
@@ -59,10 +60,6 @@ export default function MyPostsPage() {
 
 function MyPostsPageInner() {
   const searchParams = useSearchParams();
-  const currentPage = useMemo(() => {
-    const p = Number(searchParams.get("page"));
-    return Number.isFinite(p) && p > 0 ? p : 1;
-  }, [searchParams]);
 
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
@@ -71,21 +68,25 @@ function MyPostsPageInner() {
   const user = useAppSelector((s) => s.auth.user);
 
   const SRC = "mine";
-  const { rows, totalPages, postsStatus } = useSourceListState(SRC);
+  const { rows, totalPages, postsStatus, currentPage: storePage } = useSourceListState(SRC);
+  const loadedPage: number = storePage ?? 0;
+  // 通过返回回到这一页时，滚回离开前的位置
+  useScrollRestoration(postsStatus === "succeeded");
 
   const confirmSingleDelete = useConfirm<number>("Delete this post?");
   const confirmBulkDelete = useConfirm<number[]>("Delete selected posts?");
-  const buildHref = (p: number) => `/posts/mine?page=${p}`;
 
   const ctrl = usePostListController({
     dispatch,
     perPage: POSTS_PER_PAGE,
-    currentPage,
+    loadedPage: loadedPage,
+    totalPages: Number(totalPages) || 1,
+    hasItems: rows.length > 0,
     fetchPosts: fetchMyPosts,
-    buildFetchArgs: (page) => ({
+    buildFetchArgs: (page, append) => ({
       page,
       per_page: POSTS_PER_PAGE,
-      append: false,
+      append,
     }),
     deletePost: deletePostThunk,
     canEdit: (p) => canEditPost(p, user),
@@ -201,8 +202,9 @@ function MyPostsPageInner() {
 
           <PostListSection
             rows={rows}
-            totalPages={totalPages}
-            currentPage={currentPage}
+            hasMore={ctrl.hasMore}
+            loadingMore={ctrl.loadingMore}
+            onLoadMore={ctrl.loadMore}
             formatDate={formatDate}
             initialPostsLoading={ctrl.initialPostsLoading}
             showUpdatingTip={ctrl.showUpdatingTip}
@@ -217,7 +219,6 @@ function MyPostsPageInner() {
             canDelete={ctrl.canDelete}
             onEditSingle={(id) => ctrl.goEdit(id)}
             onDeleteSingle={(postId) => confirmSingleDelete.ask(postId)}
-            buildHref={buildHref}
           />)}
       </div>
       {/* 批量删帖确认 */}

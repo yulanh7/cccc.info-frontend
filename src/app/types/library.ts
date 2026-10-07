@@ -117,6 +117,10 @@ export type LibraryCatalogParams = {
   include_inactive?: boolean;
   page?: number;
   per_page?: number;
+  /** 前端用：追加到已加载的列表后面（无限滚动），不传给后端 */
+  append?: boolean;
+  /** 前端用：重新加载已加载的前 N 页（用一次大的 per_page），不传给后端 */
+  refreshPages?: number;
 };
 
 export type LibraryBorrowStatus = "active" | "returned";
