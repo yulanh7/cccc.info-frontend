@@ -10,19 +10,18 @@ import {
   DocumentTextIcon,
   ArrowRightStartOnRectangleIcon,
   ShieldCheckIcon,
-  BookmarkIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as SolidHomeIcon,
   UsersIcon as SolidUsersIcon,
   UserIcon as SolidUserIcon,
-  BookOpenIcon as SolidBookOpenIcon,
 } from '@heroicons/react/24/solid';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/app/features/hooks';
 import { logoutThunk } from '@/app/features/auth/slice';
 import { isAdmin } from '@/app/types/user';
 import NotificationBell from './NotificationBell';
+import { canManageLibrary } from '@/app/types/library';
 
 interface NavItem {
   href: string;
@@ -42,8 +41,9 @@ export default function BottomNav({ unreadCount }: BottomNavProps) {
   const dispatch = useAppDispatch();
   const authUser = useAppSelector((s) => s.auth.user);
   const showAdmin = isAdmin(authUser);
+  const showLibrary = canManageLibrary(authUser);
   // 2 列网格：Logout 之前的格子数为偶数时，Logout 占满一行
-  const logoutFullRow = (4 + Number(showAdmin)) % 2 === 0;
+  const logoutFullRow = (3 + Number(showLibrary) + Number(showAdmin)) % 2 === 0;
 
   const hideBottomNav =
     pathname.startsWith('/messages/') ||
@@ -84,7 +84,6 @@ export default function BottomNav({ unreadCount }: BottomNavProps) {
   const navItems: NavItem[] = [
     { href: '/', label: 'Home', outlineIcon: OutlineHomeIcon, solidIcon: SolidHomeIcon },
     { href: '/groups', label: 'Groups', outlineIcon: OutlineUsersIcon, solidIcon: SolidUsersIcon },
-    { href: '/library', label: 'Library', outlineIcon: OutlineBookOpenIcon, solidIcon: SolidBookOpenIcon },
     // { href: '/messages', label: 'Message', outlineIcon: OutlineBellIcon, solidIcon: SolidBellIcon, unreadCount },
   ];
 
@@ -185,14 +184,17 @@ export default function BottomNav({ unreadCount }: BottomNavProps) {
                   <span className="text-sm">My Groups</span>
                 </Link>
 
-                <Link
-                  href="/library/my-borrows"
-                  onClick={() => setSheetOpen(false)}
-                  className="flex flex-col items-center rounded-xl border border-border p-4 active:scale-[0.98] transition"
-                >
-                  <BookmarkIcon className="h-7 w-7 mb-1.5" />
-                  <span className="text-sm">My Borrows</span>
-                </Link>
+                {/* 图书馆：只有图书管理员有菜单入口；其他人通过图书馆链接 / 二维码进入 */}
+                {showLibrary && (
+                  <Link
+                    href="/library"
+                    onClick={() => setSheetOpen(false)}
+                    className="flex flex-col items-center rounded-xl border border-border p-4 active:scale-[0.98] transition"
+                  >
+                    <OutlineBookOpenIcon className="h-7 w-7 mb-1.5" />
+                    <span className="text-sm">Library</span>
+                  </Link>
+                )}
 
                 {/* 用户权限管理：仅 admin */}
                 {showAdmin && (

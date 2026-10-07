@@ -1,4 +1,5 @@
 "use client";
+import LibraryAccessGate from "@/components/library/LibraryAccessGate";
 import { Suspense } from "react";
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -37,9 +38,11 @@ const SEARCH_DEBOUNCE_MS = 400;
 
 export default function LibraryPage() {
   return (
+    <LibraryAccessGate>
     <Suspense fallback={<LoadingOverlay show text="Loading library…" />}>
       <LibraryPageInner />
     </Suspense>
+    </LibraryAccessGate>
   );
 }
 
@@ -299,6 +302,13 @@ function LibraryPageInner() {
               className="flex h-10 items-center justify-between rounded-sm border border-dark-green px-3 text-[16px] text-dark-green hover:bg-dark-green/5"
             >
               Borrow history
+              <ChevronRightIcon className="h-5 w-5" />
+            </Link>
+            <Link
+              href="/library/access-link"
+              className="flex h-10 items-center justify-between rounded-sm border border-dark-green px-3 text-[16px] text-dark-green hover:bg-dark-green/5"
+            >
+              Library link &amp; QR code
               <ChevronRightIcon className="h-5 w-5" />
             </Link>
           </div>

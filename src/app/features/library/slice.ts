@@ -20,6 +20,7 @@ import type {
   LibraryAdminBorrowsParams,
   LibraryBorrower,
   LibraryImportReport,
+  LibraryAccessLink,
 } from '@/app/types/library';
 
 type ListState<T> = {
@@ -60,6 +61,9 @@ const LIBRARY_ENDPOINTS = {
   IMPORT_PREVIEW: '/library/import/preview',
   IMPORT: '/library/import',
   EXPORT: '/library/export',
+  ACCESS_LINK: '/library/access-link',
+  ACCESS_LINK_RESET: '/library/access-link/reset',
+  ACCESS_CHECK: (code: string) => `/library/access/${encodeURIComponent(code)}`,
 } as const;
 
 /** 拼查询串：跳过 undefined / null / '' / false */
@@ -334,6 +338,58 @@ export const exportLibrary = createAsyncThunk<void, void>(
         } catch { /* 不是 JSON，保留默认文案 */ }
       }
       return rejectWithValue(message) as any;
+    }
+  }
+);
+
+/* ======================================================
+ *          访问链接 / 二维码（第 5.9 节）
+ * ====================================================== */
+
+// ===== 验证访问码：GET /api/library/access/<code>（任何登录用户；无效 → 404）
+export const verifyLibraryAccess = createAsyncThunk<boolean, string>(
+  'library/verifyAccess',
+  async (code, { rejectWithValue }) => {
+    try {
+      return !!unwrapData(await apiRequest<{ valid: boolean }>('GET', LIBRARY_ENDPOINTS.ACCESS_CHECK(code))).valid;
+    } catch (e: any) {
+      return rejectWithValue(errMsg(e, 'This library link is no longer valid')) as any;
+    }
+  }
+);
+
+// ===== 读取访问链接（没有就自动创建）：GET /api/library/access-link（仅图书管理员）
+export const fetchAccessLink = createAsyncThunk<LibraryAccessLink, void>(
+  'library/fetchAccessLink',
+  async (_, { rejectWithValue }) => {
+    try {
+      return unwrapData(await apiRequest<LibraryAccessLink>('GET', LIBRARY_ENDPOINTS.ACCESS_LINK));
+    } catch (e: any) {
+      return rejectWithValue(errMsg(e, 'Failed to load the library link')) as any;
+    }
+  }
+);
+
+// ===== 打开 / 关闭：PUT /api/library/access-link（再打开还是同一个 code）
+export const setAccessLinkEnabled = createAsyncThunk<LibraryAccessLink, boolean>(
+  'library/setAccessLinkEnabled',
+  async (enabled, { rejectWithValue }) => {
+    try {
+      return unwrapData(await apiRequest<LibraryAccessLink>('PUT', LIBRARY_ENDPOINTS.ACCESS_LINK, { enabled }));
+    } catch (e: any) {
+      return rejectWithValue(errMsg(e, 'Failed to update the library link')) as any;
+    }
+  }
+);
+
+// ===== 重新生成：POST /api/library/access-link/reset（旧链接、旧二维码立即失效）
+export const resetAccessLink = createAsyncThunk<LibraryAccessLink, void>(
+  'library/resetAccessLink',
+  async (_, { rejectWithValue }) => {
+    try {
+      return unwrapData(await apiRequest<LibraryAccessLink>('POST', LIBRARY_ENDPOINTS.ACCESS_LINK_RESET));
+    } catch (e: any) {
+      return rejectWithValue(errMsg(e, 'Failed to reset the library link')) as any;
     }
   }
 );

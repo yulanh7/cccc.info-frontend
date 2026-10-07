@@ -1,4 +1,5 @@
 "use client";
+import LibraryAccessGate from "@/components/library/LibraryAccessGate";
 import { Suspense } from "react";
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -23,9 +24,11 @@ type Tab = "active" | "history";
 
 export default function MyBorrowsPage() {
   return (
+    <LibraryAccessGate>
     <Suspense fallback={<LoadingOverlay show text="Loading your borrows…" />}>
       <MyBorrowsPageInner />
     </Suspense>
+    </LibraryAccessGate>
   );
 }
 

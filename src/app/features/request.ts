@@ -13,6 +13,12 @@ import {
   setAccessToken, // 确保在 token.ts 存在
   clearAuth,
 } from './auth/token';
+import {
+  getLibraryAccessCode,
+  clearLibraryAccessCode,
+  needsLibraryAccessHeader,
+  LIBRARY_ACCESS_HEADER,
+} from './library/access';
 
 // ====== Base configuration ======
 const BASE_URL = (process.env.NEXT_PUBLIC_BACKEND_ORIGIN || 'http://localhost:5000') + '/api'
@@ -45,6 +51,7 @@ const promptLoginRedirect = (msg?: string) => {
 
 // ====== 带固定 code 的 403：必须先改密码 / 没有通过链接进入图书馆 ======
 export const CHANGE_PASSWORD_PATH = '/change-password';
+export const LIBRARY_ACCESS_EVENT = 'library-access-required';
 
 function handleBlockingErrorCode(status: number | undefined, payload: any) {
   if (typeof window === 'undefined' || status !== 403) return;
@@ -52,6 +59,10 @@ function handleBlockingErrorCode(status: number | undefined, payload: any) {
   if (code === 'PASSWORD_CHANGE_REQUIRED') {
     // 任何接口被挡住都去改密码页（已经在那一页就不动）
     if (window.location.pathname !== CHANGE_PASSWORD_PATH) window.location.href = CHANGE_PASSWORD_PATH;
+  } else if (code === 'LIBRARY_ACCESS_REQUIRED') {
+    // 链接被关闭 / 重新生成，或者没有访问码：清掉，图书馆页面监听这个事件显示提示
+    clearLibraryAccessCode();
+    window.dispatchEvent(new CustomEvent(LIBRARY_ACCESS_EVENT, { detail: pickServerMessage(payload) }));
   }
 }
 
@@ -101,6 +112,12 @@ api.interceptors.request.use((config) => {
     if (token) {
       config.headers = config.headers ?? {};
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    // 图书馆接口带上通过链接 / 二维码拿到的访问码（图书管理员不需要，带了也无妨）
+    const libraryCode = getLibraryAccessCode();
+    if (libraryCode && needsLibraryAccessHeader(String(config.url || ''))) {
+      config.headers = config.headers ?? {};
+      (config.headers as any)[LIBRARY_ACCESS_HEADER] = libraryCode;
     }
   }
   return config;

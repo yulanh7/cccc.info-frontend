@@ -196,3 +196,11 @@ export type LibraryImportReport = {
   summary: LibraryImportSummary;
   rows: LibraryImportRow[];
 };
+
+/** 图书馆访问链接（全站只有一个，图书管理员管理） */
+export type LibraryAccessLink = {
+  enabled: boolean;
+  code: string;
+  /** 这个 code 生成的时间（也就是二维码的生效日期） */
+  created_at: string;
+};

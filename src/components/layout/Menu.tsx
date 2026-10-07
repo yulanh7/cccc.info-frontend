@@ -7,6 +7,7 @@ import { useAppDispatch, useAppSelector } from '@/app/features/hooks';
 import { logoutThunk } from '@/app/features/auth/slice';
 import { ellipsize } from "@/app/ultility";
 import NotificationBell from './NotificationBell';
+import { canManageLibrary } from '@/app/types/library';
 import { isAdmin } from '@/app/types/user';
 
 interface TopNavItem {
@@ -26,7 +27,6 @@ export default function Menu({
   const navItems: TopNavItem[] = [
     { href: '/', label: 'Home' },
     { href: '/groups', label: 'Groups' },
-    { href: '/library', label: 'Library' },
   ];
 
   const pathname = usePathname();
@@ -99,14 +99,16 @@ export default function Menu({
                 My Groups
               </Link>
 
-              {/* 我借的书 */}
-              <Link
-                href="/library/my-borrows"
-                className={`block px-4 py-2 text-sm hover:bg-gray-100 ${isActiveHref('/library/my-borrows') ? 'text-dark-green' : 'text-dark-gray'
-                  }`}
-              >
-                My Borrows
-              </Link>
+              {/* 图书馆：只有图书管理员有菜单入口；其他人通过图书馆链接 / 二维码进入 */}
+              {canManageLibrary(user) && (
+                <Link
+                  href="/library"
+                  className={`block px-4 py-2 text-sm hover:bg-gray-100 ${isActiveHref('/library') ? 'text-dark-green' : 'text-dark-gray'
+                    }`}
+                >
+                  Library
+                </Link>
+              )}
 
               {/* 用户权限管理：仅 admin */}
               {isAdmin(user) && (

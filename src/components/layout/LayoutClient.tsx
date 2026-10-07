@@ -110,13 +110,18 @@ export default function LayoutClient({ children }: { children: React.ReactNode }
 
   return (
     <>
-      <Header
-        isLoggedIn={isLoggedIn}
-        userName={user?.firstName || 'Guest'}
-        unreadCount={3}
-      />
-      <main className="bg-bg pb-16 min-h-screen">{children}</main>
-      <BottomNav unreadCount={3} />
+      {/* 打印（例如图书馆二维码）时隐藏网站导航 */}
+      <div className="print:hidden">
+        <Header
+          isLoggedIn={isLoggedIn}
+          userName={user?.firstName || 'Guest'}
+          unreadCount={3}
+        />
+      </div>
+      <main className="bg-bg pb-16 min-h-screen print:pb-0">{children}</main>
+      <div className="print:hidden">
+        <BottomNav unreadCount={3} />
+      </div>
     </>
   );
 }
