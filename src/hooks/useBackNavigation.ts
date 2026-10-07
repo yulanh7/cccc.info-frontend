@@ -66,7 +66,8 @@ export function useBackNavigation(fallbackHref: string) {
       const saved = read(HREF_PREFIX + target);
       if (saved && read(PREV_PATH_KEY) === target) {
         markReturning();
-        router.push(saved);
+        // scroll: false —— 不让 Next.js 跳转后自动滚到顶部，否则会盖掉下面恢复的位置
+        router.push(saved, { scroll: false });
       } else {
         router.push(fallbackHref);
       }
@@ -110,6 +111,12 @@ export function useScrollRestoration(ready: boolean) {
     if (!ready || restored.current || !cameBack.current) return;
     restored.current = true;
     const y = Number(read(SCROLL_PREFIX + currentHref()) || 0);
-    if (y > 0) requestAnimationFrame(() => window.scrollTo(0, y));
+    if (y <= 0) return;
+    // 列表可能分几次渲染完（先显示旧数据、再显示刚读到的），稍后再补一次，确保停在原位
+    requestAnimationFrame(() => window.scrollTo(0, y));
+    // 不在 ready 变化时取消：返回后会重新读取列表，ready 会短暂变成 false
+    setTimeout(() => {
+      if (Math.abs(window.scrollY - y) > 4) window.scrollTo(0, y);
+    }, 300);
   }, [ready]);
 }
