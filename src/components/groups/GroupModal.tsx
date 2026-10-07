@@ -7,6 +7,7 @@ import { DEFAULT_POST_POLICY, DEFAULT_COMMENT_POLICY, COMMENT_POLICY_LABELS } fr
 import { XMarkIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 import Button from "@/components/ui/Button";
 import SaveConfirmModal from "../SaveConfirmModal";
+import GroupInviteSection from "./GroupInviteSection";
 
 const MIN_NAME = 2;
 const MAX_NAME = 50;
@@ -297,11 +298,19 @@ export default function GroupEditModal({
                 <div>
                   <p className="font-medium mb-1">This group is private</p>
                   <ul className="list-disc pl-5 space-y-1">
-                    <li>Invite-only — members must be invited by an admin.</li>
+                    <li>Invite-only — members are added by a group leader, or join with an invite link.</li>
                     <li>Not discoverable — registered users can’t search or follow it.</li>
                   </ul>
                 </div>
               </div>
+            )}
+
+            {/* 邀请链接：只有已保存为私密的小组、且响应里有 invite_enabled（= 创建者 / 组长）才显示 */}
+            {!isNew && editedItem.isPrivate && group?.isPrivate && typeof group?.invite_enabled === "boolean" && (
+              <GroupInviteSection
+                groupId={group.id}
+                initial={{ invite_enabled: group.invite_enabled, invite_code: group.invite_code ?? null }}
+              />
             )}
           </div>
 

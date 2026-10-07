@@ -39,6 +39,10 @@ export interface GroupApi {
   post_policy?: PostPolicy;
   comment_policy?: CommentPolicy;
   post_count?: number;
+  /** 仅创建者 / 组长的响应有：是否允许用链接加入 */
+  invite_enabled?: boolean;
+  /** 仅创建者 / 组长、且已打开时有 */
+  invite_code?: string | null;
 }
 
 export interface GroupListPaginationApi {
@@ -188,3 +192,17 @@ export const normalizeFromAllGroups = (
   post_policy: g.post_policy,
   comment_policy: g.comment_policy,
 });
+
+/** ===================== 邀请链接 ===================== */
+export type GroupInviteState = { invite_enabled: boolean; invite_code: string | null };
+
+export type InvitePreview = {
+  group: { id: number; name: string; description: string; subscriber_count: number };
+  is_member: boolean;
+};
+
+export type InviteJoinResult = { group: GroupApi; already_member: boolean };
+
+/** 分享用的完整网址 */
+export const inviteUrl = (code: string, origin: string): string =>
+  `${origin}/groups/join/${encodeURIComponent(code)}`;

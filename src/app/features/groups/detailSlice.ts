@@ -18,6 +18,7 @@ import type {
 } from '@/app/types';
 import { fetchGroupPostsList } from '@/app/features/posts/slice';
 import { likePost, unlikePost } from "@/app/features/posts/likeSlice";
+import { setGroupInvite, resetGroupInvite } from './inviteSlice';
 
 // 简单的订阅者 UI 形状（与后端 subscribers 项一致）
 type GroupSubscriberUi = { id: number; firstName: string; email: string; is_creator?: boolean; is_leader?: boolean };
@@ -236,6 +237,15 @@ const groupDetailSlice = createSlice({
     clearGroupDetail: () => initialState,
   },
   extraReducers: (builder) => {
+    // ===== 邀请链接：打开 / 关闭、重新生成后，同步到当前小组资料（再打开编辑弹窗时显示最新状态）
+    builder
+      .addCase(setGroupInvite.fulfilled, (s, a) => {
+        if (s.group?.id === a.meta.arg.groupId) Object.assign(s.group, a.payload);
+      })
+      .addCase(resetGroupInvite.fulfilled, (s, a) => {
+        if (s.group?.id === a.meta.arg) Object.assign(s.group, a.payload);
+      });
+
     // ===== group detail =====
     builder
       .addCase(fetchGroupDetail.pending, (s, a) => {
