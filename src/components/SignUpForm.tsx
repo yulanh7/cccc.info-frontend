@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/app/features/hooks';
 import { signupThunk } from '@/app/features/auth/slice';
+import { safeNextPath } from '@/app/lib/safeNextPath';
 import { getRecaptchaToken, initRecaptcha } from '@/app/ultility/recaptcha';
 import Button from '@/components/ui/Button';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
@@ -62,7 +63,8 @@ export default function SignUpForm() {
       ).unwrap(); // <-- 关键
 
       alert(`Welcome, ${firstName}! Your account has been created.`);
-      router.push('/groups');
+      // 回到注册前要去的页面（例如邀请链接的加入页）
+      router.push(safeNextPath(new URLSearchParams(window.location.search).get('next'), '/groups'));
     } catch (e: any) {
       // e 会是 rejectWithValue(...) 的字符串/对象，或 Error
       const msg =

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDispatch } from 'react-redux';
 import { loginThunk } from '@/app/features/auth/slice';
+import { safeNextPath } from '@/app/lib/safeNextPath';
 import { LoginCredentials } from '@/app/types/auth';
 import { AppDispatch } from '@/app/features/store';
 import { getRecaptchaToken, initRecaptcha } from '@/app/ultility/recaptcha';
@@ -37,7 +38,8 @@ export default function LoginForm() {
       };
 
       await dispatch(loginThunk(credentials)).unwrap();
-      router.push('/');
+      // 回到登录前要去的页面（登录守卫会带上 ?next=）
+      router.push(safeNextPath(new URLSearchParams(window.location.search).get('next'), '/'));
     } catch (err: any) {
       setError(err || 'Incorrect email or password.');
     } finally {

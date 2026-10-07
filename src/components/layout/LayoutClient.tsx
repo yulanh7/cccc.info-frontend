@@ -65,7 +65,8 @@ export default function LayoutClient({ children }: { children: React.ReactNode }
     );
 
     if (!isLoggedIn && !isPublic) {
-      const next = encodeURIComponent(pathname || '/');
+      // 带上查询参数（例如 ?comment=…），登录后回到完全相同的地址
+      const next = encodeURIComponent((pathname || '/') + window.location.search);
       router.replace(`/auth?next=${next}`);
     }
   }, [bootstrapped, isLoggedIn, pathname, router]);
