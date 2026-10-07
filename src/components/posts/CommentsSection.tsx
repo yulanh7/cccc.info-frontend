@@ -10,6 +10,7 @@ import {
   replyToComment,
   deleteComment,
   likeComment,
+  fetchCommentDetail,
   selectRootCommentsFeed,
   selectChildCommentsFeed,
 } from "@/app/features/posts/commentsSlice";
@@ -47,6 +48,8 @@ type Props = {
   canComment?: boolean;
   /** 小组管理员：可以删除任何人的评论 */
   canModerate?: boolean;
+  /** 从通知进来：定位并高亮这条评论（回复会先展开它所在的那一串） */
+  focusCommentId?: number | null;
 };
 
 /* ======================= Main Component ======================= */
@@ -61,6 +64,7 @@ export default function CommentsSection({
   onToggleLike,
   canComment = true,
   canModerate = false,
+  focusCommentId = null,
 }: Props) {
   const dispatch = useAppDispatch();
 
@@ -119,6 +123,46 @@ export default function CommentsSection({
     }
   };
 
+  // ===== 定位到某条评论（通知跳转）：先查它属于哪一串，确保那条顶层评论已加载并展开，再滚动、高亮
+  const [focusRootId, setFocusRootId] = useState<number | null>(null);
+  useEffect(() => {
+    if (!focusCommentId) return;
+    let cancelled = false;
+    dispatch(fetchCommentDetail({ commentId: focusCommentId }))
+      .unwrap()
+      .then((c) => !cancelled && setFocusRootId(c.parent_id ?? c.id))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch, focusCommentId]);
+
+  // 顶层评论按点赞数排序、分页加载：目标那串还没出现就继续加载下一页
+  useEffect(() => {
+    if (!focusRootId || rootStatus === "loading") return;
+    if (rootComments.some((c: CommentItemApi) => c.id === focusRootId)) return;
+    if (rootPg.current_page < rootPg.total_pages) loadMoreRoots();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusRootId, rootComments, rootPg, rootStatus]);
+
+  // 元素出现后滚过去并短暂高亮（最多等 8 秒）
+  useEffect(() => {
+    if (!focusCommentId) return;
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      const el = document.getElementById(`comment-${focusCommentId}`);
+      if (el) {
+        window.clearInterval(timer);
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.classList.add("comment-highlight");
+        window.setTimeout(() => el.classList.remove("comment-highlight"), 2500);
+      } else if (++tries > 40) {
+        window.clearInterval(timer);
+      }
+    }, 200);
+    return () => window.clearInterval(timer);
+  }, [focusCommentId]);
+
 
 
   return (
@@ -144,6 +188,7 @@ export default function CommentsSection({
                 postAuthorId={postAuthorId}
                 currentUserId={currentUserId}
                 canModerate={canModerate}
+                autoExpand={focusRootId === c.id && focusCommentId !== c.id}
                 onReply={canComment ? (target) => {
                   setReplyTo(target);
                   openComposer(true); // 点“Reply”时自动展开底部 Composer
@@ -304,6 +349,8 @@ type ItemProps = {
   postAuthorId: number;
   currentUserId?: number | null;
   canModerate?: boolean;
+  /** 通知要定位到这一串里的某条回复：自动展开 */
+  autoExpand?: boolean;
   onReply?: (t: { commentId: number; nickname: string }) => void;
   onDelete: (commentId: number, parentId: number | null) => void;
   fetchChildren: (parentId: number, page: number) => any;
@@ -320,6 +367,7 @@ function CommentItem({
   postAuthorId,
   currentUserId,
   canModerate = false,
+  autoExpand = false,
   onReply,
   onDelete,
   fetchChildren,
@@ -331,6 +379,9 @@ function CommentItem({
 
   // 首次展开时拉取子评论（逻辑不变）
   const [expanded, setExpanded] = useState(false);
+  useEffect(() => {
+    if (autoExpand) setExpanded(true);
+  }, [autoExpand]);
   useEffect(() => {
     if (expanded && status === "idle") {
       fetchChildren(c.id, 1);
@@ -348,7 +399,7 @@ function CommentItem({
   };
 
   return (
-    <div className="group">
+    <div className="group scroll-mt-24" id={`comment-${c.id}`}>
       {/* 头部：头像首字母 + 名称 + author */}
       <div className="flex items-start gap-3">
         <div className="mt-0.5 h-7 w-7 flex items-center justify-center rounded-full bg-dark-green/10 text-dark-green font-semibold">
@@ -475,7 +526,7 @@ function ChildCommentItem({
   const isAuthor = Number(c.user.id) === Number(postAuthorId);
 
   return (
-    <div className="flex items-start gap-3">
+    <div className="flex items-start gap-3 scroll-mt-24" id={`comment-${c.id}`}>
       <div className="mt-0.5 h-6 w-6 flex items-center justify-center rounded-full bg-dark-green/10 text-dark-green text-xs font-semibold">
         {(c.user.firstName?.[0] || "?").toUpperCase()}
       </div>

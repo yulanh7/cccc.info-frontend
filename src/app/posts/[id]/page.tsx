@@ -449,6 +449,7 @@ function PostDetailPageInner() {
                 currentUserId={user?.id ?? null}
                 canComment={post.can_comment !== false}
                 canModerate={isGroupManager(user)}
+                focusCommentId={Number(searchParams.get("comment")) || null}
                 likeCount={likeCount}
                 liked={liked}
                 likeBusy={likeBusy}

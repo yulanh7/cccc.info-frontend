@@ -7,6 +7,7 @@ import likesReducer from './posts/likeSlice';
 import commentsReducer from "@/app/features/posts/commentsSlice";
 import adminUsersReducer from "./admin/usersSlice";
 import libraryReducer from "./library/slice";
+import notificationsReducer from "./notifications/slice";
 
 export const store = configureStore({
   reducer: {
@@ -18,6 +19,7 @@ export const store = configureStore({
     comments: commentsReducer,
     adminUsers: adminUsersReducer,
     library: libraryReducer,
+    notifications: notificationsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

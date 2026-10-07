@@ -9,9 +9,11 @@ import Header from './Header';
 import BottomNav from './BottomNav';
 import { useNavigationTracker } from '@/hooks/useBackNavigation';
 import { CHANGE_PASSWORD_PATH } from '@/app/features/request';
+import { fetchUnreadCount, resetNotifications } from '@/app/features/notifications/slice';
 
 const PUBLIC_PATHS = ['/', '/auth'];
 const PROFILE_REFRESH_MS = 30_000;
+const UNREAD_POLL_MS = 60_000;
 
 export default function LayoutClient({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -71,6 +73,34 @@ export default function LayoutClient({ children }: { children: React.ReactNode }
       router.replace(`/auth?next=${next}`);
     }
   }, [bootstrapped, isLoggedIn, pathname, router]);
+
+  // 2b) 通知未读数：登录后每 60 秒拉一次；页面不可见时暂停，回到页面立即拉；401 停止
+  const mustChangePassword = !!user?.must_change_password;
+  useEffect(() => {
+    if (!bootstrapped) return;
+    if (!isLoggedIn) {
+      dispatch(resetNotifications());
+      return;
+    }
+    if (mustChangePassword) return; // 改密码前其他接口都会 403
+    let stopped = false;
+    const poll = async () => {
+      if (stopped || document.hidden) return;
+      const res = await dispatch(fetchUnreadCount());
+      if (fetchUnreadCount.rejected.match(res) && (res.payload as any)?.code === 401) stopped = true;
+    };
+    poll();
+    const timer = window.setInterval(poll, UNREAD_POLL_MS);
+    const onVisible = () => {
+      if (!document.hidden) poll();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [bootstrapped, isLoggedIn, mustChangePassword, dispatch]);
 
   // 3) 管理员重置过密码：先改密码，不能进入其他页面
   useEffect(() => {

@@ -6,6 +6,7 @@ import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import { useAppDispatch, useAppSelector } from '@/app/features/hooks';
 import { logoutThunk } from '@/app/features/auth/slice';
 import { ellipsize } from "@/app/ultility";
+import NotificationBell from './NotificationBell';
 import { isAdmin } from '@/app/types/user';
 
 interface TopNavItem {
@@ -61,6 +62,8 @@ export default function Menu({
       <div className="border-l border-gray-300 h-6 mx-4" />
 
       <div className="flex items-center space-x-4">
+        {/* 通知铃铛（桌面顶部导航） */}
+        {isLoggedIn && <NotificationBell variant="top" />}
         {isLoggedIn && (
           <div className="relative group">
             <span className="cursor-pointer text-dark-gray group-hover:text-dark-green">

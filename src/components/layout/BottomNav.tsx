@@ -22,6 +22,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/app/features/hooks';
 import { logoutThunk } from '@/app/features/auth/slice';
 import { isAdmin } from '@/app/types/user';
+import NotificationBell from './NotificationBell';
 
 interface NavItem {
   href: string;
@@ -111,6 +112,9 @@ export default function BottomNav({ unreadCount }: BottomNavProps) {
             </Link>
           );
         })}
+
+        {/* 通知铃铛（手机底部导航） */}
+        <NotificationBell variant="bottom" />
 
         {/* Me -> 自适应高度 Bottom Sheet */}
         <button

@@ -147,8 +147,9 @@ export const fetchCommentDetail = createAsyncThunk<CommentItemApi, { commentId: 
   async ({ commentId }, { rejectWithValue }) => {
     try {
       const res = await apiRequest<CommentDetailData>("GET", COMMENTS_ENDPOINTS.COMMENT_DETAIL(commentId));
-      const data = unwrapData(res); // CommentItemApi
-      return data;
+      // 后端返回 data: { comment }；兼容直接返回评论对象的旧写法
+      const data: any = unwrapData(res);
+      return (data?.comment ?? data) as CommentItemApi;
     } catch (e: any) {
       return rejectWithValue(e.message || "Fetch comment failed") as any;
     }
