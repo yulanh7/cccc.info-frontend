@@ -111,8 +111,9 @@ function AdminUsersPageInner() {
                 setQInput("");
                 pushQuery("", 1);
               }}
-              placeholder="Search by email or name…"
+              placeholder="Name or email"
               sticky={false}
+              size="lg"
             />
 
             {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
