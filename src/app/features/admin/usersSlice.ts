@@ -29,6 +29,7 @@ const ADMIN_ENDPOINTS = {
   USERS: '/admin/users',
   USER_PERMISSIONS: (userId: number) => `/admin/users/${userId}/permissions`,
   USER_ADMIN: (userId: number) => `/admin/users/${userId}/admin`,
+  RESET_PASSWORD: (userId: number) => `/admin/users/${userId}/reset-password`,
 } as const;
 
 // ===== 用户列表：GET /api/admin/users（仅 admin）
@@ -77,6 +78,20 @@ export const setUserAdmin = createAsyncThunk<UserProps, { userId: number; admin:
   }
 );
 
+// ===== 重置为初始密码：POST /api/admin/users/{user_id}/reset-password（不能重置自己）
+// 返回更新后的 user（must_change_password: true）；初始密码由管理员线下告诉用户，前端不写死
+export const resetUserPassword = createAsyncThunk<UserProps, number>(
+  'adminUsers/resetUserPassword',
+  async (userId, { rejectWithValue }) => {
+    try {
+      const res = await apiRequest<UserProps>('POST', ADMIN_ENDPOINTS.RESET_PASSWORD(userId));
+      return unwrapData(res);
+    } catch (e: any) {
+      return rejectWithValue(e.message || 'Reset password failed') as any;
+    }
+  }
+);
+
 const adminUsersSlice = createSlice({
   name: 'adminUsers',
   initialState,
@@ -121,6 +136,19 @@ const adminUsersSlice = createSlice({
       })
       .addCase(setUserAdmin.rejected, (s, a) => {
         s.updatingIds = s.updatingIds.filter((id) => id !== a.meta.arg.userId);
+      });
+
+    builder
+      .addCase(resetUserPassword.pending, (s, a) => {
+        s.updatingIds.push(a.meta.arg);
+      })
+      .addCase(resetUserPassword.fulfilled, (s, a) => {
+        s.updatingIds = s.updatingIds.filter((id) => id !== a.meta.arg);
+        const idx = s.users.findIndex((u) => u.id === a.payload.id);
+        if (idx >= 0) s.users[idx] = a.payload;
+      })
+      .addCase(resetUserPassword.rejected, (s, a) => {
+        s.updatingIds = s.updatingIds.filter((id) => id !== a.meta.arg);
       });
   },
 });

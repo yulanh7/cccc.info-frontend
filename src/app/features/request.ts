@@ -43,6 +43,18 @@ const promptLoginRedirect = (msg?: string) => {
   }
 };
 
+// ====== 带固定 code 的 403：必须先改密码 / 没有通过链接进入图书馆 ======
+export const CHANGE_PASSWORD_PATH = '/change-password';
+
+function handleBlockingErrorCode(status: number | undefined, payload: any) {
+  if (typeof window === 'undefined' || status !== 403) return;
+  const code = payload?.code;
+  if (code === 'PASSWORD_CHANGE_REQUIRED') {
+    // 任何接口被挡住都去改密码页（已经在那一页就不动）
+    if (window.location.pathname !== CHANGE_PASSWORD_PATH) window.location.href = CHANGE_PASSWORD_PATH;
+  }
+}
+
 function pickServerMessage(payload: any): string | undefined {
   if (!payload) return;
   if (typeof payload === "string" && payload.trim()) return payload;
@@ -112,6 +124,7 @@ api.interceptors.response.use(
     if (error.response?.status !== 401 || originalRequest?._retry || isAuthEndpoint) {
       const serverMsg = pickServerMessage(error.response?.data);
       if (serverMsg) (error as any).message = serverMsg;
+      handleBlockingErrorCode(error.response?.status, error.response?.data);
 
 
 
@@ -213,7 +226,9 @@ export const apiRequest = async <T>(
     }
 
 
-    throw { code, message } as { code: number; message: string };
+    // errorCode：后端的固定 code（如 PASSWORD_CHANGE_REQUIRED、LIBRARY_ACCESS_REQUIRED）
+    const errorCode = error?.response?.data?.code as string | undefined;
+    throw { code, message, errorCode } as { code: number; message: string; errorCode?: string };
   }
 };
 

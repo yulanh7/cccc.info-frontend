@@ -4,7 +4,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
-import { fetchAdminUsers, setUserPermission, setUserAdmin } from "@/app/features/admin/usersSlice";
+import { fetchAdminUsers, setUserPermission, setUserAdmin, resetUserPassword } from "@/app/features/admin/usersSlice";
+import Button from "@/components/ui/Button";
 import { fetchProfileThunk } from "@/app/features/auth/slice";
 import { isAdmin, PERMISSION_CREATE_GROUP, PERMISSION_MANAGE_GROUPS } from "@/app/types/user";
 import ConfirmModal from "@/components/ConfirmModal";
@@ -76,6 +77,22 @@ function AdminUsersPageInner() {
     }
   };
 
+  // ===== 重置为初始密码（先确认；不能重置自己）
+  const confirmReset = useConfirm<UserProps>("Reset this user's password?");
+  const [notice, setNotice] = useState<string | null>(null);
+  const doResetPassword = async (u: UserProps | null) => {
+    if (!u) return;
+    setNotice(null);
+    try {
+      await dispatch(resetUserPassword(u.id)).unwrap();
+      setNotice(
+        `${u.firstName}'s password has been reset to the initial password. Tell them to log in with it — they will be asked to choose a new password.`
+      );
+    } catch (e: any) {
+      alert(typeof e === "string" ? e : e?.message || "Reset password failed");
+    }
+  };
+
   const togglePermission = async (u: UserProps, permission: string, granted: boolean) => {
     try {
       await dispatch(setUserPermission({ userId: u.id, permission, granted })).unwrap();
@@ -117,6 +134,7 @@ function AdminUsersPageInner() {
             />
 
             {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+            {notice && <p className="mt-3 rounded-sm border border-dark-green/30 bg-dark-green/5 p-2 text-sm text-dark-green" role="status">{notice}</p>}
 
             <div className="mt-4 rounded-md border border-border bg-white relative">
               {listLoading && (
@@ -211,6 +229,26 @@ function AdminUsersPageInner() {
                           <span className="text-dark-gray">Group manager</span>
                         </label>
                       )}
+                      {/* 重置为初始密码：自己那一行不显示（改自己的密码去 Profile） */}
+                      {!isSelf && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="mt-1 w-fit"
+                          disabled={updating}
+                          onClick={() =>
+                            confirmReset.ask(
+                              u,
+                              `Reset ${u.firstName}'s password to the initial password? They will have to choose a new password after logging in.`
+                            )
+                          }
+                        >
+                          Reset password
+                        </Button>
+                      )}
+                      {u.must_change_password && (
+                        <span className="text-xs text-amber-700">Must change password</span>
+                      )}
                       {updating && <span className="text-xs text-dark-gray/70">Saving…</span>}
                     </div>
                   </div>
@@ -241,6 +279,18 @@ function AdminUsersPageInner() {
         onCancel={confirmAdmin.cancel}
         onClose={confirmAdmin.cancel}
         onConfirm={confirmAdmin.confirm(toggleAdmin)}
+      />
+      <ConfirmModal
+        isOpen={confirmReset.open}
+        title="Reset password"
+        message={confirmReset.message}
+        confirmLabel="Reset"
+        confirmVariant="danger"
+        cancelLabel="Cancel"
+        cancelVariant="outline"
+        onCancel={confirmReset.cancel}
+        onClose={confirmReset.cancel}
+        onConfirm={confirmReset.confirm(doResetPassword)}
       />
     </>
   );

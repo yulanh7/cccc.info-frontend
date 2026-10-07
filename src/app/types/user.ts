@@ -7,6 +7,8 @@ export interface UserProps {
   admin: boolean;
   permissions?: string[]; // 全局权限，目前只有 'create_group'；admin 隐含拥有全部权限
   created_at?: string; // 新增（可选，对应后端返回）
+  /** admin 重置过密码、用户还没改：必须先改密码才能用其他功能 */
+  must_change_password?: boolean;
 }
 
 export interface AuthResponseData {

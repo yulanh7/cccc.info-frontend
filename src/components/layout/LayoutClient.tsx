@@ -8,6 +8,7 @@ import { getToken } from '@/app/features/auth/token';
 import Header from './Header';
 import BottomNav from './BottomNav';
 import { useNavigationTracker } from '@/hooks/useBackNavigation';
+import { CHANGE_PASSWORD_PATH } from '@/app/features/request';
 
 const PUBLIC_PATHS = ['/', '/auth'];
 const PROFILE_REFRESH_MS = 30_000;
@@ -70,6 +71,12 @@ export default function LayoutClient({ children }: { children: React.ReactNode }
       router.replace(`/auth?next=${next}`);
     }
   }, [bootstrapped, isLoggedIn, pathname, router]);
+
+  // 3) 管理员重置过密码：先改密码，不能进入其他页面
+  useEffect(() => {
+    if (!bootstrapped || !user?.must_change_password) return;
+    if (pathname !== CHANGE_PASSWORD_PATH) router.replace(CHANGE_PASSWORD_PATH);
+  }, [bootstrapped, user?.must_change_password, pathname, router]);
 
   return (
     <>

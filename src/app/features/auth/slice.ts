@@ -13,6 +13,7 @@ import {
   UserProps,
   AuthResponseData,
   ProfileGetData,
+  ProfileUpdateData,
 } from '@/app/types/user';
 import { LoginCredentials, SignupCredentials } from '@/app/types/auth';
 
@@ -169,16 +170,19 @@ export const saveProfileNameThunk = createAsyncThunk<
 
 
 export const changePasswordThunk = createAsyncThunk<
-  void,
+  UserProps | null,
   { oldPassword: string; newPassword: string },
   { rejectValue: string }
 >('auth/changePassword', async ({ oldPassword, newPassword }, { rejectWithValue }) => {
   try {
-    const res = await apiRequest('PUT', USER_ENDPOINTS.PROFILE, {
+    const res = await apiRequest<ProfileUpdateData>('PUT', USER_ENDPOINTS.PROFILE, {
       password: { oldPassword, newPassword },
     });
     if (!res?.success) throw new Error(res?.message || 'Change password failed');
-    return;
+    // 返回更新后的用户（must_change_password 会变成 false）
+    const user = res.data?.user ?? null;
+    if (user) persistUser(user);
+    return user;
   } catch (err: any) {
     return rejectWithValue(err?.message || 'Change password failed');
   }
@@ -288,7 +292,8 @@ const authSlice = createSlice({
         state.passwordStatus = 'changing';
         state.passwordError = null;
       })
-      .addCase(changePasswordThunk.fulfilled, (state) => {
+      .addCase(changePasswordThunk.fulfilled, (state, action) => {
+        if (action.payload) state.user = action.payload;
         state.changingPassword = false;
         state.passwordStatus = 'succeeded';
         state.passwordError = null;
