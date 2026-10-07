@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { BookmarkIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import { useScrollRestoration } from "@/hooks/useBackNavigation";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import {
   fetchLibraryCatalog,
@@ -44,6 +45,8 @@ function LibraryPageInner() {
   useEffect(() => setMounted(true), []);
 
   const { catalog, categories } = useAppSelector((s) => s.library);
+  // 通过返回回到这一页时，滚回离开前的位置
+  useScrollRestoration(catalog.status === "succeeded");
 
   const currentUser = useAppSelector((s) => s.auth.user);
   const myActiveBorrows = useAppSelector((s) => s.library.myBorrows.list);

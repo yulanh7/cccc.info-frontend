@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeftIcon } from "@heroicons/react/24/outline";
+import { useBackNavigation, useScrollRestoration } from "@/hooks/useBackNavigation";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import { fetchMyBorrows, returnLibraryBorrow } from "@/app/features/library/slice";
 import type { LibraryBorrow } from "@/app/types/library";
@@ -32,12 +33,15 @@ function MyBorrowsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
+  const goBack = useBackNavigation("/library");
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
   const currentUser = useAppSelector((s) => s.auth.user);
   const { list, pagination, status, error } = useAppSelector((s) => s.library.myBorrows);
+  // 通过返回回到这一页时，滚回离开前的位置
+  useScrollRestoration(status === "succeeded");
 
   // ===== URL 参数：tab / page
   const tab: Tab = searchParams.get("tab") === "history" ? "history" : "active";
@@ -98,11 +102,11 @@ function MyBorrowsPageInner() {
   return (
     <>
       <LoadingOverlay show={!mounted} text="Loading your borrows…" />
-      <CustomHeader pageTitle="My borrows" />
+      <CustomHeader pageTitle="My borrows" backHref="/library" backText="Library" backLabel="Back to library" />
       <PageTitle title="My borrows" showPageTitle />
 
       <div className="mx-auto w-full max-w-3xl p-4 min-h-screen mt-0 md:mt-16">
-        <Link href="/library" className="hidden md:inline-flex items-center gap-1 text-sm text-dark-gray hover:text-dark-green mb-3">
+        <Link href="/library" onClick={goBack} className="hidden md:inline-flex items-center gap-1 text-sm text-dark-gray hover:text-dark-green mb-3">
           <ChevronLeftIcon className="h-4 w-4" />
           Back to library
         </Link>

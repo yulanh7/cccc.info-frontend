@@ -7,6 +7,7 @@ import { rehydrateAuth, fetchProfileThunk } from '@/app/features/auth/slice';
 import { getToken } from '@/app/features/auth/token';
 import Header from './Header';
 import BottomNav from './BottomNav';
+import { useNavigationTracker } from '@/hooks/useBackNavigation';
 
 const PUBLIC_PATHS = ['/', '/auth'];
 
@@ -14,6 +15,8 @@ export default function LayoutClient({ children }: { children: React.ReactNode }
   const router = useRouter();
   const pathname = usePathname();
   const dispatch = useAppDispatch();
+  // 记录上一页，供返回箭头回到离开时的列表位置
+  useNavigationTracker();
 
   const user = useAppSelector((s) => s.auth.user);
   const isLoggedIn = !!user;

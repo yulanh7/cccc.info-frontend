@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronLeftIcon, ArrowDownTrayIcon, InformationCircleIcon, DocumentArrowUpIcon } from "@heroicons/react/24/outline";
+import { useBackNavigation } from "@/hooks/useBackNavigation";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import { previewLibraryImport, importLibrary, exportLibrary } from "@/app/features/library/slice";
 import { canManageLibrary } from "@/app/types/library";
@@ -17,6 +18,7 @@ type Stage = "pick" | "preview" | "done";
 
 export default function LibraryImportPage() {
   const dispatch = useAppDispatch();
+  const goBack = useBackNavigation("/library/manage");
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -64,11 +66,11 @@ export default function LibraryImportPage() {
   return (
     <>
       <LoadingOverlay show={!mounted} text="Loading…" />
-      <CustomHeader pageTitle="Import / export" />
+      <CustomHeader pageTitle="Import / export" backHref="/library/manage" backText="Manage" backLabel="Back to library management" />
       <PageTitle title="Import / export" showPageTitle />
 
       <div className="mx-auto w-full max-w-3xl p-4 min-h-screen mt-0 md:mt-16">
-        <Link href="/library/manage" className="hidden md:inline-flex items-center gap-1 text-sm text-dark-gray hover:text-dark-green mb-3">
+        <Link href="/library/manage" onClick={goBack} className="hidden md:inline-flex items-center gap-1 text-sm text-dark-gray hover:text-dark-green mb-3">
           <ChevronLeftIcon className="h-4 w-4" />
           Back to library management
         </Link>

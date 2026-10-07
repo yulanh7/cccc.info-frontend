@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeftIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { useBackNavigation, useScrollRestoration } from "@/hooks/useBackNavigation";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import { fetchAdminBorrows, returnLibraryBorrow } from "@/app/features/library/slice";
 import { canManageLibrary } from "@/app/types/library";
@@ -38,6 +39,7 @@ function LibraryBorrowsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
+  const goBack = useBackNavigation("/library/manage");
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -45,6 +47,8 @@ function LibraryBorrowsPageInner() {
   const currentUser = useAppSelector((s) => s.auth.user);
   const canAccess = canManageLibrary(currentUser);
   const { list, pagination, status, error } = useAppSelector((s) => s.library.adminBorrows);
+  // 通过返回回到这一页时，滚回离开前的位置
+  useScrollRestoration(status === "succeeded");
 
   // ===== URL 参数：status / user_id / item_id / page（user_name、item_label 只用于显示筛选标签）
   const statusParam = searchParams.get("status");
@@ -126,11 +130,11 @@ function LibraryBorrowsPageInner() {
   return (
     <>
       <LoadingOverlay show={!mounted} text="Loading borrows…" />
-      <CustomHeader pageTitle="Borrows" />
+      <CustomHeader pageTitle="Borrows" backHref="/library/manage" backText="Manage" backLabel="Back to library management" />
       <PageTitle title="Borrows" showPageTitle />
 
       <div className="mx-auto w-full max-w-4xl p-4 min-h-screen mt-0 md:mt-16">
-        <Link href="/library/manage" className="hidden md:inline-flex items-center gap-1 text-sm text-dark-gray hover:text-dark-green mb-3">
+        <Link href="/library/manage" onClick={goBack} className="hidden md:inline-flex items-center gap-1 text-sm text-dark-gray hover:text-dark-green mb-3">
           <ChevronLeftIcon className="h-4 w-4" />
           Back to library management
         </Link>
