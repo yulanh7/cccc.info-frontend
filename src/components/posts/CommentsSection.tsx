@@ -42,6 +42,8 @@ type Props = {
 
   /** 当前用户能否发评论/回复（post.can_comment）；false 时隐藏输入框和 Reply */
   canComment?: boolean;
+  /** 小组管理员：可以删除任何人的评论 */
+  canModerate?: boolean;
 };
 
 /* ======================= Main Component ======================= */
@@ -55,6 +57,7 @@ export default function CommentsSection({
   likeBusy = false,
   onToggleLike,
   canComment = true,
+  canModerate = false,
 }: Props) {
   const dispatch = useAppDispatch();
 
@@ -137,6 +140,7 @@ export default function CommentsSection({
                 c={c}
                 postAuthorId={postAuthorId}
                 currentUserId={currentUserId}
+                canModerate={canModerate}
                 onReply={canComment ? (target) => {
                   setReplyTo(target);
                   openComposer(true); // 点“Reply”时自动展开底部 Composer
@@ -262,6 +266,7 @@ type ItemProps = {
   c: CommentItemApi;
   postAuthorId: number;
   currentUserId?: number | null;
+  canModerate?: boolean;
   onReply?: (t: { commentId: number; nickname: string }) => void;
   onDelete: (commentId: number, parentId: number | null) => void;
   fetchChildren: (parentId: number, page: number) => any;
@@ -277,6 +282,7 @@ function CommentItem({
   c,
   postAuthorId,
   currentUserId,
+  canModerate = false,
   onReply,
   onDelete,
   fetchChildren,
@@ -348,7 +354,7 @@ function CommentItem({
               </button>
             )}
 
-            {isMine && (
+            {(isMine || canModerate) && (
               <button
                 className="inline-flex items-center gap-1 hover:text-red-600"
                 onClick={() => onDelete(c.id, c.parent_id)}
@@ -384,6 +390,7 @@ function CommentItem({
                       c={child}
                       postAuthorId={postAuthorId}
                       currentUserId={currentUserId}
+                      canModerate={canModerate}
                       onReply={onReply}
                       onDelete={onDelete}
                     />
@@ -415,12 +422,14 @@ function ChildCommentItem({
   c,
   postAuthorId,
   currentUserId,
+  canModerate = false,
   onReply,
   onDelete,
 }: {
   c: CommentItemApi;
   postAuthorId: number;
   currentUserId?: number | null;
+  canModerate?: boolean;
   onReply?: (t: { commentId: number; nickname: string }) => void;
   onDelete: (commentId: number, parentId: number | null) => void;
 }) {
@@ -456,7 +465,7 @@ function ChildCommentItem({
 
         </div>
         <div className="mt-1 flex items-center gap-3 text-xs text-gray-500">
-          {isMine && (
+          {(isMine || canModerate) && (
             <button
               className="inline-flex items-center gap-1 hover:text-red-600"
               onClick={() => onDelete(c.id, c.parent_id)}

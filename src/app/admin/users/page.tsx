@@ -4,9 +4,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
-import { fetchAdminUsers, setUserPermission } from "@/app/features/admin/usersSlice";
+import { fetchAdminUsers, setUserPermission, setUserAdmin } from "@/app/features/admin/usersSlice";
 import { fetchProfileThunk } from "@/app/features/auth/slice";
-import { isAdmin, PERMISSION_CREATE_GROUP } from "@/app/types/user";
+import { isAdmin, PERMISSION_CREATE_GROUP, PERMISSION_MANAGE_GROUPS } from "@/app/types/user";
+import ConfirmModal from "@/components/ConfirmModal";
+import { useConfirm } from "@/hooks/useConfirm";
 import { PERMISSION_MANAGE_LIBRARY } from "@/app/types/library";
 import type { UserProps } from "@/app/types/user";
 import { formatDate } from "@/app/ultility";
@@ -63,6 +65,17 @@ function AdminUsersPageInner() {
     router.push(qs ? `${ADMIN_USERS_PATH}?${qs}` : ADMIN_USERS_PATH);
   };
 
+  // ===== 设为 admin / 改回普通用户（先确认；不能取消自己，后端也会拒绝）
+  const confirmAdmin = useConfirm<{ user: UserProps; admin: boolean }>("Change admin role?");
+  const toggleAdmin = async (target: { user: UserProps; admin: boolean } | null) => {
+    if (!target) return;
+    try {
+      await dispatch(setUserAdmin({ userId: target.user.id, admin: target.admin })).unwrap();
+    } catch (e: any) {
+      alert(typeof e === "string" ? e : e?.message || "Update admin role failed");
+    }
+  };
+
   const togglePermission = async (u: UserProps, permission: string, granted: boolean) => {
     try {
       await dispatch(setUserPermission({ userId: u.id, permission, granted })).unwrap();
@@ -116,6 +129,8 @@ function AdminUsersPageInner() {
               ) : users.map((u) => {
                 const hasCreateGroup = !!u.permissions?.includes(PERMISSION_CREATE_GROUP);
                 const hasManageLibrary = !!u.permissions?.includes(PERMISSION_MANAGE_LIBRARY);
+                const hasManageGroups = !!u.permissions?.includes(PERMISSION_MANAGE_GROUPS);
+                const isSelf = currentUser?.id === u.id;
                 const updating = updatingIds.includes(u.id);
                 return (
                   <div key={u.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-border last:border-b-0 p-3 text-sm">
@@ -135,8 +150,29 @@ function AdminUsersPageInner() {
                       )}
                     </div>
 
-                    {/* admin 隐含拥有全部权限，开关只读 */}
                     <div className="flex flex-col gap-1">
+                      {/* 站点管理员：不能取消自己 */}
+                      <label
+                        className={`flex items-center gap-2 ${isSelf || updating ? "opacity-60" : "cursor-pointer"}`}
+                        title={isSelf ? "You can't remove your own admin role" : undefined}
+                      >
+                        <input
+                          type="checkbox"
+                          aria-label={`Make ${u.firstName} an admin`}
+                          checked={u.admin}
+                          disabled={isSelf || updating}
+                          onChange={(e) =>
+                            confirmAdmin.ask(
+                              { user: u, admin: e.target.checked },
+                              e.target.checked
+                                ? `Make ${u.firstName} an admin? Admins can manage users and permissions.`
+                                : `Remove ${u.firstName}'s admin role? Their Group manager access will also be removed.`
+                            )
+                          }
+                        />
+                        <span className="text-dark-gray">Admin</span>
+                      </label>
+                      {/* admin 隐含可以建组，开关只读 */}
                       <label
                         className={`flex items-center gap-2 ${u.admin || updating ? "opacity-60" : "cursor-pointer"}`}
                         title={u.admin ? "Admins can always create groups" : undefined}
@@ -161,6 +197,19 @@ function AdminUsersPageInner() {
                         />
                         <span className="text-dark-gray">Library manager</span>
                       </label>
+                      {/* 小组管理员：只能给 admin，admin 也要单独打开 */}
+                      {u.admin && (
+                        <label className={`flex items-center gap-2 ${updating ? "opacity-60" : "cursor-pointer"}`}>
+                          <input
+                            type="checkbox"
+                            aria-label={`Make ${u.firstName} a group manager`}
+                            checked={hasManageGroups}
+                            disabled={updating}
+                            onChange={(e) => togglePermission(u, PERMISSION_MANAGE_GROUPS, e.target.checked)}
+                          />
+                          <span className="text-dark-gray">Group manager</span>
+                        </label>
+                      )}
                       {updating && <span className="text-xs text-dark-gray/70">Saving…</span>}
                     </div>
                   </div>
@@ -180,6 +229,18 @@ function AdminUsersPageInner() {
           </>
         )}
       </div>
+      <ConfirmModal
+        isOpen={confirmAdmin.open}
+        title="Admin role"
+        message={confirmAdmin.message}
+        confirmLabel="Confirm"
+        confirmVariant="primary"
+        cancelLabel="Cancel"
+        cancelVariant="outline"
+        onCancel={confirmAdmin.cancel}
+        onClose={confirmAdmin.cancel}
+        onConfirm={confirmAdmin.confirm(toggleAdmin)}
+      />
     </>
   );
 }

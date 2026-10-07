@@ -28,6 +28,7 @@ const initialState: AdminUsersState = {
 const ADMIN_ENDPOINTS = {
   USERS: '/admin/users',
   USER_PERMISSIONS: (userId: number) => `/admin/users/${userId}/permissions`,
+  USER_ADMIN: (userId: number) => `/admin/users/${userId}/admin`,
 } as const;
 
 // ===== 用户列表：GET /api/admin/users（仅 admin）
@@ -62,6 +63,20 @@ export const setUserPermission = createAsyncThunk<
   }
 });
 
+// ===== 设为 admin / 改回普通用户：PATCH /api/admin/users/{user_id}/admin
+// 不能取消自己、不能取消最后一个 admin（后端 400）；改回普通用户时后端自动去掉 manage_groups
+export const setUserAdmin = createAsyncThunk<UserProps, { userId: number; admin: boolean }>(
+  'adminUsers/setUserAdmin',
+  async ({ userId, admin }, { rejectWithValue }) => {
+    try {
+      const res = await apiRequest<UserProps>('PATCH', ADMIN_ENDPOINTS.USER_ADMIN(userId), { admin });
+      return unwrapData(res);
+    } catch (e: any) {
+      return rejectWithValue(e.message || 'Update admin role failed') as any;
+    }
+  }
+);
+
 const adminUsersSlice = createSlice({
   name: 'adminUsers',
   initialState,
@@ -92,6 +107,19 @@ const adminUsersSlice = createSlice({
         if (idx >= 0) s.users[idx] = a.payload;
       })
       .addCase(setUserPermission.rejected, (s, a) => {
+        s.updatingIds = s.updatingIds.filter((id) => id !== a.meta.arg.userId);
+      });
+
+    builder
+      .addCase(setUserAdmin.pending, (s, a) => {
+        s.updatingIds.push(a.meta.arg.userId);
+      })
+      .addCase(setUserAdmin.fulfilled, (s, a) => {
+        s.updatingIds = s.updatingIds.filter((id) => id !== a.meta.arg.userId);
+        const idx = s.users.findIndex((u) => u.id === a.payload.id);
+        if (idx >= 0) s.users[idx] = a.payload;
+      })
+      .addCase(setUserAdmin.rejected, (s, a) => {
         s.updatingIds = s.updatingIds.filter((id) => id !== a.meta.arg.userId);
       });
   },

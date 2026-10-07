@@ -19,8 +19,14 @@ export type AuthResponse = ApiResponseProps<AuthResponseData>;
 
 export const isAdmin = (user?: UserProps | null): boolean => !!user?.admin;
 
-/** 全局权限值：目前只有 create_group */
+/** 全局权限值 */
 export const PERMISSION_CREATE_GROUP = 'create_group';
+/** 小组管理员：只能授予 admin，admin 也要单独打开 */
+export const PERMISSION_MANAGE_GROUPS = 'manage_groups';
+
+/** 小组管理员 = admin 而且打开了 manage_groups；没打开的 admin 在别人的小组里和普通用户一样 */
+export const isGroupManager = (user?: UserProps | null): boolean =>
+  !!user?.admin && !!user.permissions?.includes(PERMISSION_MANAGE_GROUPS);
 
 /** 能否创建小组：admin 或拥有 create_group 权限（admin 的 permissions 不会自动包含所有值） */
 export const canCreateGroup = (user?: UserProps | null): boolean =>

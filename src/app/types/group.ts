@@ -1,5 +1,6 @@
 import type { ApiResponseProps } from "./api";
 import type { UserProps } from "./user";
+import { isGroupManager } from "./user";
 
 /** 发帖权限：members = 所有成员可发帖；leaders_only = 仅组长可发帖/编辑/删帖 */
 export type PostPolicy = "members" | "leaders_only";
@@ -112,17 +113,17 @@ export type AddLeaderResponseApi = ApiResponseProps<{
 export type MembersListResponseApi = ApiResponseProps<MembersListData>;
 export type GroupStatsResponseApi = ApiResponseProps<GroupStats>;
 
-/** 编辑小组设置 / 管理成员 / 加撤组长：admin、创建者、任一组长 */
+/** 编辑小组设置 / 管理成员 / 加撤组长：小组管理员、创建者、任一组长 */
 export const canEditGroup = (group: GroupApi, user?: UserProps | null): boolean =>
-  !!user?.admin || group.is_creator || !!group.is_leader;
+  isGroupManager(user) || group.is_creator || !!group.is_leader;
 
-/** 转让创建者：仅 admin、当前创建者 */
+/** 转让创建者：仅小组管理员、当前创建者 */
 export const canTransferOwnership = (group: GroupApi, user?: UserProps | null): boolean =>
-  !!user?.admin || group.is_creator;
+  isGroupManager(user) || group.is_creator;
 
-/** 删除小组：仅 admin、创建者（组长不行） */
+/** 删除小组：仅小组管理员、创建者（组长不行） */
 export const canDeleteGroup = (group: GroupApi, user?: UserProps | null): boolean =>
-  !!user?.admin || group.is_creator;
+  isGroupManager(user) || group.is_creator;
 
 
 export type RawUserGroup = {

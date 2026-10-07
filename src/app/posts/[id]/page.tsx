@@ -30,6 +30,7 @@ import YouTubeList from "@/components/ui/YouTubeList";
 import { uploadAllFiles } from "@/app/ultility/uploadAllFiles";
 import CommentsSection from "@/components/posts/CommentsSection";
 import type { UserProps } from "@/app/types";
+import { isGroupManager } from "@/app/types/user";
 import type { CommentPolicy } from "@/app/types/group";
 import type {
   PostDetailData,
@@ -447,6 +448,7 @@ function PostDetailPageInner() {
                 postAuthorId={post.author.id}
                 currentUserId={user?.id ?? null}
                 canComment={post.can_comment !== false}
+                canModerate={isGroupManager(user)}
                 likeCount={likeCount}
                 liked={liked}
                 likeBusy={likeBusy}

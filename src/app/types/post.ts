@@ -1,5 +1,6 @@
 import { ApiResponseProps, UserProps } from '@/app/types'
 import type { PostPolicy, CommentPolicy } from './group'
+import { isGroupManager } from './user'
 
 export type postsPagination = {
   current_page: number;
@@ -227,19 +228,19 @@ function isGroupCreatorOrLeader(group: GroupPostAccess | null | undefined, user?
   return isCreator || !!group.is_leader;
 }
 
-/** admin / 创建者 / 组长 */
+/** 小组管理员 / 创建者 / 组长 */
 function isGroupPrivileged(group: GroupPostAccess | null | undefined, user?: UserProps | null): boolean {
-  return !!user?.admin || isGroupCreatorOrLeader(group, user);
+  return isGroupManager(user) || isGroupCreatorOrLeader(group, user);
 }
 
-/** 能否在该组发帖：leaders_only 组仅 admin / 创建者 / 组长 */
+/** 能否在该组发帖：leaders_only 组仅小组管理员 / 创建者 / 组长 */
 export function canWritePosts(group: GroupPostAccess | null | undefined, user?: UserProps | null): boolean {
   if (!user || !group) return false;
   if (isGroupPrivileged(group, user)) return true;
   return group.post_policy !== 'leaders_only';
 }
 
-/** 能否编辑帖子：leaders_only 组仅 admin / 创建者 / 组长（旧帖子也不例外）；members 组仅作者本人 */
+/** 能否编辑帖子：leaders_only 组仅小组管理员 / 创建者 / 组长（旧帖子也不例外）；members 组仅作者本人 */
 export function canEditPost(
   post: PostListItemApi | PostDetailData | null | undefined,
   user?: UserProps | null
@@ -249,7 +250,7 @@ export function canEditPost(
   return isPostAuthor(post, user);
 }
 
-/** 能否删除帖子：leaders_only 组仅 admin / 创建者 / 组长；members 组为作者本人 / 创建者 / 组长（与后端一致，不含 admin） */
+/** 能否删除帖子：leaders_only 组仅小组管理员 / 创建者 / 组长；members 组为作者本人 / 创建者 / 组长（与后端一致，不含小组管理员） */
 export function canDeletePost(
   post: PostListItemApi | PostDetailData | null | undefined,
   user?: UserProps | null
