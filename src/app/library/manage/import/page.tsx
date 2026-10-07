@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ChevronLeftIcon, ArrowDownTrayIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
+import { ChevronLeftIcon, ArrowDownTrayIcon, InformationCircleIcon, DocumentArrowUpIcon } from "@heroicons/react/24/outline";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import { previewLibraryImport, importLibrary, exportLibrary } from "@/app/features/library/slice";
 import { canManageLibrary } from "@/app/types/library";
@@ -82,8 +82,9 @@ export default function LibraryImportPage() {
               <div className="flex items-start gap-2 text-sm text-dark-gray">
                 <InformationCircleIcon className="h-5 w-5 shrink-0 text-dark-green" />
                 <p>
-                  Download the latest list first, make your changes in that file, then import it here.
-                  Importing an old spreadsheet can create duplicates.
+                  Tip: Export the current catalogue, edit that file, then import it. The exported file can also be used
+                  as a template. Avoid using an older file if you have changed book details in the system, as this may
+                  create duplicates for books without call numbers.
                 </p>
               </div>
               <Button
@@ -108,6 +109,7 @@ export default function LibraryImportPage() {
               </p>
 
               <div className="mt-3 flex flex-wrap items-center gap-2">
+                {/* 原生文件控件隐藏，用和网站一致的按钮触发 */}
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -119,8 +121,23 @@ export default function LibraryImportPage() {
                     setStage("pick");
                     setError(null);
                   }}
-                  className="text-sm"
+                  className="hidden"
                 />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  tone="brand"
+                  leftIcon={<DocumentArrowUpIcon className="h-4 w-4" />}
+                  disabled={busy !== null}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  Choose Excel file
+                </Button>
+                {file && (
+                  <span className="min-w-0 max-w-full truncate text-sm text-dark-gray" title={file.name}>
+                    {file.name}
+                  </span>
+                )}
                 {stage === "pick" && (
                   <Button
                     size="sm"
@@ -154,7 +171,7 @@ export default function LibraryImportPage() {
                       Cancel
                     </Button>
                   </div>
-                  <ImportReportView report={report} />
+                  <ImportReportView report={report} mode="preview" />
                 </div>
               )}
 
@@ -164,7 +181,7 @@ export default function LibraryImportPage() {
                     Import finished.
                   </p>
                   <Button variant="outline" size="sm" onClick={reset}>Import another file</Button>
-                  <ImportReportView report={report} />
+                  <ImportReportView report={report} mode="done" />
                 </div>
               )}
             </section>
