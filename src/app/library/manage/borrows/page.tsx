@@ -8,7 +8,7 @@ import { useBackNavigation, useScrollRestoration } from "@/hooks/useBackNavigati
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import { fetchAdminBorrows, returnLibraryBorrow } from "@/app/features/library/slice";
 import { canManageLibrary } from "@/app/types/library";
-import type { LibraryBorrow, LibraryBorrower, LibraryBorrowStatus } from "@/app/types/library";
+import type { LibraryBorrow, LibraryBorrowStatus } from "@/app/types/library";
 import { formatDate } from "@/app/ultility";
 import { LIBRARY_PER_PAGE } from "@/app/constants";
 import PageTitle from "@/components/layout/PageTitle";
@@ -18,7 +18,7 @@ import Pagination from "@/components/ui/Pagination";
 import Button from "@/components/ui/Button";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useConfirm } from "@/hooks/useConfirm";
-import BorrowerPicker from "@/components/library/BorrowerPicker";
+import SearchBar from "@/components/SearchBar";
 
 const BORROWS_PATH = "/library/manage/borrows";
 
@@ -54,6 +54,7 @@ function LibraryBorrowsPageInner() {
   const statusParam = searchParams.get("status");
   const statusFilter: LibraryBorrowStatus | undefined =
     statusParam === "active" || statusParam === "returned" ? statusParam : undefined;
+  const qParam = (searchParams.get("q") || "").trim();
   const userId = positiveInt(searchParams.get("user_id"));
   const itemId = positiveInt(searchParams.get("item_id"));
   const userLabel = searchParams.get("user_name") || (userId ? `User #${userId}` : "");
@@ -74,6 +75,7 @@ function LibraryBorrowsPageInner() {
   const load = () =>
     dispatch(
       fetchAdminBorrows({
+        q: qParam || undefined,
         status: statusFilter,
         user_id: userId,
         item_id: itemId,
@@ -86,15 +88,11 @@ function LibraryBorrowsPageInner() {
     if (!mounted || !canAccess) return;
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dispatch, mounted, canAccess, statusFilter, userId, itemId, currentPage]);
+  }, [dispatch, mounted, canAccess, qParam, statusFilter, userId, itemId, currentPage]);
 
-  // ===== 按借阅人筛选
-  const [pickingUser, setPickingUser] = useState(false);
-  const onPickUser = (u: LibraryBorrower | null) => {
-    if (!u) return;
-    setPickingUser(false);
-    pushQuery({ user_id: String(u.id), user_name: u.firstName });
-  };
+  // ===== 文字搜索：借阅人名字 / 邮箱、书名、编号
+  const [qInput, setQInput] = useState(qParam);
+  useEffect(() => setQInput(qParam), [qParam]);
 
   // ===== 代还
   const confirmReturn = useConfirm<LibraryBorrow>("Register this return?");
@@ -130,8 +128,8 @@ function LibraryBorrowsPageInner() {
   return (
     <>
       <LoadingOverlay show={!mounted} text="Loading borrows…" />
-      <CustomHeader pageTitle="Borrows" backHref="/library/manage" backText="Manage" backLabel="Back to library management" />
-      <PageTitle title="Borrows" showPageTitle />
+      <CustomHeader pageTitle="Borrow history" backHref="/library/manage" backText="Manage" backLabel="Back to library management" />
+      <PageTitle title="Borrow history" showPageTitle />
 
       <div className="mx-auto w-full max-w-4xl p-4 min-h-screen mt-0 md:mt-16">
         <Link href="/library/manage" onClick={goBack} className="hidden md:inline-flex items-center gap-1 text-sm text-dark-gray hover:text-dark-green mb-3">
@@ -143,33 +141,52 @@ function LibraryBorrowsPageInner() {
           <p className="text-sm text-dark-gray">Only library managers can see all borrows.</p>
         ) : (
           <>
-            {/* 筛选 */}
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <select
-                aria-label="Status"
-                value={statusFilter ?? ""}
-                onChange={(e) => pushQuery({ status: e.target.value || undefined })}
-                className="rounded-sm border border-border bg-white p-1.5"
-              >
-                <option value="">All borrows</option>
-                <option value="active">On loan</option>
-                <option value="returned">Returned</option>
-              </select>
-              {userId
-                ? chip(`Borrower: ${userLabel}`, () => pushQuery({ user_id: undefined, user_name: undefined }))
-                : !pickingUser && (
-                  <Button size="sm" variant="outline" onClick={() => setPickingUser(true)}>
-                    Filter by borrower
-                  </Button>
-                )}
-              {itemId && chip(`Item: ${itemLabel}`, () => pushQuery({ item_id: undefined, item_label: undefined }))}
+            {/* 状态：三个并排按钮 */}
+            <div className="grid grid-cols-3 overflow-hidden rounded-sm border border-border bg-white text-[16px]" role="tablist" aria-label="Status">
+              {([
+                [undefined, "All"],
+                ["active", "On loan"],
+                ["returned", "Returned"],
+              ] as Array<[LibraryBorrowStatus | undefined, string]>).map(([value, label], i) => {
+                const selected = statusFilter === value;
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    role="tab"
+                    aria-selected={selected}
+                    onClick={() => pushQuery({ status: value })}
+                    className={`h-10 px-2 ${i > 0 ? "border-l border-border" : ""} ${selected ? "bg-dark-green text-white" : "text-dark-gray hover:bg-gray-50"}`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
             </div>
-            {pickingUser && !userId && (
-              <div className="mt-2 max-w-sm">
-                <BorrowerPicker selected={null} onSelect={onPickUser} autoFocus />
-                <button type="button" className="mt-1 text-xs text-dark-gray underline" onClick={() => setPickingUser(false)}>
-                  Cancel
-                </button>
+
+            <div className="mt-3">
+              <SearchBar
+                value={qInput}
+                onChange={setQInput}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  pushQuery({ q: qInput.trim() || undefined });
+                }}
+                onClear={() => {
+                  setQInput("");
+                  pushQuery({ q: undefined });
+                }}
+                placeholder="Borrower, title or no."
+                sticky={false}
+                size="lg"
+              />
+            </div>
+
+            {/* 从馆藏管理页某一本的 "Borrow history" 进来时，只看这一本；点 ✕ 看全部 */}
+            {(userId || itemId) && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {userId && chip(`Showing borrows by ${userLabel}`, () => pushQuery({ user_id: undefined, user_name: undefined }))}
+                {itemId && chip(`Showing borrows for ${itemLabel}`, () => pushQuery({ item_id: undefined, item_label: undefined }))}
               </div>
             )}
 
@@ -190,28 +207,14 @@ function LibraryBorrowsPageInner() {
                   <div className="min-w-0 flex-1 basis-full sm:basis-0">
                     <div className="flex flex-wrap items-center gap-2">
                       {b.item.call_number && <span className="font-mono text-xs text-dark-gray/80">{b.item.call_number}</span>}
-                      <button
-                        type="button"
-                        className="font-medium text-dark-gray hover:text-dark-green text-left break-words"
-                        title="Show borrows of this item"
-                        onClick={() => pushQuery({ item_id: String(b.item.id), item_label: b.item.call_number || b.item.title })}
-                      >
-                        {b.item.title}
-                      </button>
+                      <span className="font-medium text-dark-gray break-words">{b.item.title}</span>
                       {!b.returned_at && (
                         <span className="rounded-full bg-dark-green/10 px-2 py-0.5 text-[10px] text-dark-green">On loan</span>
                       )}
                     </div>
                     <div className="mt-0.5 text-xs text-dark-gray">
-                      <button
-                        type="button"
-                        className="hover:text-dark-green"
-                        title="Show borrows of this person"
-                        onClick={() => pushQuery({ user_id: String(b.user.id), user_name: b.user.firstName })}
-                      >
-                        {b.user.firstName}
-                        {b.user.email ? ` (${b.user.email})` : ""}
-                      </button>
+                      {b.user.firstName}
+                      {b.user.email ? ` (${b.user.email})` : ""}
                     </div>
                     <div className="mt-0.5 text-xs text-dark-gray/70">
                       Borrowed {formatDate(b.borrowed_at)}

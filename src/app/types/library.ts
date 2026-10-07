@@ -169,6 +169,8 @@ export type LibraryItemInput = Partial<{
 }>;
 
 export type LibraryAdminBorrowsParams = {
+  /** 模糊搜借阅人名字 / 邮箱、书名、编号 */
+  q?: string;
   status?: LibraryBorrowStatus;
   user_id?: number;
   item_id?: number;
