@@ -20,7 +20,7 @@ import ConfirmModal from "@/components/ConfirmModal";
 import { useConfirm } from "@/hooks/useConfirm";
 import SearchBar from "@/components/SearchBar";
 
-const BORROWS_PATH = "/library/manage/borrows";
+const BORROWS_PATH = "/library/borrows";
 
 export default function LibraryBorrowsPage() {
   return (
@@ -39,7 +39,7 @@ function LibraryBorrowsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
-  const goBack = useBackNavigation("/library/manage");
+  const goBack = useBackNavigation("/library");
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -128,13 +128,13 @@ function LibraryBorrowsPageInner() {
   return (
     <>
       <LoadingOverlay show={!mounted} text="Loading borrows…" />
-      <CustomHeader pageTitle="Borrow history" backHref="/library/manage" backText="Manage" backLabel="Back to library management" />
+      <CustomHeader pageTitle="Borrow history" backHref="/library" backText="Library" backLabel="Back to library" />
       <PageTitle title="Borrow history" showPageTitle />
 
       <div className="mx-auto w-full max-w-4xl p-4 min-h-screen mt-0 md:mt-16">
-        <Link href="/library/manage" onClick={goBack} className="hidden md:inline-flex items-center gap-1 text-sm text-dark-gray hover:text-dark-green mb-3">
+        <Link href="/library" onClick={goBack} className="hidden md:inline-flex items-center gap-1 text-sm text-dark-gray hover:text-dark-green mb-3">
           <ChevronLeftIcon className="h-4 w-4" />
-          Back to library management
+          Back to library
         </Link>
 
         {mounted && !canAccess ? (

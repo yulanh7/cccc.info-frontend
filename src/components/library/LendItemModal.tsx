@@ -8,18 +8,20 @@ import Button from "@/components/ui/Button";
 import LibraryModal from "@/components/library/LibraryModal";
 import BorrowerPicker from "@/components/library/BorrowerPicker";
 
-/** 代借：选借阅人 → 借这一件（带 user_id，不带 any_copy） */
+/** 代借：选借阅人 → 借这一件（带 user_id，不带 any_copy）；默认借阅人是管理员自己 */
 export default function LendItemModal({
   item,
+  defaultBorrower = null,
   onClose,
   onLent,
 }: {
-  item: LibraryItem;
+  item: Pick<LibraryItem, "id" | "call_number" | "title">;
+  defaultBorrower?: LibraryBorrower | null;
   onClose: () => void;
   onLent: (res: LibraryBorrowResult) => void;
 }) {
   const dispatch = useAppDispatch();
-  const [borrower, setBorrower] = useState<LibraryBorrower | null>(null);
+  const [borrower, setBorrower] = useState<LibraryBorrower | null>(defaultBorrower);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

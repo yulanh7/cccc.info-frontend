@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import type { LibraryCatalogGroup, LibraryCopy } from "@/app/types/library";
 import { formatDate } from "@/app/ultility";
 import Button from "@/components/ui/Button";
@@ -11,28 +12,32 @@ export type CatalogActionError = { message: string };
 /** 自己借的那一件：用来显示 "Borrowed by you" 和还书 */
 export type OwnBorrow = { borrowId: number; borrowedAt: string };
 
+/** 图书管理员每一件的操作；不传 = 普通读者视图 */
+export type CatalogManagerActions = {
+  onWithdraw: (copy: LibraryCopy) => void;
+  onRestore: (copy: LibraryCopy) => void;
+  onEdit: (copy: LibraryCopy) => void;
+  onLend: (copy: LibraryCopy) => void;
+  onReturnFor: (copy: LibraryCopy, borrowId: number) => void;
+  historyHref: (copy: LibraryCopy) => string;
+};
+
 type Props = {
   group: LibraryCatalogGroup;
   /** 按馆藏 id 查“我借的那一件”（来自我的借阅中） */
   ownBorrows: Record<number, OwnBorrow>;
-  currentUserId?: number | null;
-  /** 正在借 / 还的那一件 */
+  /** 正在操作的那一件 */
   busyCopyId?: number | null;
   error?: CatalogActionError;
   onBorrow: (group: LibraryCatalogGroup, copy: LibraryCopy) => void;
   onReturn: (group: LibraryCatalogGroup, copy: LibraryCopy, borrowId: number) => void;
+  manager?: CatalogManagerActions;
 };
 
-/** 目录里的一组（同一本书的所有在架复本）：每一件单独一行，各自借 / 还 */
-export default function CatalogGroupCard({
-  group,
-  ownBorrows,
-  currentUserId,
-  busyCopyId,
-  error,
-  onBorrow,
-  onReturn,
-}: Props) {
+/** 目录里的一组（同一本书的所有复本）：每一件单独一行。
+ *  普通读者：编号 · 状态 · Borrow / Return
+ *  图书管理员：编号 · 状态 · Borrow history，下面一排 [Withdraw|Restore] [Edit] [Lend|Return]（不显示借阅人） */
+export default function CatalogGroupCard({ group, ownBorrows, busyCopyId, error, onBorrow, onReturn, manager }: Props) {
   const byline = [group.creator, group.publisher].filter(Boolean).join(" · ");
 
   return (
@@ -46,35 +51,98 @@ export default function CatalogGroupCard({
       </div>
       {byline && <p className="mt-0.5 text-sm text-dark-gray/80 break-words">{byline}</p>}
 
-      {/* 每一件一行：编号 + 状态 + 按钮；自己借的用绿色加粗区分，不加底色 */}
       <ul className="mt-2 divide-y divide-border border-t border-border">
         {group.items.map((c) => {
-          // 自己借的：普通用户从“我的借阅中”对上；管理员的目录响应自带 current_borrow
-          const own: OwnBorrow | undefined =
-            ownBorrows[c.id] ??
-            (c.current_borrow && currentUserId != null && c.current_borrow.user.id === currentUserId
-              ? { borrowId: c.current_borrow.id, borrowedAt: c.current_borrow.borrowed_at }
-              : undefined);
+          const own = ownBorrows[c.id];
           const busy = busyCopyId === c.id;
+          const withdrawn = c.is_active === false;
+          const onLoan = !withdrawn && !c.available;
+          // 编号固定宽度对齐；没有编号显示 —
+          const number = (
+            <span className="w-14 shrink-0 text-xs font-medium text-dark-gray">{c.call_number ?? "—"}</span>
+          );
 
+          if (manager) {
+            // 代还要用借阅记录 id：自己借的来自我的借阅，别人借的来自 current_borrow（不显示借阅人）
+            const borrowId = own?.borrowId ?? c.current_borrow?.id;
+            const status = withdrawn ? (
+              <span className="text-dark-gray/60">Withdrawn</span>
+            ) : own ? (
+              <span className="font-medium text-dark-green">Borrowed by you</span>
+            ) : onLoan ? (
+              <span className="text-amber-700">On loan</span>
+            ) : (
+              <span className="text-dark-green">Available</span>
+            );
+            return (
+              <li key={c.id} className="py-2 text-sm">
+                <div className="flex items-center gap-2">
+                  {number}
+                  <span className="min-w-0 flex-1 text-xs">{status}</span>
+                  <Link href={manager.historyHref(c)} className="shrink-0 text-xs text-dark-gray underline underline-offset-2 hover:text-dark-green">
+                    Borrow history
+                  </Link>
+                </div>
+                {/* 位置固定：左 下架/恢复 · 中 编辑 · 右 代借/代还（主要操作在右边）。
+                    手机上三等分全宽；电脑上靠右、每个一样宽 */}
+                <div className="mt-1.5 grid grid-cols-3 gap-2 sm:flex sm:justify-end sm:[&>button]:w-[100px]">
+                  {withdrawn ? (
+                    <Button size="sm" variant="outline" tone="brand" disabled={busy} onClick={() => manager.onRestore(c)}>
+                      Restore
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      tone="danger"
+                      disabled={busy || onLoan}
+                      title={onLoan ? "Register the return first" : undefined}
+                      onClick={() => manager.onWithdraw(c)}
+                    >
+                      Withdraw
+                    </Button>
+                  )}
+                  <Button size="sm" variant="outline" disabled={busy} onClick={() => manager.onEdit(c)}>
+                    Edit
+                  </Button>
+                  {onLoan ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      tone="brand"
+                      loading={busy}
+                      loadingText="Returning…"
+                      disabled={!borrowId}
+                      onClick={() => borrowId && manager.onReturnFor(c, borrowId)}
+                    >
+                      Return
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      loading={busy && !withdrawn}
+                      loadingText="Lending…"
+                      disabled={withdrawn}
+                      onClick={() => manager.onLend(c)}
+                    >
+                      Lend
+                    </Button>
+                  )}
+                </div>
+              </li>
+            );
+          }
+
+          // ===== 普通读者
           let status: React.ReactNode;
           if (c.available) status = <span className="text-dark-green">Available</span>;
           else if (own) status = <span className="font-medium text-dark-green">Borrowed by you · {formatDate(own.borrowedAt)}</span>;
-          else if (c.current_borrow)
-            status = (
-              <span className="text-dark-gray/80" title={c.current_borrow.user.email}>
-                Borrowed by {c.current_borrow.user.firstName} · {formatDate(c.current_borrow.borrowed_at)}
-              </span>
-            );
           else status = <span className="text-dark-gray/60">Borrowed</span>;
 
           return (
-            <li
-              key={c.id}
-              className="flex items-center gap-2 py-1.5 text-sm"
-            >
-              {/* 编号固定宽度对齐；没有编号显示 — */}
-              <span className="w-14 shrink-0 text-xs font-medium text-dark-gray">{c.call_number ?? "—"}</span>
+            <li key={c.id} className="flex items-center gap-2 py-1.5 text-sm">
+              {number}
               <span className="min-w-0 flex-1 text-xs break-words">{status}</span>
               {c.available ? (
                 <Button size="sm" variant="primary" loading={busy} loadingText="Borrowing…" onClick={() => onBorrow(group, c)}>

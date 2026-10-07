@@ -26,7 +26,9 @@ export type LibraryCopy = {
   id: number;
   call_number: string | null;
   available: boolean;
-  /** 仅图书管理员的目录响应有：没人借为 null；普通用户的响应里没有这个键 */
+  /** 仅图书管理员带 include_inactive 时有：false = 已下架 */
+  is_active?: boolean;
+  /** 仅图书管理员的目录响应有：没人借为 null；普通用户的响应里没有这个键。前端不显示借阅人，只用 id 代还 */
   current_borrow?: {
     id: number;
     user: { id: number; firstName: string; email?: string };
@@ -111,6 +113,8 @@ export type LibraryCatalogParams = {
   category?: string;
   item_type?: LibraryItemType;
   available_only?: boolean;
+  /** 仅图书管理员：也列出已下架的 */
+  include_inactive?: boolean;
   page?: number;
   per_page?: number;
 };
@@ -136,19 +140,6 @@ export type LibraryBorrowBody = {
 };
 
 /** ===== 仅图书管理员 ===== */
-
-export type LibraryItemsParams = {
-  q?: string;
-  category?: string;
-  include_inactive?: boolean;
-  page?: number;
-  per_page?: number;
-};
-
-export type LibraryItemsData = {
-  items: LibraryItem[];
-  pagination: LibraryPagination;
-};
 
 /** 新增 / 编辑：编辑只传要改的字段；传空字符串 = 清空（title、category 不能清空） */
 export type LibraryItemInput = Partial<{

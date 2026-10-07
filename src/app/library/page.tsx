@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { BookmarkIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import { BookmarkIcon, ChevronDownIcon, PlusIcon, ArrowUpTrayIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { useScrollRestoration } from "@/hooks/useBackNavigation";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import {
@@ -12,8 +12,12 @@ import {
   fetchMyBorrows,
   borrowLibraryItem,
   returnLibraryBorrow,
+  fetchLibraryItem,
+  deactivateLibraryItem,
+  restoreLibraryItem,
 } from "@/app/features/library/slice";
-import type { LibraryCatalogGroup, LibraryCopy } from "@/app/types/library";
+import { canManageLibrary } from "@/app/types/library";
+import type { LibraryCatalogGroup, LibraryCopy, LibraryItem, LibraryBorrower } from "@/app/types/library";
 import { LIBRARY_PER_PAGE } from "@/app/constants";
 import PageTitle from "@/components/layout/PageTitle";
 import CustomHeader from "@/components/layout/CustomHeader";
@@ -21,7 +25,10 @@ import LoadingOverlay from "@/components/feedback/LoadingOverLay";
 import SearchBar from "@/components/SearchBar";
 import Pagination from "@/components/ui/Pagination";
 import CatalogGroupCard from "@/components/library/CatalogGroupCard";
-import type { CatalogActionError, OwnBorrow } from "@/components/library/CatalogGroupCard";
+import type { CatalogActionError, OwnBorrow, CatalogManagerActions } from "@/components/library/CatalogGroupCard";
+import LibraryItemFormModal from "@/components/library/LibraryItemFormModal";
+import LendItemModal from "@/components/library/LendItemModal";
+import Button from "@/components/ui/Button";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useConfirm } from "@/hooks/useConfirm";
 
@@ -104,10 +111,71 @@ function LibraryPageInner() {
     }
   };
 
-  // ===== URL 参数：q / category / available / page
+  // ===== 图书管理员：同一个页面多出管理操作（不显示借阅人）
+  const isManager = mounted && canManageLibrary(currentUser);
+  const confirmWithdraw = useConfirm<CopyAction>("Withdraw this item?");
+  const [editing, setEditing] = useState<LibraryItem | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+  const [lending, setLending] = useState<CopyAction | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  /** 管理操作的通用包装：标记忙碌、清掉这一组的错误、结束后刷新 */
+  const runCopyAction = async (target: CopyAction, action: () => Promise<unknown>, fallback: string) => {
+    const key = groupKey(target.group);
+    setBusyCopyId(target.copy.id);
+    setNotice(null);
+    setErrors(({ [key]: _, ...rest }) => rest);
+    try {
+      await action();
+    } catch (e: any) {
+      setErrors((m) => ({ ...m, [key]: { message: errText(e, fallback) } }));
+    } finally {
+      setBusyCopyId(null);
+      setReloadTick((t) => t + 1);
+    }
+  };
+
+  const doWithdraw = async (target: CopyAction | null) => {
+    if (!target) return;
+    await runCopyAction(target, () => dispatch(deactivateLibraryItem(target.copy.id)).unwrap(), "Withdraw failed");
+    dispatch(fetchLibraryCategories());
+  };
+
+  const managerActions = (group: LibraryCatalogGroup): CatalogManagerActions => ({
+    onWithdraw: (copy) =>
+      confirmWithdraw.ask({ group, copy }, `Withdraw ${describe({ group, copy })}? Members will no longer see it. You can restore it later.`),
+    onRestore: (copy) => {
+      void runCopyAction({ group, copy }, () => dispatch(restoreLibraryItem(copy.id)).unwrap(), "Restore failed");
+    },
+    onEdit: (copy) => {
+      // 编辑要完整资料：目录里只有编号和状态，先读详情
+      void runCopyAction(
+        { group, copy },
+        async () => {
+          const item = await dispatch(fetchLibraryItem(copy.id)).unwrap();
+          setEditing(item);
+          setFormOpen(true);
+        },
+        "Failed to load the item"
+      );
+    },
+    onLend: (copy) => setLending({ group, copy }),
+    onReturnFor: (copy, borrowId) =>
+      confirmReturn.ask({ group, copy, borrowId }, `Register the return of ${describe({ group, copy })}?`),
+    historyHref: (copy) =>
+      `/library/borrows?item_id=${copy.id}&item_label=${encodeURIComponent(copy.call_number || group.title)}`,
+  });
+
+  /** 代借时默认借阅人是管理员自己 */
+  const selfAsBorrower: LibraryBorrower | null = currentUser
+    ? { id: currentUser.id, firstName: currentUser.firstName, email: currentUser.email }
+    : null;
+
+  // ===== URL 参数：q / category / available / withdrawn（仅管理员）/ page
   const qParam = (searchParams.get("q") || "").trim();
   const categoryParam = searchParams.get("category") || "";
   const availableOnly = searchParams.get("available") === "1";
+  const showWithdrawn = searchParams.get("withdrawn") === "1";
   const currentPage = useMemo(() => {
     const p = Number(searchParams.get("page"));
     return Number.isFinite(p) && p > 0 ? p : 1;
@@ -118,18 +186,20 @@ function LibraryPageInner() {
 
   /** 改筛选条件时回到第 1 页；搜索框输入用 replace，避免每个字都进历史记录 */
   const pushQuery = (
-    next: Partial<{ q: string; category: string; available: boolean; page: number }>,
+    next: Partial<{ q: string; category: string; available: boolean; withdrawn: boolean; page: number }>,
     replace = false
   ) => {
     const q = next.q ?? qParam;
     const category = next.category ?? categoryParam;
     const available = next.available ?? availableOnly;
+    const withdrawn = next.withdrawn ?? showWithdrawn;
     const page = next.page ?? 1;
 
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     if (category) params.set("category", category);
     if (available) params.set("available", "1");
+    if (withdrawn) params.set("withdrawn", "1");
     if (page > 1) params.set("page", String(page));
     const qs = params.toString();
     const href = qs ? `${LIBRARY_PATH}?${qs}` : LIBRARY_PATH;
@@ -164,11 +234,12 @@ function LibraryPageInner() {
         q: qParam || undefined,
         category: categoryParam || undefined,
         available_only: availableOnly || undefined,
+        include_inactive: (isManager && showWithdrawn) || undefined,
         page: currentPage,
         per_page: LIBRARY_PER_PAGE,
       })
     );
-  }, [dispatch, mounted, qParam, categoryParam, availableOnly, currentPage, reloadTick]);
+  }, [dispatch, mounted, qParam, categoryParam, availableOnly, isManager, showWithdrawn, currentPage, reloadTick]);
 
   // 分类按书 / 影音分组显示
   const bookCategories = categories.list.filter((c) => c.item_type === "book");
@@ -198,6 +269,41 @@ function LibraryPageInner() {
       <PageTitle title="Library" showPageTitle />
 
       <div className="mx-auto w-full max-w-3xl p-4 min-h-screen mt-0 md:mt-16">
+        {/* 图书管理员：新增、导入导出、借阅记录 */}
+        {isManager && (
+          <div className="mb-3 space-y-3">
+            {/* 手机上两个按钮按内容宽度分配、加起来占满整行；电脑上保持自然宽度 */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="primary"
+                size="sm"
+                className="h-10 flex-auto py-0 text-[16px]! sm:flex-none"
+                leftIcon={<PlusIcon className="h-4 w-4" />}
+                onClick={() => {
+                  setEditing(null);
+                  setFormOpen(true);
+                }}
+              >
+                Add item
+              </Button>
+              <Link
+                href="/library/import"
+                className="inline-flex h-10 flex-auto items-center justify-center gap-1 rounded-sm border border-dark-green px-3 text-[16px] text-dark-green hover:bg-dark-green/5 sm:flex-none"
+              >
+                <ArrowUpTrayIcon className="h-4 w-4" />
+                Import / export
+              </Link>
+            </div>
+            <Link
+              href="/library/borrows"
+              className="flex h-10 items-center justify-between rounded-sm border border-dark-green px-3 text-[16px] text-dark-green hover:bg-dark-green/5"
+            >
+              Borrow history
+              <ChevronRightIcon className="h-5 w-5" />
+            </Link>
+          </div>
+        )}
+
         {/* 电脑上在搜索栏右边放“我的借阅”；手机上在顶部栏右侧 */}
         <div className="flex items-center gap-2">
         <div className="min-w-0 flex-1">
@@ -268,6 +374,17 @@ function LibraryPageInner() {
             Available only
           </label>
 
+          {isManager && (
+            <label className="flex items-center gap-2 cursor-pointer text-dark-gray">
+              <input
+                type="checkbox"
+                checked={showWithdrawn}
+                onChange={(e) => pushQuery({ withdrawn: e.target.checked })}
+              />
+              Show withdrawn
+            </label>
+          )}
+
           {catalog.pagination && (
             <span className="ml-auto text-xs text-dark-gray/70">
               {totalItems !== undefined
@@ -277,6 +394,7 @@ function LibraryPageInner() {
           )}
         </div>
 
+        {notice && <p className="mt-3 text-sm text-dark-green" role="status">{notice}</p>}
         {catalog.error && <p className="mt-3 text-sm text-red-600">{catalog.error}</p>}
 
         <div className="mt-4 relative min-h-[120px]">
@@ -297,8 +415,8 @@ function LibraryPageInner() {
                   <CatalogGroupCard
                     group={g}
                     ownBorrows={ownBorrows}
-                    currentUserId={currentUser?.id ?? null}
                     busyCopyId={busyCopyId}
+                    manager={isManager ? managerActions(g) : undefined}
                     error={errors[groupKey(g)]}
                     onBorrow={(group, copy) => confirmBorrow.ask({ group, copy }, `Borrow ${describe({ group, copy })}?`)}
                     onReturn={(group, copy, borrowId) =>
@@ -347,6 +465,45 @@ function LibraryPageInner() {
         onClose={confirmReturn.cancel}
         onConfirm={confirmReturn.confirm(doReturn)}
       />
+
+      <ConfirmModal
+        isOpen={confirmWithdraw.open}
+        title="Withdraw item"
+        message={confirmWithdraw.message}
+        confirmLabel="Withdraw"
+        confirmVariant="danger"
+        cancelLabel="Cancel"
+        cancelVariant="outline"
+        onCancel={confirmWithdraw.cancel}
+        onClose={confirmWithdraw.cancel}
+        onConfirm={confirmWithdraw.confirm(doWithdraw)}
+      />
+
+      {formOpen && (
+        <LibraryItemFormModal
+          item={editing}
+          categories={categories.list.map((c) => c.category)}
+          onClose={() => setFormOpen(false)}
+          onSaved={(saved) => {
+            setFormOpen(false);
+            setNotice(`${editing ? "Saved" : "Added"} "${saved.title}".`);
+            setReloadTick((t) => t + 1);
+            dispatch(fetchLibraryCategories());
+          }}
+        />
+      )}
+
+      {lending && (
+        <LendItemModal
+          item={{ id: lending.copy.id, call_number: lending.copy.call_number, title: lending.group.title }}
+          defaultBorrower={selfAsBorrower}
+          onClose={() => setLending(null)}
+          onLent={() => {
+            setLending(null);
+            setReloadTick((t) => t + 1);
+          }}
+        />
+      )}
     </>
   );
 }

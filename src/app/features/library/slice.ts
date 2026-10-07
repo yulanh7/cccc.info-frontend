@@ -16,8 +16,6 @@ import type {
   LibraryBorrowStatus,
   LibraryBorrowResult,
   LibraryBorrowBody,
-  LibraryItemsParams,
-  LibraryItemsData,
   LibraryItemInput,
   LibraryAdminBorrowsParams,
   LibraryBorrower,
@@ -37,8 +35,6 @@ interface LibraryState {
   catalog: ListState<LibraryCatalogGroup>;
   categories: { list: LibraryCategory[]; status: LoadStatus; error: string | null };
   myBorrows: ListState<LibraryBorrow>;
-  /** 以下仅图书管理员 */
-  adminItems: ListState<LibraryItem>;
   adminBorrows: ListState<LibraryBorrow>;
 }
 
@@ -46,7 +42,6 @@ const initialState: LibraryState = {
   catalog: emptyList(),
   categories: { list: [], status: 'idle', error: null },
   myBorrows: emptyList(),
-  adminItems: emptyList(),
   adminBorrows: emptyList(),
 };
 
@@ -114,6 +109,19 @@ export const fetchLibraryCategories = createAsyncThunk<LibraryCategory[], void>(
   }
 );
 
+// ===== 详情：GET /api/library/items/<id>（管理员编辑时读取完整资料，不存进 store）
+export const fetchLibraryItem = createAsyncThunk<LibraryItemDetail, number>(
+  'library/fetchItem',
+  async (id, { rejectWithValue }) => {
+    try {
+      const res = await apiRequest<LibraryItemDetail>('GET', LIBRARY_ENDPOINTS.ITEM(id));
+      return unwrapData(res);
+    } catch (e: any) {
+      return rejectWithValue(errMsg(e, 'Failed to load the item')) as any;
+    }
+  }
+);
+
 // ===== 按编号 / 条码查找：GET /api/library/items/lookup?code=（不区分大小写）
 // 目前没有页面使用（主页搜索框已能搜编号）；保留给以后的扫码功能
 export const lookupLibraryItem = createAsyncThunk<LibraryItemDetail, string>(
@@ -174,22 +182,6 @@ export const fetchMyBorrows = createAsyncThunk<
 /* ======================================================
  *                 仅图书管理员 / admin
  * ====================================================== */
-
-// ===== 馆藏列表：GET /api/library/items（一件一行，不合并复本）
-export const fetchLibraryItems = createAsyncThunk<LibraryItemsData, LibraryItemsParams>(
-  'library/fetchItems',
-  async ({ page = 1, per_page = 20, ...rest }, { rejectWithValue }) => {
-    try {
-      const res = await apiRequest<LibraryItemsData>(
-        'GET',
-        LIBRARY_ENDPOINTS.ITEMS + toQuery({ ...rest, page, per_page })
-      );
-      return unwrapData(res);
-    } catch (e: any) {
-      return rejectWithValue(errMsg(e, 'Failed to load items')) as any;
-    }
-  }
-);
 
 // ===== 新增：POST /api/library/items
 export const createLibraryItem = createAsyncThunk<LibraryItem, LibraryItemInput>(
@@ -406,21 +398,6 @@ const librarySlice = createSlice({
       });
 
     builder
-      .addCase(fetchLibraryItems.pending, (s) => {
-        s.adminItems.status = 'loading';
-        s.adminItems.error = null;
-      })
-      .addCase(fetchLibraryItems.fulfilled, (s, a) => {
-        s.adminItems.status = 'succeeded';
-        s.adminItems.list = a.payload.items ?? [];
-        s.adminItems.pagination = a.payload.pagination ?? null;
-      })
-      .addCase(fetchLibraryItems.rejected, (s, a) => {
-        s.adminItems.status = 'failed';
-        s.adminItems.error = (a.payload as string) || 'Failed to load items';
-      });
-
-    builder
       .addCase(fetchAdminBorrows.pending, (s) => {
         s.adminBorrows.status = 'loading';
         s.adminBorrows.error = null;
@@ -434,12 +411,6 @@ const librarySlice = createSlice({
         s.adminBorrows.status = 'failed';
         s.adminBorrows.error = (a.payload as string) || 'Failed to load borrows';
       });
-
-    // 编辑 / 下架 / 恢复：用返回的馆藏替换管理列表里那一行
-    builder
-      .addCase(updateLibraryItem.fulfilled, (s, a) => replaceById(s.adminItems.list, a.payload))
-      .addCase(deactivateLibraryItem.fulfilled, (s, a) => replaceById(s.adminItems.list, a.payload))
-      .addCase(restoreLibraryItem.fulfilled, (s, a) => replaceById(s.adminItems.list, a.payload));
 
     // 还书 / 代还：更新对应的借阅行（是否移到“历史”由页面重新拉取决定）
     builder.addCase(returnLibraryBorrow.fulfilled, (s, a) => {

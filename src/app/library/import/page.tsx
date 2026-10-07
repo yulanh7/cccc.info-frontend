@@ -18,7 +18,7 @@ type Stage = "pick" | "preview" | "done";
 
 export default function LibraryImportPage() {
   const dispatch = useAppDispatch();
-  const goBack = useBackNavigation("/library/manage");
+  const goBack = useBackNavigation("/library");
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -66,13 +66,13 @@ export default function LibraryImportPage() {
   return (
     <>
       <LoadingOverlay show={!mounted} text="Loading…" />
-      <CustomHeader pageTitle="Import / export" backHref="/library/manage" backText="Manage" backLabel="Back to library management" />
+      <CustomHeader pageTitle="Import / export" backHref="/library" backText="Library" backLabel="Back to library" />
       <PageTitle title="Import / export" showPageTitle />
 
       <div className="mx-auto w-full max-w-3xl p-4 min-h-screen mt-0 md:mt-16">
-        <Link href="/library/manage" onClick={goBack} className="hidden md:inline-flex items-center gap-1 text-sm text-dark-gray hover:text-dark-green mb-3">
+        <Link href="/library" onClick={goBack} className="hidden md:inline-flex items-center gap-1 text-sm text-dark-gray hover:text-dark-green mb-3">
           <ChevronLeftIcon className="h-4 w-4" />
-          Back to library management
+          Back to library
         </Link>
 
         {mounted && !canAccess ? (
