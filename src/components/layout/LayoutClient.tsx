@@ -10,6 +10,7 @@ import BottomNav from './BottomNav';
 import { useNavigationTracker } from '@/hooks/useBackNavigation';
 
 const PUBLIC_PATHS = ['/', '/auth'];
+const PROFILE_REFRESH_MS = 30_000;
 
 export default function LayoutClient({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function LayoutClient({ children }: { children: React.ReactNode }
 
   const [bootstrapped, setBootstrapped] = useState(false);
   const didBootstrap = useRef(false);
+  const lastProfileFetch = useRef(0);
 
   // 1) 恢复本地登录状态（同步 action，无 unwrap）
   useEffect(() => {
@@ -31,9 +33,28 @@ export default function LayoutClient({ children }: { children: React.ReactNode }
 
     dispatch(rehydrateAuth());
     // permissions 可能被 admin 随时修改：有 token 就拉一次 profile 刷新本地用户信息
-    if (getToken()) dispatch(fetchProfileThunk());
+    if (getToken()) {
+      dispatch(fetchProfileThunk());
+      lastProfileFetch.current = Date.now();
+    }
     setBootstrapped(true);
   }, [dispatch]);
+
+  // 1b) 权限可能被别人改：网页切回前台、或换页时再刷新一次登录资料（最多每 30 秒一次）
+  useEffect(() => {
+    if (!bootstrapped) return;
+    const refresh = () => {
+      if (!getToken() || Date.now() - lastProfileFetch.current < PROFILE_REFRESH_MS) return;
+      lastProfileFetch.current = Date.now();
+      dispatch(fetchProfileThunk());
+    };
+    refresh();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [bootstrapped, pathname, dispatch]);
 
   // 2) 登录守卫：等待 bootstrapped 再执行
   useEffect(() => {

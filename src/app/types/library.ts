@@ -5,9 +5,9 @@ import type { UserProps } from "./user";
 /** 图书管理员权限值 */
 export const PERMISSION_MANAGE_LIBRARY = "manage_library";
 
-/** 能否进入图书馆管理：admin 或拥有 manage_library 权限 */
+/** 能否看到图书馆的管理操作：必须单独授予 manage_library，admin 也不例外 */
 export const canManageLibrary = (user?: UserProps | null): boolean =>
-  !!user && (user.admin || !!user.permissions?.includes(PERMISSION_MANAGE_LIBRARY));
+  !!user?.permissions?.includes(PERMISSION_MANAGE_LIBRARY);
 
 export type LibraryItemType = "book" | "dvd" | "cd" | "vcd" | "mp3";
 export const LIBRARY_ITEM_TYPES: LibraryItemType[] = ["book", "dvd", "cd", "vcd", "mp3"];

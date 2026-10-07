@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import { fetchAdminUsers, setUserPermission } from "@/app/features/admin/usersSlice";
+import { fetchProfileThunk } from "@/app/features/auth/slice";
 import { isAdmin, PERMISSION_CREATE_GROUP } from "@/app/types/user";
 import { PERMISSION_MANAGE_LIBRARY } from "@/app/types/library";
 import type { UserProps } from "@/app/types/user";
@@ -65,6 +66,8 @@ function AdminUsersPageInner() {
   const togglePermission = async (u: UserProps, permission: string, granted: boolean) => {
     try {
       await dispatch(setUserPermission({ userId: u.id, permission, granted })).unwrap();
+      // 改的是自己的权限：马上刷新登录资料，其他页面（图书馆、建组按钮）不用刷新就生效
+      if (currentUser && u.id === currentUser.id) dispatch(fetchProfileThunk());
     } catch (e: any) {
       alert(typeof e === "string" ? e : e?.message || "Update permission failed");
     }
@@ -147,15 +150,13 @@ function AdminUsersPageInner() {
                         />
                         <span className="text-dark-gray">Can create groups</span>
                       </label>
-                      <label
-                        className={`flex items-center gap-2 ${u.admin || updating ? "opacity-60" : "cursor-pointer"}`}
-                        title={u.admin ? "Admins can always manage the library" : undefined}
-                      >
+                      {/* 图书管理员要单独授予，admin 也一样（可以给自己开） */}
+                      <label className={`flex items-center gap-2 ${updating ? "opacity-60" : "cursor-pointer"}`}>
                         <input
                           type="checkbox"
                           aria-label={`Make ${u.firstName} a library manager`}
-                          checked={u.admin || hasManageLibrary}
-                          disabled={u.admin || updating}
+                          checked={hasManageLibrary}
+                          disabled={updating}
                           onChange={(e) => togglePermission(u, PERMISSION_MANAGE_LIBRARY, e.target.checked)}
                         />
                         <span className="text-dark-gray">Library manager</span>
