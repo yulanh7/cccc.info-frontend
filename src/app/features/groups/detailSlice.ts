@@ -173,7 +173,7 @@ export const removeGroupLeader = createAsyncThunk<
   { groupId: number; userId: number }
 >('groupDetail/removeGroupLeader', async ({ groupId, userId }, { rejectWithValue }) => {
   try {
-    const res = await apiRequest<{}>('DELETE', `/groups/${groupId}/leaders`, { user_id: userId });
+    const res = await apiRequest<Record<string, never>>('DELETE', `/groups/${groupId}/leaders`, { user_id: userId });
     if (!res.success) throw new Error(res.message || 'Remove leader failed');
     return { userId, message: res.message };
   } catch (e: any) {

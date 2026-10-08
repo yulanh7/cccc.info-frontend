@@ -127,7 +127,7 @@ export type UpdatePostData = {
 };
 export type UpdatePostResponse = ApiResponseProps<UpdatePostData>;
 
-export type DeletePostData = {};
+export type DeletePostData = Record<string, never>;
 export type DeletePostResponse = ApiResponseProps<DeletePostData>;
 
 /** 5) 点赞 / 取消点赞 */

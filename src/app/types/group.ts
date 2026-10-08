@@ -138,7 +138,7 @@ export type AddMemberRequest = { user_id?: number; email?: string };
 export type AddMemberResponseApi = ApiResponseProps<{
   member: { id: number; firstName: string; email: string; is_creator?: boolean };
 }>;
-export type KickMemberResponseApi = ApiResponseProps<{}>;
+export type KickMemberResponseApi = ApiResponseProps<Record<string, never>>;
 export type TransferOwnershipResponseApi = ApiResponseProps<{ group: GroupApi }>;
 export type AddLeaderResponseApi = ApiResponseProps<{
   leader: { id: number; firstName: string; email: string };

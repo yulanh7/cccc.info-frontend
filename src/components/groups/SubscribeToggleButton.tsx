@@ -188,7 +188,8 @@ export default function SubscribeToggle({
       setShowConfirm(true); // 内嵌弹窗，不需要父级处理
       return;
     }
-    isMember ? performLeave() : performJoin();
+    if (isMember) performLeave();
+    else performJoin();
   };
 
   // 默认渲染

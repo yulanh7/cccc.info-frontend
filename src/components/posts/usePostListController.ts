@@ -70,7 +70,6 @@ export function usePostListController<
 >(opts: UsePostListControllerOptions<FArgs, CArgs, DArg>) {
   const {
     dispatch,
-    perPage,
     loadedPage,
     totalPages,
     hasItems,
@@ -100,7 +99,8 @@ export function usePostListController<
   const toggleSelect = useCallback((postId: number) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      next.has(postId) ? next.delete(postId) : next.add(postId);
+      if (next.has(postId)) next.delete(postId);
+      else next.add(postId);
       return next;
     });
   }, []);

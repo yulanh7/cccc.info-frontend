@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import {
@@ -19,7 +19,7 @@ import { canCreateGroup } from "@/app/types/user";
 import { useCameBack, useScrollRestoration } from "@/hooks/useBackNavigation";
 import { appendUnique } from "@/app/lib/infiniteList";
 import { canEditGroup as canEditGroupOf, canDeleteGroup as canDeleteGroupOf, joinPolicyOf } from "@/app/types/group";
-import type { CreateOrUpdateGroupBody, GroupListPaginationApi } from "@/app/types/group";
+import type { CreateOrUpdateGroupBody } from "@/app/types/group";
 import { mapApiErrorToFields } from "@/app/ultility";
 
 /** 控制器模式：决定数据从哪里来 */
@@ -57,22 +57,11 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
   // user 由 LayoutClient 在客户端从 localStorage 恢复；挂载前不渲染建组按钮，避免 SSR/hydration 不一致
   const canCreate = mounted && canCreateGroup(user);
 
-  const visibleGroups = useAppSelector((s) => s.groups.visibleGroups);
-  const visibleGroupsPagination = useAppSelector((s) => s.groups.visibleGroupsPagination);
-  const visibleSearchResults = useAppSelector((s) => s.groups.visibleSearchResults);
-  const visibleSearchPagination = useAppSelector((s) => s.groups.visibleSearchPagination);
-
-
-  const userGroups = useAppSelector((s) => s.groups.userGroups);
-  const subscribedGroups = useAppSelector((s) => s.groups.subscribedGroups);
-
-  const userPagination = useAppSelector((s) => s.groups.userGroupsPagination);
-  const subscribedPagination = useAppSelector((s) => s.groups.subscribedGroupsPagination);
   const searchQuery = useAppSelector((s) => s.groups.searchQuery);
 
   // ===== 本地 UI 状态
   const [listLoading, setListLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [saving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   // modal 状态（新建/编辑）

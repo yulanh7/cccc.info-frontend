@@ -22,7 +22,7 @@ export default function SignUpForm() {
 
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const { status, error } = useAppSelector((state) => state.auth);
+  const { status } = useAppSelector((state) => state.auth);
   const isLoading = status === 'loading';
 
   // 2-20 位：英文/数字/下划线/中文；不允许空格

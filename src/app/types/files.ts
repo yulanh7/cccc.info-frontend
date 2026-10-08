@@ -1,4 +1,4 @@
-import { ApiResponseProps, UserProps } from '@/app/types'
+import { ApiResponseProps } from '@/app/types'
 
 export type FileMetaData = {
   file_id: number;
@@ -23,7 +23,7 @@ export type UploadFileData = FileMetaData;
 export type UploadFileResponse = ApiResponseProps<UploadFileData>;
 
 /** DELETE /api/files/{file_id} */
-export type DeleteFileData = {};
+export type DeleteFileData = Record<string, never>;
 export type DeleteFileResponse = ApiResponseProps<DeleteFileData>;
 
 /** GET /api/files/{file_id} */
@@ -45,5 +45,5 @@ export type GetDownloadUrlData = {
 export type GetDownloadUrlResponse = ApiResponseProps<GetDownloadUrlData>;
 
 /** POST /api/admin/cleanup-files */
-export type AdminCleanupFilesData = {};
+export type AdminCleanupFilesData = Record<string, never>;
 export type AdminCleanupFilesResponse = ApiResponseProps<AdminCleanupFilesData>;

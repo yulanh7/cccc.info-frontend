@@ -1,7 +1,6 @@
 "use client";
 import { Suspense } from "react";
-import React, { useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import React from "react";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import CustomHeader from "@/components/layout/CustomHeader";
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
@@ -51,7 +50,6 @@ function useSourceListState(sourceKey: string) {
 
 
 function HomePageInner() {
-  const searchParams = useSearchParams();
 
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
@@ -169,7 +167,6 @@ function HomePageInner() {
 
 
       {/* 单个删帖确认 */}
-      {/* @ts-ignore: ConfirmModal 的 props 由你的实现决定 */}
       <ConfirmModal
         isOpen={confirmOwnDelete.open}
         message={confirmOwnDelete.message}

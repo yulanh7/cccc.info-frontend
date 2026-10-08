@@ -58,7 +58,6 @@ function GroupsPageInner() {
     canDeleteGroup,
     // modal
     isModalOpen,
-    saveGroup: innerSaveGroup,
     isNew,
     selectedGroup,
     modalSaving,

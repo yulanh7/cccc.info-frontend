@@ -14,7 +14,6 @@ import InfiniteSentinel from "@/components/ui/InfiniteSentinel";
 import { ellipsize } from "@/app/ultility";
 import IconButton from "@/components/ui/IconButton";
 import SubscribeToggleButton from "@/components/groups/SubscribeToggleButton";
-import Button from "@/components/ui/Button";
 
 type Props = {
   title?: string;

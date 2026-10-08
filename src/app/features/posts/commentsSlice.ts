@@ -9,13 +9,8 @@ import { insertReplyInOrder, applyLikeResult } from "./commentThread";
 import type {
   CommentItemApi,
   CommentListData,
-  CommentListResponse,
-  CommentDetailResponse,
   CreateCommentRequest,
-  CreateCommentResponse,
   UpdateCommentRequest,
-  UpdateCommentResponse,
-  DeleteCommentResponse,
   CommentsPagination,
   CreateCommentData,
   UpdateCommentData,

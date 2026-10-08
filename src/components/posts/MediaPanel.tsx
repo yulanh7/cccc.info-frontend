@@ -6,12 +6,6 @@ import Button from "@/components/ui/Button";
 import type { PostFileApi } from "@/app/types";
 import { MAX_DOC_MB } from '@/app/constants'
 
-const isImageMime = (mime?: string) => !!mime && /^image\//i.test(mime);
-const isPdfOrDoc = (mime?: string) =>
-  !!mime &&
-  /^(application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/i.test(
-    mime
-  );
 
 type MediaPanelProps = {
   videos: string[];
@@ -51,11 +45,7 @@ export default function MediaPanel({
   videos,
   setVideos,
   localImages,
-  setLocalImages,
   localDocs,
-  setLocalDocs,
-  fileIds,
-  setFileIds,
   onPickImages,
   onPickDocs,
   removeLocalImage,
@@ -66,7 +56,6 @@ export default function MediaPanel({
   isCompressing,
   compressDone,
   compressTotal,
-  formatMB,
   IMAGE_ACCEPT,
   DOC_ACCEPT,
   saving,
@@ -141,6 +130,7 @@ export default function MediaPanel({
             <ul className="mt-2 grid grid-cols-4 md:grid-cols-8 gap-2">
               {existingImages.map((f) => (
                 <li key={`${f.id}-${f.url}`} className="border border-border rounded p-1">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- 用户上传的图片（后端地址 / 本地预览），不走 next/image */}
                   <img
                     src={f.url}
                     alt={f.filename}
@@ -201,6 +191,7 @@ export default function MediaPanel({
             <ul className="mt-2 grid grid-cols-4 md:grid-cols-8 gap-2">
               {localImages.map((f, i) => (
                 <li key={`${f.name}-${f.size}-${i}`} className="border border-border rounded p-1">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- 用户上传的图片（后端地址 / 本地预览），不走 next/image */}
                   <img
                     src={URL.createObjectURL(f)}
                     alt={f.name}

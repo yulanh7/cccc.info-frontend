@@ -3,7 +3,6 @@
 import React from "react";
 import {
   PencilSquareIcon,
-  PlusIcon,
   TrashIcon,
   CalendarIcon,
   UserPlusIcon,
@@ -50,7 +49,6 @@ export default function GroupInfoBar({
   onBulkDeleteSelected,
   canManageGroup = false,
   canDeleteGroup = false,
-  canShowCreateFab = false,
   onShowJoinRequests,
   onGroupStale,
 }: Props) {

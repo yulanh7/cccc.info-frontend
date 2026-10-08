@@ -39,7 +39,7 @@ export const withdrawJoinRequest = createAsyncThunk<{ groupId: number }, number,
   'joinRequests/withdraw',
   async (groupId, { rejectWithValue }) => {
     try {
-      await apiRequest<{}>('DELETE', JOIN_REQUEST_ENDPOINTS.MINE(groupId));
+      await apiRequest<Record<string, never>>('DELETE', JOIN_REQUEST_ENDPOINTS.MINE(groupId));
       return { groupId };
     } catch (e: any) {
       return rejectWithValue(fail(e, 'Failed to withdraw the request'));

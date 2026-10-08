@@ -1,7 +1,6 @@
 "use client";
 import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import type { PostListItemApi } from "@/app/types";
-import Link from 'next/link';
 import { useRouter } from "next/navigation";
 import ConfirmModal from "@/components/ConfirmModal";
 
@@ -35,8 +34,6 @@ const BG_URLS = ["/images/bg-card-2.jpg", "/images/bg-for-homepage.png"];
 
 export default function PostCardSimple({
   post,
-  formatDate,
-  showEnterArrow = true,
   canEdit = false,
   canDelete = false,
   selectMode = false,
@@ -49,7 +46,7 @@ export default function PostCardSimple({
 }: Props) {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { id, title, author, summary, videos, like_count } = post;
+  const { id, title, author, videos, like_count } = post;
   const [showEditConfirm, setShowEditConfirm] = useState(false);
   const [pendingEditId, setPendingEditId] = useState<number | null>(null);
   // Redux state selectors
@@ -160,12 +157,6 @@ export default function PostCardSimple({
     }
   }, [handleOpenPost]);
 
-  const handleEditClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onEditSingle?.(id);
-  }, [onEditSingle, id]);
-
   const handleDeleteClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -252,6 +243,7 @@ export default function PostCardSimple({
     if (thumbnail) {
       return (
         <div className="relative">
+          {/* eslint-disable-next-line @next/next/no-img-element -- 用户上传的图片（后端地址 / 本地预览），不走 next/image */}
           <img
             src={thumbnail}
             alt={title}
@@ -278,6 +270,7 @@ export default function PostCardSimple({
     if (imageUrl) {
       return (
         <div className="relative">
+          {/* eslint-disable-next-line @next/next/no-img-element -- 用户上传的图片（后端地址 / 本地预览），不走 next/image */}
           <img
             src={imageUrl}
             alt={title}

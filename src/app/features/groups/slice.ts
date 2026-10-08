@@ -270,7 +270,7 @@ export const deleteGroup = createAsyncThunk<{ id: number }, number>(
   'groups/deleteGroup',
   async (groupId, { rejectWithValue }) => {
     try {
-      const res = await apiRequest<{}>('DELETE', GROUP_ENDPOINTS.DELETE_GROUP(groupId));
+      const res = await apiRequest<Record<string, never>>('DELETE', GROUP_ENDPOINTS.DELETE_GROUP(groupId));
       if (!res.success) throw new Error(res.message || 'Delete group failed');
       return { id: groupId };
     } catch (e: any) {
@@ -309,7 +309,7 @@ export const joinGroup = createAsyncThunk<{ id: number }, number>(
   'groups/joinGroup',
   async (groupId, { rejectWithValue }) => {
     try {
-      const res = await apiRequest<{}>('POST', GROUP_ENDPOINTS.JOIN_GROUP(groupId));
+      const res = await apiRequest<Record<string, never>>('POST', GROUP_ENDPOINTS.JOIN_GROUP(groupId));
       if (!res.success) throw new Error(res.message || 'Join group failed');
       return { id: groupId };
     } catch (e: any) {
@@ -322,7 +322,7 @@ export const leaveGroup = createAsyncThunk<{ id: number }, number>(
   'groups/leaveGroup',
   async (groupId, { rejectWithValue }) => {
     try {
-      const res = await apiRequest<{}>('POST', GROUP_ENDPOINTS.LEAVE_GROUP(groupId));
+      const res = await apiRequest<Record<string, never>>('POST', GROUP_ENDPOINTS.LEAVE_GROUP(groupId));
       if (!res.success) throw new Error(res.message || 'Leave group failed');
       return { id: groupId };
     } catch (e: any) {

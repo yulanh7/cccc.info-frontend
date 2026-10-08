@@ -95,6 +95,7 @@ export default function ImageLightboxGrid({
             onClick={() => openAt(i)}
             title="Click to preview"
           >
+            {/* eslint-disable-next-line @next/next/no-img-element -- 用户上传的图片（后端地址 / 本地预览），不走 next/image */}
             <img
               src={img.url}
               alt={img.alt || img.filename || `image-${i + 1}`}
@@ -147,6 +148,7 @@ export default function ImageLightboxGrid({
           </button>
 
           {/* 图片本体（阻止冒泡，避免点图关闭） */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- 用户上传的图片（后端地址 / 本地预览），不走 next/image */}
           <img
             src={items[idx].url}
             alt={items[idx].alt || items[idx].filename || `image-${idx + 1}`}

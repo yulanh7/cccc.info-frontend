@@ -2,7 +2,6 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import { useAppDispatch, useAppSelector } from '@/app/features/hooks';
 import { logoutThunk } from '@/app/features/auth/slice';
 import { ellipsize } from "@/app/ultility";
@@ -18,7 +17,6 @@ interface TopNavItem {
 export default function Menu({
   isLoggedIn,
   userName,
-  unreadCount,
 }: {
   isLoggedIn: boolean;
   userName?: string;

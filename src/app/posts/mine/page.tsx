@@ -1,8 +1,7 @@
 "use client";
 import { Suspense } from "react";
-import React, { useMemo } from "react";
+import React from "react";
 import Link from 'next/link';
-import { useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
 import PostListSection from "@/components/posts/PostListSection";
@@ -59,7 +58,6 @@ export default function MyPostsPage() {
 }
 
 function MyPostsPageInner() {
-  const searchParams = useSearchParams();
 
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => setMounted(true), []);
@@ -222,7 +220,6 @@ function MyPostsPageInner() {
           />)}
       </div>
       {/* 批量删帖确认 */}
-      {/* @ts-ignore */}
       <ConfirmModal
         isOpen={confirmBulkDelete.open}
         message={confirmBulkDelete.message}

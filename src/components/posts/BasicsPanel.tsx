@@ -26,8 +26,6 @@ export default function BasicsPanel({
   setTitle,
   titleLen,
   maxTitle,
-  description,
-  setDescription,
   content,
   setContent,
   errors,

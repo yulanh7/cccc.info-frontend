@@ -81,8 +81,6 @@ export default function GroupEditModal({
   const descLen = (editedItem.description ?? "").length;
   const descTrimmedLen = (editedItem.description ?? "").trim().length;
 
-  const overNameMax = Math.max(0, nameLen - MAX_NAME);
-  const underNameMin = Math.max(0, MIN_NAME - nameLen);
 
   const displayErrors = useMemo(
     () => ({

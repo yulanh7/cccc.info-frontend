@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useMemo } from "react";
-import Link from "next/link";
 import CardSkeleton from "@/components/feedback/CardSkeleton";
 import type { PostListItemApi } from "@/app/types";
 import PostCardSimple from "./PostCardSimple";
@@ -50,7 +49,6 @@ export default function PostsListWithPagination({
   canDelete,
   onDeleteSingle,
   onEditSingle,
-  deleting = false,
   formatDate,
   hasMore,
   loadingMore,
@@ -109,6 +107,7 @@ export default function PostsListWithPagination({
       </div>
     );
   }, [
+    router,
     rows,
     showSkeleton,
     selectMode,

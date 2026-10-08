@@ -34,7 +34,6 @@ export default function CustomHeader({
   pageTitle,
   onDelete,
   onEdit,
-  onAdd,
   showLogo = false,
   confirmDeleteInHeader = false,
   deleteConfirmMessage = "Are you sure you want to delete this item?",

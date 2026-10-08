@@ -87,7 +87,7 @@ function GroupDetailPageInner() {
   // Computed values
   const groupMatchesRoute = group?.id === groupId;
   const safeGroup: GroupApi | null = groupMatchesRoute ? group : null;
-  const safePosts = groupMatchesRoute ? posts : [];
+  const safePosts = useMemo(() => (groupMatchesRoute ? posts : []), [groupMatchesRoute, posts]);
   // 通过返回回到这一页时，滚回离开前的位置
   useScrollRestoration(status.posts === "succeeded");
   const safePagination = groupMatchesRoute ? postsPagination : null;
@@ -189,7 +189,8 @@ function GroupDetailPageInner() {
   const toggleSelect = useCallback((postId: number) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      next.has(postId) ? next.delete(postId) : next.add(postId);
+      if (next.has(postId)) next.delete(postId);
+      else next.add(postId);
       return next;
     });
     ctrl.toggleSelect(postId);

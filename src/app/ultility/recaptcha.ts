@@ -35,26 +35,7 @@ function isIpHost(host: string) {
 const RAW_ENABLED = (process.env.NEXT_PUBLIC_RECAPTCHA_ENABLED || '').toLowerCase() === 'true';
 const SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '';
 
-function shouldEnableInThisContext(): boolean {
-  if (!RAW_ENABLED || !SITE_KEY) return false;
-  if (!isBrowser()) return false;
 
-  const { protocol, hostname } = window.location;
-
-  // 永远不要在本地启用
-  if (hostname === 'localhost' || hostname === '127.0.0.1') return false;
-
-  // 必须 HTTPS
-  if (protocol !== 'https:') return false;
-
-  // 裸 IP 不启用（等域名）
-  if (isIpHost(hostname)) return false;
-
-  // 正式域名 + HTTPS 才启用
-  return true;
-}
-
-const ENABLED = shouldEnableInThisContext();
 
 function waitForGrecaptchaReady(timeoutMs = 8000): Promise<void> {
   return new Promise((resolve, reject) => {

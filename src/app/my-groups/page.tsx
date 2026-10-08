@@ -57,7 +57,6 @@ function MyGroupsPageInner() {
     // 状态文案
     saving,
     deleting,
-    overlayText,
   } = useGroupListController({
     mode: "user",         // ✅ 只拉取用户订阅的群组
     pageSize: POSTS_PER_PAGE,
@@ -67,7 +66,7 @@ function MyGroupsPageInner() {
 
 
   // ========== 本地搜索（仅过滤已订阅群组） ==========
-  const [qInput, setQInput] = useState("");
+  const [qInput] = useState("");
   const filteredRows = useMemo(() => {
     const q = qInput.trim().toLowerCase();
     if (!q) return rows;

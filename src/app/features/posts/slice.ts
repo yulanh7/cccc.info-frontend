@@ -166,7 +166,7 @@ export const deletePost = createAsyncThunk<{ id: number }, number>(
   "posts/deletePost",
   async (postId, { rejectWithValue }) => {
     try {
-      const res = await apiRequest<{}>("DELETE", POSTS_ENDPOINTS.DELETE(postId));
+      const res = await apiRequest<Record<string, never>>("DELETE", POSTS_ENDPOINTS.DELETE(postId));
       if (!res.success) throw new Error(res.message || "Delete post failed");
       return { id: postId };
     } catch (e: any) {

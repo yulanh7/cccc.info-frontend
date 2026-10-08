@@ -61,5 +61,5 @@ export type UpdateCommentData = { comment: CommentItemApi };
 export type UpdateCommentResponse = ApiResponseProps<UpdateCommentData>;
 
 /** 删除 */
-export type DeleteCommentData = {};
+export type DeleteCommentData = Record<string, never>;
 export type DeleteCommentResponse = ApiResponseProps<DeleteCommentData>;

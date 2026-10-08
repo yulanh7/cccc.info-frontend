@@ -10,7 +10,6 @@ import { COMMENT_POLICY_LABELS, DEFAULT_COMMENT_POLICY } from "@/app/types/group
 import { compressImageFile } from "@/app/ultility/imageCompression";
 import BasicsPanel from "@/components/posts/BasicsPanel";
 import MediaPanel from "@/components/posts/MediaPanel";
-import StepDot from "@/components/posts/StepDot";
 import Stepper from "@/components/posts/Stepper";
 import {
   TARGET_IMAGE_BYTES,
@@ -137,6 +136,8 @@ export default function PostModal({
     setLocalDocs([]);
 
     didInitRef.current = true;
+    // 故意不依赖 existingFiles：表单只在打开 / 换了帖子时初始化一次，之后不能被覆盖掉用户正在改的内容
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seedId, item]);
 
   const { images: existingImagesAll, documents: existingDocsAll } = useMemo(

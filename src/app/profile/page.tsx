@@ -11,7 +11,7 @@ import Button from '@/components/ui/Button'
 import PageTitle from '@/components/layout/PageTitle';
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
 import CustomHeader from "@/components/layout/CustomHeader";
-import { MIN_USER_NAME_LEN, MAX_USER_NAME_LEN, FIRST_NAME_RULE, FIRST_NAME_ERR } from '@/app/constants'
+import { FIRST_NAME_RULE, FIRST_NAME_ERR } from '@/app/constants'
 
 export default function ProfilePage() {
   const dispatch = useAppDispatch();
@@ -50,8 +50,6 @@ export default function ProfilePage() {
   const nameTrimmed = useMemo(() => firstName.trim(), [firstName]);
   const sameAsPrev = nameTrimmed === prevFirstName;
 
-  // 仅在“已触碰”时展示长度错误；提交且为空时展示必填
-  const showServerError = Boolean(nameErr);
 
   function validateFirstNameForSubmit() {
     if (!FIRST_NAME_RULE.test(nameTrimmed)) return FIRST_NAME_ERR;
@@ -108,7 +106,7 @@ export default function ProfilePage() {
       setOldPwd('');
       setNewPwd('');
       setConfirmPwd('');
-    } catch (e: any) {
+    } catch {
       // setPwdErrMsg(e?.message || 'Change password failed.');
     }
   };

@@ -35,7 +35,7 @@ interface BottomNavProps {
   unreadCount: number;
 }
 
-export default function BottomNav({ unreadCount }: BottomNavProps) {
+export default function BottomNav(_props: BottomNavProps) {
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useAppDispatch();

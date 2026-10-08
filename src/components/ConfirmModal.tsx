@@ -52,6 +52,8 @@ export default function ConfirmModal({
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
+    // handleClose 只用到 onClose / onCancel，已经在依赖里
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, closeOnEsc, onClose, onCancel]);
 
   useEffect(() => {

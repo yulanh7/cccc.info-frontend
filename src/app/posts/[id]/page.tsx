@@ -1,7 +1,7 @@
 "use client";
 import { Suspense } from "react";
 import Link from 'next/link';
-import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import CustomHeader from "@/components/layout/CustomHeader";
@@ -102,9 +102,6 @@ function PostDetailPageInner() {
   const liked = Boolean(storeLiked ?? (post as any)?.clicked_like ?? false);
   const inFlightRef = useRef(false);
   const [likeBusy, setLikeBusy] = useState(false);
-  // —— 内容折叠
-  const [expanded, setExpanded] = useState(false);
-  const [maxChars, setMaxChars] = useState(300);
 
   // —— 图片灯箱
   const { images, documents } = useMemo(
@@ -138,20 +135,14 @@ function PostDetailPageInner() {
     if (typeof (post as any).clicked_like === "boolean") {
       dispatch(setLikedByMe({ postId: post.id, liked: (post as any).clicked_like }));
     }
+    // 只在换了帖子时写一次初值；之后点赞数以 likes store 为准，不能被详情里的旧值盖掉
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [post?.id]);
 
   useEffect(() => {
     if (!Number.isFinite(postId)) return;
     dispatch(fetchPostDetail({ postId }));
   }, [dispatch, postId]);
-
-  // 根据屏幕大小决定折叠长度（<768 走 200）
-  useEffect(() => {
-    const compute = () => setMaxChars(window.innerWidth < 768 ? 200 : 300);
-    compute();
-    window.addEventListener("resize", compute);
-    return () => window.removeEventListener("resize", compute);
-  }, []);
 
   const [mounted, setMounted] = React.useState(false);
   useEffect(() => setMounted(true), []);
@@ -276,10 +267,6 @@ function PostDetailPageInner() {
     }
   };
 
-  // —— content 折叠/展开
-  const content = post?.content ?? "";
-  const isLong = content.length > maxChars;
-  const shown = expanded || !isLong ? content : content.slice(0, maxChars);
 
 
   // YouTube 需要 string[] 的视频链接

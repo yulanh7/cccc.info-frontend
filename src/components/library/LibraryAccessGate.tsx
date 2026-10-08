@@ -35,7 +35,7 @@ export default function LibraryAccessGate({ children }: { children: React.ReactN
         <PageTitle title="Library" showPageTitle />
         <div className="mx-auto w-full max-w-md p-4 min-h-screen mt-0 md:mt-16">
           <p className="rounded-md border border-border bg-white p-4 text-sm text-dark-gray" role="status">
-            {blockedText || LIBRARY_ACCESS_REQUIRED_TEXT}. Ask a library manager if you don't have it.
+            {blockedText || LIBRARY_ACCESS_REQUIRED_TEXT}. Ask a library manager if you don&apos;t have it.
           </p>
         </div>
       </>

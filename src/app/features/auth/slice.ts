@@ -105,7 +105,7 @@ export const logoutThunk = createAsyncThunk<boolean, void, { rejectValue: string
   `${AUTH_ENDPOINTS.LOGOUT}`,
   async (_, { rejectWithValue }) => {
     try {
-      const res = await apiRequest<{}>('POST', AUTH_ENDPOINTS.LOGOUT, {}, true);
+      const res = await apiRequest<Record<string, never>>('POST', AUTH_ENDPOINTS.LOGOUT, {}, true);
       if (!res.success) throw new Error(res.message || 'Logout failed');
       return true;
     } catch (e: any) {
