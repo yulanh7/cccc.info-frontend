@@ -8,6 +8,7 @@ import { JOIN_REQUEST_MESSAGE_MAX } from "@/app/types/group";
 import type { MyJoinRequest } from "@/app/types/group";
 import Button from "@/components/ui/Button";
 import LibraryModal from "@/components/library/LibraryModal";
+import { errorMessage } from "@/app/lib/errors";
 
 /**
  * 申请加入 request 小组：可选留言（最多 200 字），发出后组长批准。
@@ -42,7 +43,7 @@ export default function JoinRequestModal({
     try {
       const { join_request: r } = await dispatch(sendJoinRequest({ groupId, message })).unwrap();
       onSent({ id: r.id, status: "pending", created_at: r.created_at, message: r.message });
-    } catch (e: any) {
+    } catch (e) {
       setError((e as JoinRequestError)?.message || "Failed to send the request");
     } finally {
       setBusy(false);
@@ -55,9 +56,9 @@ export default function JoinRequestModal({
     try {
       await dispatch(withdrawJoinRequest(groupId)).unwrap();
       onWithdrawn?.();
-    } catch (e: any) {
+    } catch (e) {
       const err = e as JoinRequestError;
-      setError(err?.message || "Failed to withdraw the request");
+      setError(errorMessage(err, "Failed to withdraw the request"));
       if (err?.code === 404) onWithdrawn?.();
     } finally {
       setBusy(false);

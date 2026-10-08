@@ -6,6 +6,7 @@ import { setUserActive } from "@/app/features/admin/usersSlice";
 import type { UserProps } from "@/app/types/user";
 import Button from "@/components/ui/Button";
 import LibraryModal from "@/components/library/LibraryModal";
+import { errorMessage } from "@/app/lib/errors";
 
 /**
  * 恢复一个停用期间还保留小组成员关系的用户：列出这些小组，默认全部勾上（回去当普通成员）。
@@ -45,8 +46,8 @@ export default function ReactivateUserModal({
         setUserActive({ userId: user.id, active: true, keep_groups: groups.filter((g) => keep.has(g.id)).map((g) => g.id) })
       ).unwrap();
       onDone(updated, leaving.map((g) => g.name));
-    } catch (e: any) {
-      setError(typeof e === "string" ? e : e?.message || "Reactivate failed");
+    } catch (e) {
+      setError(errorMessage(e, "Reactivate failed"));
       setConfirmLeaving(false);
     } finally {
       setSaving(false);

@@ -2,6 +2,7 @@ import { createAsyncThunk } from '@reduxjs/toolkit';
 import { apiRequest } from '../request';
 import { unwrapData } from '@/app/types';
 import type { GroupInviteState, InvitePreview, InviteJoinResult } from '@/app/types/group';
+import { errorMessage, errorCode } from '@/app/lib/errors';
 
 /** 私密小组邀请链接的请求（不存 state）。接口名以后端 frontend-api.md 为准 */
 const GROUP_INVITE_ENDPOINTS = {
@@ -11,7 +12,7 @@ const GROUP_INVITE_ENDPOINTS = {
   JOIN: (code: string) => `/invites/${encodeURIComponent(code)}/join`,
 } as const;
 
-const errMsg = (e: any, fallback: string) => (typeof e === 'string' ? e : e?.message) || fallback;
+const errMsg = (e: unknown, fallback: string) => errorMessage(e, fallback);
 
 // ===== 打开 / 关闭：PUT /api/groups/<id>/invite（创建者 / 组长）
 export const setGroupInvite = createAsyncThunk<GroupInviteState, { groupId: number; enabled: boolean }>(
@@ -19,7 +20,7 @@ export const setGroupInvite = createAsyncThunk<GroupInviteState, { groupId: numb
   async ({ groupId, enabled }, { rejectWithValue }) => {
     try {
       return unwrapData(await apiRequest<GroupInviteState>('PUT', GROUP_INVITE_ENDPOINTS.SET(groupId), { enabled }));
-    } catch (e: any) {
+    } catch (e) {
       return rejectWithValue(errMsg(e, 'Failed to update the invite link')) as any;
     }
   }
@@ -31,7 +32,7 @@ export const resetGroupInvite = createAsyncThunk<GroupInviteState, number>(
   async (groupId, { rejectWithValue }) => {
     try {
       return unwrapData(await apiRequest<GroupInviteState>('POST', GROUP_INVITE_ENDPOINTS.RESET(groupId)));
-    } catch (e: any) {
+    } catch (e) {
       return rejectWithValue(errMsg(e, 'Failed to reset the invite link')) as any;
     }
   }
@@ -43,8 +44,8 @@ export const fetchInvite = createAsyncThunk<InvitePreview, string>(
   async (code, { rejectWithValue }) => {
     try {
       return unwrapData(await apiRequest<InvitePreview>('GET', GROUP_INVITE_ENDPOINTS.PREVIEW(code)));
-    } catch (e: any) {
-      return rejectWithValue({ code: e?.code, message: errMsg(e, 'This invite link is no longer valid') }) as any;
+    } catch (e) {
+      return rejectWithValue({ code: errorCode(e), message: errMsg(e, 'This invite link is no longer valid') }) as any;
     }
   }
 );
@@ -55,8 +56,8 @@ export const joinByInvite = createAsyncThunk<InviteJoinResult, string>(
   async (code, { rejectWithValue }) => {
     try {
       return unwrapData(await apiRequest<InviteJoinResult>('POST', GROUP_INVITE_ENDPOINTS.JOIN(code)));
-    } catch (e: any) {
-      return rejectWithValue({ code: e?.code, message: errMsg(e, 'Join failed') }) as any;
+    } catch (e) {
+      return rejectWithValue({ code: errorCode(e), message: errMsg(e, 'Join failed') }) as any;
     }
   }
 );

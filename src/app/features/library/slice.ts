@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { isAxiosError } from 'axios';
 import type { AxiosResponse } from 'axios';
 import api, { apiRequest } from '../request';
 import { unwrapData } from '@/app/types';
@@ -23,6 +24,7 @@ import type {
   LibraryImportReport,
   LibraryAccessLink,
 } from '@/app/types/library';
+import { errorMessage } from '@/app/lib/errors';
 
 type ListState<T> = {
   list: T[];
@@ -79,8 +81,8 @@ const toQuery = (params: Record<string, string | number | boolean | undefined | 
   return s ? `?${s}` : '';
 };
 
-const errMsg = (e: any, fallback: string) =>
-  (typeof e === 'string' ? e : e?.message) || fallback;
+const errMsg = (e: unknown, fallback: string) =>
+  errorMessage(e, fallback);
 
 /* ======================================================
  *                     所有登录用户
@@ -101,7 +103,7 @@ export const fetchLibraryCatalog = createAsyncThunk<LibraryCatalogData, LibraryC
         : { ...rest, page, per_page };
       const res = await apiRequest<LibraryCatalogData>('GET', LIBRARY_ENDPOINTS.CATALOG + toQuery(query));
       return unwrapData(res);
-    } catch (e: any) {
+    } catch (e) {
       return rejectWithValue(errMsg(e, 'Failed to load the catalog')) as any;
     }
   }
@@ -114,7 +116,7 @@ export const fetchLibraryCategories = createAsyncThunk<LibraryCategory[], void>(
     try {
       const res = await apiRequest<{ categories: LibraryCategory[] }>('GET', LIBRARY_ENDPOINTS.CATEGORIES);
       return unwrapData(res).categories ?? [];
-    } catch (e: any) {
+    } catch (e) {
       return rejectWithValue(errMsg(e, 'Failed to load categories')) as any;
     }
   }
@@ -127,7 +129,7 @@ export const fetchLibraryItem = createAsyncThunk<LibraryItemDetail, number>(
     try {
       const res = await apiRequest<LibraryItemDetail>('GET', LIBRARY_ENDPOINTS.ITEM(id));
       return unwrapData(res);
-    } catch (e: any) {
+    } catch (e) {
       return rejectWithValue(errMsg(e, 'Failed to load the item')) as any;
     }
   }
@@ -141,7 +143,7 @@ export const lookupLibraryItem = createAsyncThunk<LibraryItemDetail, string>(
     try {
       const res = await apiRequest<LibraryItemDetail>('GET', LIBRARY_ENDPOINTS.LOOKUP + toQuery({ code }));
       return unwrapData(res);
-    } catch (e: any) {
+    } catch (e) {
       return rejectWithValue(errMsg(e, 'Item not found')) as any;
     }
   }
@@ -156,7 +158,7 @@ export const borrowLibraryItem = createAsyncThunk<
   try {
     const res = await apiRequest<LibraryBorrowResult>('POST', LIBRARY_ENDPOINTS.BORROW(itemId), body);
     return unwrapData(res);
-  } catch (e: any) {
+  } catch (e) {
     return rejectWithValue(errMsg(e, 'Borrow failed')) as any;
   }
 });
@@ -168,7 +170,7 @@ export const returnLibraryBorrow = createAsyncThunk<LibraryBorrow, number>(
     try {
       const res = await apiRequest<{ borrow: LibraryBorrow }>('POST', LIBRARY_ENDPOINTS.RETURN(borrowId));
       return unwrapData(res).borrow;
-    } catch (e: any) {
+    } catch (e) {
       return rejectWithValue(errMsg(e, 'Return failed')) as any;
     }
   }
@@ -185,7 +187,7 @@ export const fetchMyBorrows = createAsyncThunk<
       LIBRARY_ENDPOINTS.MY_BORROWS + toQuery({ status, page, per_page })
     );
     return unwrapData(res);
-  } catch (e: any) {
+  } catch (e) {
     return rejectWithValue(errMsg(e, 'Failed to load your borrows')) as any;
   }
 });
@@ -201,7 +203,7 @@ export const createLibraryItem = createAsyncThunk<LibraryItem, LibraryItemInput>
     try {
       const res = await apiRequest<LibraryItem>('POST', LIBRARY_ENDPOINTS.ITEMS, body);
       return unwrapData(res);
-    } catch (e: any) {
+    } catch (e) {
       return rejectWithValue(errMsg(e, 'Create item failed')) as any;
     }
   }
@@ -215,7 +217,7 @@ export const updateLibraryItem = createAsyncThunk<
   try {
     const res = await apiRequest<LibraryItem>('PUT', LIBRARY_ENDPOINTS.ITEM(id), body);
     return unwrapData(res);
-  } catch (e: any) {
+  } catch (e) {
     return rejectWithValue(errMsg(e, 'Update item failed')) as any;
   }
 });
@@ -227,7 +229,7 @@ export const deactivateLibraryItem = createAsyncThunk<LibraryItem, number>(
     try {
       const res = await apiRequest<LibraryItem>('DELETE', LIBRARY_ENDPOINTS.ITEM(id));
       return unwrapData(res);
-    } catch (e: any) {
+    } catch (e) {
       return rejectWithValue(errMsg(e, 'Deactivate item failed')) as any;
     }
   }
@@ -240,7 +242,7 @@ export const restoreLibraryItem = createAsyncThunk<LibraryItem, number>(
     try {
       const res = await apiRequest<LibraryItem>('POST', LIBRARY_ENDPOINTS.RESTORE(id));
       return unwrapData(res);
-    } catch (e: any) {
+    } catch (e) {
       return rejectWithValue(errMsg(e, 'Restore item failed')) as any;
     }
   }
@@ -256,7 +258,7 @@ export const fetchAdminBorrows = createAsyncThunk<LibraryBorrowsData, LibraryAdm
         LIBRARY_ENDPOINTS.BORROWS + toQuery({ ...rest, page, per_page })
       );
       return unwrapData(res);
-    } catch (e: any) {
+    } catch (e) {
       return rejectWithValue(errMsg(e, 'Failed to load borrows')) as any;
     }
   }
@@ -269,7 +271,7 @@ export const searchLibraryBorrowers = createAsyncThunk<LibraryBorrower[], string
     try {
       const res = await apiRequest<{ users: LibraryBorrower[] }>('GET', LIBRARY_ENDPOINTS.BORROWERS + toQuery({ q }));
       return unwrapData(res).users ?? [];
-    } catch (e: any) {
+    } catch (e) {
       return rejectWithValue(errMsg(e, 'Failed to search users')) as any;
     }
   }
@@ -286,8 +288,9 @@ const postImportFile = async (endpoint: string, file: File): Promise<LibraryImpo
     });
     if (!res.data?.success || !res.data?.data) throw new Error(res.data?.message || 'Import failed');
     return res.data.data;
-  } catch (e: any) {
-    throw new Error(e?.response?.data?.message || e?.message || 'Import failed');
+  } catch (e) {
+    const serverMsg = isAxiosError(e) ? e.response?.data?.message : undefined;
+    throw new Error(serverMsg || errorMessage(e, 'Import failed'));
   }
 };
 
@@ -296,7 +299,7 @@ export const previewLibraryImport = createAsyncThunk<LibraryImportReport, File>(
   async (file, { rejectWithValue }) => {
     try {
       return await postImportFile(LIBRARY_ENDPOINTS.IMPORT_PREVIEW, file);
-    } catch (e: any) {
+    } catch (e) {
       return rejectWithValue(errMsg(e, 'Import preview failed')) as any;
     }
   }
@@ -307,7 +310,7 @@ export const importLibrary = createAsyncThunk<LibraryImportReport, File>(
   async (file, { rejectWithValue }) => {
     try {
       return await postImportFile(LIBRARY_ENDPOINTS.IMPORT, file);
-    } catch (e: any) {
+    } catch (e) {
       return rejectWithValue(errMsg(e, 'Import failed')) as any;
     }
   }
@@ -335,10 +338,10 @@ export const exportLibrary = createAsyncThunk<void, void>(
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-    } catch (e: any) {
+    } catch (e) {
       // 错误响应也是 blob，读出来取 message
-      let message = e?.message || 'Export failed';
-      const data = e?.response?.data;
+      let message = errorMessage(e, 'Export failed');
+      const data = isAxiosError(e) ? e.response?.data : undefined;
       if (data instanceof Blob) {
         try {
           message = JSON.parse(await data.text())?.message || message;
@@ -359,7 +362,7 @@ export const verifyLibraryAccess = createAsyncThunk<boolean, string>(
   async (code, { rejectWithValue }) => {
     try {
       return !!unwrapData(await apiRequest<{ valid: boolean }>('GET', LIBRARY_ENDPOINTS.ACCESS_CHECK(code))).valid;
-    } catch (e: any) {
+    } catch (e) {
       return rejectWithValue(errMsg(e, 'This library link is no longer valid')) as any;
     }
   }
@@ -371,7 +374,7 @@ export const fetchAccessLink = createAsyncThunk<LibraryAccessLink, void>(
   async (_, { rejectWithValue }) => {
     try {
       return unwrapData(await apiRequest<LibraryAccessLink>('GET', LIBRARY_ENDPOINTS.ACCESS_LINK));
-    } catch (e: any) {
+    } catch (e) {
       return rejectWithValue(errMsg(e, 'Failed to load the library link')) as any;
     }
   }
@@ -383,7 +386,7 @@ export const setAccessLinkEnabled = createAsyncThunk<LibraryAccessLink, boolean>
   async (enabled, { rejectWithValue }) => {
     try {
       return unwrapData(await apiRequest<LibraryAccessLink>('PUT', LIBRARY_ENDPOINTS.ACCESS_LINK, { enabled }));
-    } catch (e: any) {
+    } catch (e) {
       return rejectWithValue(errMsg(e, 'Failed to update the library link')) as any;
     }
   }
@@ -395,7 +398,7 @@ export const resetAccessLink = createAsyncThunk<LibraryAccessLink, void>(
   async (_, { rejectWithValue }) => {
     try {
       return unwrapData(await apiRequest<LibraryAccessLink>('POST', LIBRARY_ENDPOINTS.ACCESS_LINK_RESET));
-    } catch (e: any) {
+    } catch (e) {
       return rejectWithValue(errMsg(e, 'Failed to reset the library link')) as any;
     }
   }

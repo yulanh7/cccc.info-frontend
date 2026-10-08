@@ -7,6 +7,7 @@ import { inviteUrl } from "@/app/types/group";
 import type { GroupInviteState } from "@/app/types/group";
 import Button from "@/components/ui/Button";
 import ConfirmModal from "@/components/ConfirmModal";
+import { errorMessage } from "@/app/lib/errors";
 
 /** 私密小组的邀请链接：开关和重新生成都直接调接口，不跟着“保存小组”提交 */
 export default function GroupInviteSection({ groupId, initial }: { groupId: number; initial: GroupInviteState }) {
@@ -25,8 +26,8 @@ export default function GroupInviteSection({ groupId, initial }: { groupId: numb
     setCopied(false);
     try {
       setState(await action());
-    } catch (e: any) {
-      setError(typeof e === "string" ? e : e?.message || "Something went wrong");
+    } catch (e) {
+      setError(errorMessage(e, "Something went wrong"));
     } finally {
       setBusy(false);
     }

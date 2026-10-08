@@ -9,6 +9,7 @@ import { getRecaptchaToken, initRecaptcha } from '@/app/ultility/recaptcha';
 import Button from '@/components/ui/Button';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { FIRST_NAME_RULE, FIRST_NAME_ERR } from '@/app/constants'
+import { errorMessage } from '@/app/lib/errors';
 
 export default function SignUpForm() {
   const [email, setEmail] = useState('');
@@ -65,12 +66,12 @@ export default function SignUpForm() {
       alert(`Welcome, ${firstName}! Your account has been created.`);
       // 回到注册前要去的页面（例如邀请链接的加入页）
       router.push(safeNextPath(new URLSearchParams(window.location.search).get('next'), '/groups'));
-    } catch (e: any) {
+    } catch (e) {
       // e 会是 rejectWithValue(...) 的字符串/对象，或 Error
       const msg =
         typeof e === 'string'
           ? e
-          : e?.message || 'Signup failed';
+          : errorMessage(e, 'Signup failed');
       alert(msg);
     }
 

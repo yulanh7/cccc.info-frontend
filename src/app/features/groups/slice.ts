@@ -12,6 +12,7 @@ import type {
 import { normalizeFromUserGroups, normalizeFromAllGroups } from '@/app/types/group';
 import type { LoadStatus } from '@/app/types';
 import type { RootState, AppDispatch } from '@/app/features/store';
+import { errorMessage } from '@/app/lib/errors';
 
 const GROUP_ENDPOINTS = {
   CREATE_GROUP: '/groups',
@@ -104,8 +105,8 @@ export const createGroup = createAsyncThunk<GroupApi, CreateOrUpdateGroupBody>(
       const res = await apiRequest<{ group: GroupApi }>('POST', GROUP_ENDPOINTS.CREATE_GROUP, body);
       if (!res.success || !res.data?.group) throw new Error(res.message || 'Create group failed');
       return res.data.group;
-    } catch (e: any) {
-      return rejectWithValue(e.message || 'Create group failed') as any;
+    } catch (e) {
+      return rejectWithValue(errorMessage(e, 'Create group failed')) as any;
     }
   }
 );
@@ -129,8 +130,8 @@ export const fetchUserGroups = createAsyncThunk<
     const currentUserId = (getState().auth.user?.id ?? undefined) as number | undefined;
     const groups = res.data.groups.map(g => normalizeFromUserGroups(g, currentUserId));
     return { groups, pagination: res.data.pagination };
-  } catch (e: any) {
-    return rejectWithValue(e.message || 'Fetch user groups failed') as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, 'Fetch user groups failed')) as any;
   }
 });
 
@@ -154,8 +155,8 @@ export const fetchUserSubscribedGroups = createAsyncThunk<
     const groups = res.data.groups.map(g => normalizeFromUserGroups(g, currentUserId));
     const membership = Object.fromEntries(groups.map(g => [g.id, true])) as Record<number, boolean>;
     return { groups, pagination: res.data.pagination, membership };
-  } catch (e: any) {
-    return rejectWithValue(e.message || 'Fetch user subscribed groups failed') as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, 'Fetch user subscribed groups failed')) as any;
   }
 });
 
@@ -176,8 +177,8 @@ export const fetchAvailableGroups = createAsyncThunk<
 
     const groups = res.data.groups.map(normalizeFromAllGroups);
     return { groups, pagination: res.data.pagination };
-  } catch (e: any) {
-    return rejectWithValue(e.message || 'Fetch available groups failed') as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, 'Fetch available groups failed')) as any;
   }
 });
 
@@ -198,8 +199,8 @@ export const fetchAllGroups = createAsyncThunk<
 
     const groups = res.data.groups.map(normalizeFromAllGroups);
     return { groups, pagination: res.data.pagination };
-  } catch (e: any) {
-    return rejectWithValue(e.message || 'Fetch all groups failed') as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, 'Fetch all groups failed')) as any;
   }
 });
 
@@ -220,8 +221,8 @@ export const fetchVisibleGroups = createAsyncThunk<
 
     const groups = res.data.groups.map(normalizeFromAllGroups);
     return { groups, pagination: res.data.pagination };
-  } catch (e: any) {
-    return rejectWithValue(e.message || 'Fetch visible groups failed') as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, 'Fetch visible groups failed')) as any;
   }
 });
 
@@ -246,8 +247,8 @@ export const searchVisibleGroups = createAsyncThunk<
       groups: res.data.groups.map(normalizeFromAllGroups),
       pagination: res.data.pagination,
     };
-  } catch (e: any) {
-    return rejectWithValue(e.message || 'Search visible groups failed') as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, 'Search visible groups failed')) as any;
   }
 });
 
@@ -261,8 +262,8 @@ export const updateGroup = createAsyncThunk<
     const res = await apiRequest<{ group: GroupApi }>('PUT', GROUP_ENDPOINTS.UPDATE_GROUP(groupId), body);
     if (!res.success || !res.data?.group) throw new Error(res.message || 'Update group failed');
     return res.data.group;
-  } catch (e: any) {
-    return rejectWithValue(e.message || 'Update group failed') as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, 'Update group failed')) as any;
   }
 });
 
@@ -273,8 +274,8 @@ export const deleteGroup = createAsyncThunk<{ id: number }, number>(
       const res = await apiRequest<Record<string, never>>('DELETE', GROUP_ENDPOINTS.DELETE_GROUP(groupId));
       if (!res.success) throw new Error(res.message || 'Delete group failed');
       return { id: groupId };
-    } catch (e: any) {
-      return rejectWithValue(e.message || 'Delete group failed') as any;
+    } catch (e) {
+      return rejectWithValue(errorMessage(e, 'Delete group failed')) as any;
     }
   }
 );
@@ -300,8 +301,8 @@ export const searchGroups = createAsyncThunk<
       groups: res.data.groups.map(normalizeFromAllGroups),
       pagination: res.data.pagination,
     };
-  } catch (e: any) {
-    return rejectWithValue(e.message || 'Search groups failed') as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, 'Search groups failed')) as any;
   }
 });
 
@@ -312,8 +313,8 @@ export const joinGroup = createAsyncThunk<{ id: number }, number>(
       const res = await apiRequest<Record<string, never>>('POST', GROUP_ENDPOINTS.JOIN_GROUP(groupId));
       if (!res.success) throw new Error(res.message || 'Join group failed');
       return { id: groupId };
-    } catch (e: any) {
-      return rejectWithValue(e.message || 'Join group failed') as any;
+    } catch (e) {
+      return rejectWithValue(errorMessage(e, 'Join group failed')) as any;
     }
   }
 );
@@ -325,8 +326,8 @@ export const leaveGroup = createAsyncThunk<{ id: number }, number>(
       const res = await apiRequest<Record<string, never>>('POST', GROUP_ENDPOINTS.LEAVE_GROUP(groupId));
       if (!res.success) throw new Error(res.message || 'Leave group failed');
       return { id: groupId };
-    } catch (e: any) {
-      return rejectWithValue(e.message || 'Leave group failed') as any;
+    } catch (e) {
+      return rejectWithValue(errorMessage(e, 'Leave group failed')) as any;
     }
   }
 );
@@ -339,8 +340,8 @@ export const fetchGroupDetail = createAsyncThunk<GroupApi, number>(
       const res = await apiRequest<GroupDetailData>('GET', GROUP_ENDPOINTS.GROUP_DETAIL(groupId));
       if (!res.success || !res.data) throw new Error(res.message || 'Fetch group detail failed');
       return res.data;
-    } catch (e: any) {
-      return rejectWithValue(e.message || 'Fetch group detail failed') as any;
+    } catch (e) {
+      return rejectWithValue(errorMessage(e, 'Fetch group detail failed')) as any;
     }
   }
 );

@@ -10,6 +10,7 @@ import type { InvitePreview } from "@/app/types/group";
 import CustomHeader from "@/components/layout/CustomHeader";
 import PageTitle from "@/components/layout/PageTitle";
 import Button from "@/components/ui/Button";
+import { errorMessage, errorCode } from "@/app/lib/errors";
 
 type View =
   | { kind: "loading" }
@@ -37,7 +38,7 @@ export default function JoinByInvitePage() {
       .then((preview) => !cancelled && setView({ kind: "ready", preview }))
       .catch((e: any) => {
         if (cancelled) return;
-        setView(e?.code === 404 ? { kind: "invalid" } : { kind: "error", message: e?.message || "Something went wrong" });
+        setView(e?.code === 404 ? { kind: "invalid" } : { kind: "error", message: errorMessage(e, "Something went wrong") });
       });
     return () => {
       cancelled = true;
@@ -50,9 +51,9 @@ export default function JoinByInvitePage() {
     try {
       const res = await dispatch(joinByInvite(code)).unwrap();
       router.push(`/groups/${res.group.id}`);
-    } catch (e: any) {
-      if (e?.code === 404) setView({ kind: "invalid" });
-      else setJoinError(e?.message || "Join failed");
+    } catch (e) {
+      if (errorCode(e) === 404) setView({ kind: "invalid" });
+      else setJoinError(errorMessage(e, "Join failed"));
     } finally {
       setJoining(false);
     }

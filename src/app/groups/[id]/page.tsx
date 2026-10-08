@@ -37,6 +37,7 @@ import { useScrollRestoration } from "@/hooks/useBackNavigation";
 import { POSTS_PER_PAGE, MEMBERS_PER_PAGE } from "@/app/constants";
 import SubscribeToggleButton from "@/components/groups/SubscribeToggleButton";
 import JoinRequestsModal from "@/components/groups/JoinRequestsModal";
+import { errorMessage } from "@/app/lib/errors";
 
 export default function GroupDetailPage() {
   return (
@@ -157,8 +158,8 @@ function GroupDetailPageInner() {
     try {
       await dispatch(deleteGroup(safeGroup.id)).unwrap();
       router.push("/groups");
-    } catch (e: any) {
-      alert(typeof e === "string" ? e : e?.message || "Delete group failed");
+    } catch (e) {
+      alert(errorMessage(e, "Delete group failed"));
     }
   }, [safeGroup, dispatch, router]);
 
@@ -230,12 +231,12 @@ function GroupDetailPageInner() {
       const updated = await dispatch(updateGroup({ groupId: safeGroup.id, body })).unwrap();
       await dispatch(fetchGroupDetail(updated.id));
       setShowEditModal(false);
-    } catch (e: any) {
-      const fieldErrors = mapApiErrorToFields(typeof e === "string" ? e : e?.message);
+    } catch (e) {
+      const fieldErrors = mapApiErrorToFields(errorMessage(e, ""));
       if (fieldErrors.title || fieldErrors.description) {
         setModalErrors(fieldErrors);
       } else {
-        alert(typeof e === "string" ? e : e?.message || "Update group failed");
+        alert(errorMessage(e, "Update group failed"));
       }
     } finally {
       setModalSaving(false);
@@ -269,8 +270,8 @@ function GroupDetailPageInner() {
     try {
       await dispatch(addGroupMember(payload)).unwrap();
       dispatch(fetchGroupMembers({ groupId: safeGroup.id, page: 1, per_page: MEMBERS_PER_PAGE }));
-    } catch (e: any) {
-      alert(typeof e === "string" ? e : e?.message || "Add member failed");
+    } catch (e) {
+      alert(errorMessage(e, "Add member failed"));
     }
   }, [safeGroup, dispatch]);
 
@@ -280,8 +281,8 @@ function GroupDetailPageInner() {
       await dispatch(kickGroupMember({ groupId: safeGroup.id, userId })).unwrap();
       const page = membersPagination?.page ?? 1;
       dispatch(fetchGroupMembers({ groupId: safeGroup.id, page, per_page: MEMBERS_PER_PAGE }));
-    } catch (e: any) {
-      alert(typeof e === "string" ? e : e?.message || "Kick member failed");
+    } catch (e) {
+      alert(errorMessage(e, "Kick member failed"));
     }
   }, [safeGroup, dispatch, membersPagination?.page]);
 
@@ -290,8 +291,8 @@ function GroupDetailPageInner() {
     try {
       const thunk = makeLeader ? addGroupLeader : removeGroupLeader;
       await dispatch(thunk({ groupId: safeGroup.id, userId })).unwrap();
-    } catch (e: any) {
-      alert(typeof e === "string" ? e : e?.message || (makeLeader ? "Set leader failed" : "Remove leader failed"));
+    } catch (e) {
+      alert(errorMessage(e, makeLeader ? "Set leader failed" : "Remove leader failed"));
     }
   }, [safeGroup, dispatch]);
 
@@ -305,8 +306,8 @@ function GroupDetailPageInner() {
     try {
       const leaders = await dispatch(fetchGroupLeaders({ groupId: safeGroup.id })).unwrap();
       setTransferCandidates(leaders.filter((u) => !u.is_creator));
-    } catch (e: any) {
-      alert(typeof e === "string" ? e : e?.message || "Fetch leaders failed");
+    } catch (e) {
+      alert(errorMessage(e, "Fetch leaders failed"));
     } finally {
       setTransferLoading(false);
     }
@@ -322,8 +323,8 @@ function GroupDetailPageInner() {
       alert(wasCreator
         ? "You are no longer the group owner, but you are still a leader."
         : `Group ownership transferred to ${target.firstName}.`);
-    } catch (e: any) {
-      alert(typeof e === "string" ? e : e?.message || "Transfer ownership failed");
+    } catch (e) {
+      alert(errorMessage(e, "Transfer ownership failed"));
     } finally {
       setTransferring(false);
     }
@@ -494,8 +495,8 @@ function GroupDetailPageInner() {
             try {
               await onCreatePost(form);
               setIsPostModalOpen(false);
-            } catch (e: any) {
-              alert(typeof e === "string" ? e : e?.message || "Create post failed");
+            } catch (e) {
+              alert(errorMessage(e, "Create post failed"));
             } finally {
               setCreating(false);
             }

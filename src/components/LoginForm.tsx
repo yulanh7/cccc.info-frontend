@@ -10,6 +10,7 @@ import { AppDispatch } from '@/app/features/store';
 import { getRecaptchaToken, initRecaptcha } from '@/app/ultility/recaptcha';
 import Button from '@/components/ui/Button'; // ← 按你的路径修改
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { errorMessage } from "@/app/lib/errors";
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
@@ -40,8 +41,8 @@ export default function LoginForm() {
       await dispatch(loginThunk(credentials)).unwrap();
       // 回到登录前要去的页面（登录守卫会带上 ?next=）
       router.push(safeNextPath(new URLSearchParams(window.location.search).get('next'), '/'));
-    } catch (err: any) {
-      setError(err || 'Incorrect email or password.');
+    } catch (err) {
+      setError(errorMessage(err, 'Incorrect email or password.'));
     } finally {
       setIsLoading(false);
     }

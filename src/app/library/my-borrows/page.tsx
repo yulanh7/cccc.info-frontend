@@ -18,6 +18,7 @@ import Pagination from "@/components/ui/Pagination";
 import Button from "@/components/ui/Button";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useConfirm } from "@/hooks/useConfirm";
+import { errorMessage } from "@/app/lib/errors";
 
 const MY_BORROWS_PATH = "/library/my-borrows";
 type Tab = "active" | "history";
@@ -87,8 +88,8 @@ function MyBorrowsPageInner() {
     setActionError(null);
     try {
       await dispatch(returnLibraryBorrow(b.id)).unwrap();
-    } catch (e: any) {
-      setActionError(typeof e === "string" ? e : e?.message || "Return failed");
+    } catch (e) {
+      setActionError(errorMessage(e, "Return failed"));
     } finally {
       setReturningId(null);
       // 还掉的从“借阅中”移到“历史”：重新拉当前页

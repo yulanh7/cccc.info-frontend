@@ -18,6 +18,7 @@ import {
   MAX_DOC_MB,
   MAX_DOC_FILE_SIZE
 } from '@/app/constants'
+import { errorMessage } from "@/app/lib/errors";
 /* ======================= 常量 & 工具 ======================= */
 const IMAGE_ACCEPT = ".png,.jpg,.jpeg,.gif,.bmp,.webp";
 const DOC_ACCEPT = ".doc,.docx,.pdf";
@@ -363,8 +364,8 @@ export default function PostModal({
       initialStateRef.current = serializeState();
       setIsConfirmOpen(false);
       onClose(); // 成功才关闭
-    } catch (e: any) {
-      alert(typeof e === "string" ? e : e?.message || "Save failed");
+    } catch (e) {
+      alert(errorMessage(e, "Save failed"));
     }
   };
 

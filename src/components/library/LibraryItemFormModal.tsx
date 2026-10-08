@@ -7,6 +7,7 @@ import { LIBRARY_ITEM_TYPES } from "@/app/types/library";
 import type { LibraryItem, LibraryItemInput, LibraryItemType } from "@/app/types/library";
 import Button from "@/components/ui/Button";
 import LibraryModal from "@/components/library/LibraryModal";
+import { errorMessage } from "@/app/lib/errors";
 
 type FieldKey = Exclude<keyof LibraryItemInput, "item_type">;
 type FieldDef = { key: FieldKey; label: string; required?: boolean; type?: string; placeholder?: string };
@@ -110,8 +111,8 @@ export default function LibraryItemFormModal({
         ? await dispatch(createLibraryItem(body)).unwrap()
         : await dispatch(updateLibraryItem({ id: item!.id, body })).unwrap();
       onSaved(saved);
-    } catch (err: any) {
-      setError(typeof err === "string" ? err : err?.message || "Save failed");
+    } catch (err) {
+      setError(errorMessage(err, "Save failed"));
     } finally {
       setSaving(false);
     }

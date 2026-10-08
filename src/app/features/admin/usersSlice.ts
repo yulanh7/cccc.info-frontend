@@ -7,6 +7,7 @@ import type {
   AdminUsersListData,
   UpdateUserPermissionBody,
 } from '@/app/types/user';
+import { errorMessage } from '@/app/lib/errors';
 
 interface AdminUsersState {
   users: UserProps[];
@@ -46,8 +47,8 @@ export const fetchAdminUsers = createAsyncThunk<
 
     const res = await apiRequest<AdminUsersListData>('GET', `${ADMIN_ENDPOINTS.USERS}?${qs.toString()}`);
     return unwrapData(res);
-  } catch (e: any) {
-    return rejectWithValue(e.message || 'Fetch users failed') as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, 'Fetch users failed')) as any;
   }
 });
 
@@ -60,8 +61,8 @@ export const setUserPermission = createAsyncThunk<
   try {
     const res = await apiRequest<UserProps>('PATCH', ADMIN_ENDPOINTS.USER_PERMISSIONS(userId), body);
     return unwrapData(res);
-  } catch (e: any) {
-    return rejectWithValue(e.message || 'Update permission failed') as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, 'Update permission failed')) as any;
   }
 });
 
@@ -73,8 +74,8 @@ export const setUserAdmin = createAsyncThunk<UserProps, { userId: number; admin:
     try {
       const res = await apiRequest<UserProps>('PATCH', ADMIN_ENDPOINTS.USER_ADMIN(userId), { admin });
       return unwrapData(res);
-    } catch (e: any) {
-      return rejectWithValue(e.message || 'Update admin role failed') as any;
+    } catch (e) {
+      return rejectWithValue(errorMessage(e, 'Update admin role failed')) as any;
     }
   }
 );
@@ -97,8 +98,8 @@ export const setUserActive = createAsyncThunk<
       if (keep_groups) body.keep_groups = keep_groups;
       const res = await apiRequest<UserProps>('PATCH', ADMIN_ENDPOINTS.USER_ACTIVE(userId), body);
       return unwrapData(res);
-    } catch (e: any) {
-      return rejectWithValue(e.message || 'Update account status failed') as any;
+    } catch (e) {
+      return rejectWithValue(errorMessage(e, 'Update account status failed')) as any;
     }
   }
 );
@@ -109,8 +110,8 @@ export const resetUserPassword = createAsyncThunk<UserProps, number>(
     try {
       const res = await apiRequest<UserProps>('POST', ADMIN_ENDPOINTS.RESET_PASSWORD(userId));
       return unwrapData(res);
-    } catch (e: any) {
-      return rejectWithValue(e.message || 'Reset password failed') as any;
+    } catch (e) {
+      return rejectWithValue(errorMessage(e, 'Reset password failed')) as any;
     }
   }
 );

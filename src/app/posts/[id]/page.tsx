@@ -42,6 +42,7 @@ import ConfirmModal from "@/components/ConfirmModal";
 import { useConfirm } from "@/hooks/useConfirm";
 import CollapsibleText from "@/components/ui/CollapsibleText";
 import SubscribeToggleButton from "@/components/groups/SubscribeToggleButton";
+import { errorMessage } from "@/app/lib/errors";
 
 
 // —— 本页内部使用：编辑表单的最小类型（与 PostModal 对接）
@@ -154,8 +155,8 @@ function PostDetailPageInner() {
     try {
       await dispatch(deletePost(id)).unwrap();
       history.back();
-    } catch (e: any) {
-      alert(typeof e === "string" ? e : e?.message || "Delete post failed");
+    } catch (e) {
+      alert(errorMessage(e, "Delete post failed"));
     }
   };
 
@@ -225,8 +226,8 @@ function PostDetailPageInner() {
       // ✅ 到这里才算彻底成功：关闭编辑
       handleEditClose();
 
-    } catch (e: any) {
-      alert(typeof e === "string" ? e : e?.message || "Update post failed");
+    } catch (e) {
+      alert(errorMessage(e, "Update post failed"));
       // ❌ 失败则不关闭，保持在编辑态
       throw e; // 抛给 PostModal 的 try/catch，避免“保存并关闭”把弹窗关掉
     } finally {
@@ -256,11 +257,11 @@ function PostDetailPageInner() {
         await dispatch(likePost(post.id)).unwrap();
       }
       // fulfilled 时我们已经在 groupDetail/posts slice 覆盖了 props 源
-    } catch (err: any) {
+    } catch (err) {
       // 回滚 + 显示后端字符串
       dispatch(setLikedByMe({ postId: post.id, liked: prevLiked }));
       dispatch(setLikeCount({ postId: post.id, like_count: prevCount }));
-      alert(typeof err === "string" ? err : err?.message || (prevLiked ? "Unlike failed" : "Like failed"));
+      alert(errorMessage(err, prevLiked ? "Unlike failed" : "Like failed"));
     } finally {
       inFlightRef.current = false;
       setLikeBusy(false);

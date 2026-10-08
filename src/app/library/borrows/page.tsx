@@ -19,6 +19,7 @@ import Button from "@/components/ui/Button";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useConfirm } from "@/hooks/useConfirm";
 import SearchBar from "@/components/SearchBar";
+import { errorMessage } from "@/app/lib/errors";
 
 const BORROWS_PATH = "/library/borrows";
 
@@ -105,8 +106,8 @@ function LibraryBorrowsPageInner() {
     setActionError(null);
     try {
       await dispatch(returnLibraryBorrow(b.id)).unwrap();
-    } catch (e: any) {
-      setActionError(typeof e === "string" ? e : e?.message || "Return failed");
+    } catch (e) {
+      setActionError(errorMessage(e, "Return failed"));
     } finally {
       setReturningId(null);
       load();

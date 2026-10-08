@@ -21,6 +21,7 @@ import CustomHeader from "@/components/layout/CustomHeader";
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
 import SearchBar from "@/components/SearchBar";
 import Pagination from "@/components/ui/Pagination";
+import { errorMessage } from "@/app/lib/errors";
 
 const ADMIN_USERS_PATH = "/admin/users";
 
@@ -74,8 +75,8 @@ function AdminUsersPageInner() {
     if (!target) return;
     try {
       await dispatch(setUserAdmin({ userId: target.user.id, admin: target.admin })).unwrap();
-    } catch (e: any) {
-      alert(typeof e === "string" ? e : e?.message || "Update admin role failed");
+    } catch (e) {
+      alert(errorMessage(e, "Update admin role failed"));
     }
   };
 
@@ -90,8 +91,8 @@ function AdminUsersPageInner() {
       setNotice(
         `${u.firstName}'s password has been reset to the initial password. Tell them to log in with it — they will be asked to choose a new password.`
       );
-    } catch (e: any) {
-      alert(typeof e === "string" ? e : e?.message || "Reset password failed");
+    } catch (e) {
+      alert(errorMessage(e, "Reset password failed"));
     }
   };
 
@@ -110,8 +111,8 @@ function AdminUsersPageInner() {
           ? `${target.user.firstName}'s account has been reactivated.`
           : `${target.user.firstName}'s account has been deactivated. They can't log in until it is reactivated.`
       );
-    } catch (e: any) {
-      alert(typeof e === "string" ? e : e?.message || "Update account status failed");
+    } catch (e) {
+      alert(errorMessage(e, "Update account status failed"));
     }
   };
 
@@ -120,8 +121,8 @@ function AdminUsersPageInner() {
       await dispatch(setUserPermission({ userId: u.id, permission, granted })).unwrap();
       // 改的是自己的权限：马上刷新登录资料，其他页面（图书馆、建组按钮）不用刷新就生效
       if (currentUser && u.id === currentUser.id) dispatch(fetchProfileThunk());
-    } catch (e: any) {
-      alert(typeof e === "string" ? e : e?.message || "Update permission failed");
+    } catch (e) {
+      alert(errorMessage(e, "Update permission failed"));
     }
   };
 

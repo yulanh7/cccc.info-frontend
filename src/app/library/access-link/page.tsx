@@ -15,6 +15,7 @@ import PageTitle from "@/components/layout/PageTitle";
 import CustomHeader from "@/components/layout/CustomHeader";
 import Button from "@/components/ui/Button";
 import ConfirmModal from "@/components/ConfirmModal";
+import { errorMessage } from "@/app/lib/errors";
 
 /** 图书管理员：图书馆访问链接 + 可打印的二维码。普通用户只能通过它进入图书馆 */
 export default function LibraryAccessLinkPage() {
@@ -39,8 +40,8 @@ export default function LibraryAccessLinkPage() {
     setCopied(false);
     try {
       setLink(await action());
-    } catch (e: any) {
-      setError(typeof e === "string" ? e : e?.message || "Something went wrong");
+    } catch (e) {
+      setError(errorMessage(e, "Something went wrong"));
     } finally {
       setBusy(false);
     }

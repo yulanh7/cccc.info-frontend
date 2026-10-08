@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useAppDispatch } from "@/app/features/hooks";
 import { searchLibraryBorrowers } from "@/app/features/library/slice";
 import type { LibraryBorrower } from "@/app/types/library";
+import { errorMessage } from "@/app/lib/errors";
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -36,8 +37,8 @@ export default function BorrowerPicker({
       try {
         const users = await dispatch(searchLibraryBorrowers(term)).unwrap();
         if (!cancelled) setResults(users);
-      } catch (e: any) {
-        if (!cancelled) setError(typeof e === "string" ? e : e?.message || "Search failed");
+      } catch (e) {
+        if (!cancelled) setError(errorMessage(e, "Search failed"));
       } finally {
         if (!cancelled) setLoading(false);
       }

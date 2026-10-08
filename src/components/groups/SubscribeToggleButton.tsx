@@ -18,6 +18,7 @@ import {
   CheckIcon,
   ClockIcon,
 } from "@heroicons/react/24/outline";
+import { errorMessage } from "@/app/lib/errors";
 
 type Mode = "subscribe" | "follow" | "join";
 
@@ -134,14 +135,14 @@ export default function SubscribeToggle({
     try {
       await dispatch(withdrawJoinRequest(groupId)).unwrap();
       onJoinRequestChange?.(null);
-    } catch (e: any) {
+    } catch (e) {
       const err = e as JoinRequestError;
       if (err?.code === 404) {
         setLocalPending(false);
         onJoinRequestChange?.(null);
         onStale?.();
       }
-      alert(err?.message || "Failed to withdraw the request");
+      alert(errorMessage(err, "Failed to withdraw the request"));
     } finally {
       setBusy(false);
       setShowWithdraw(false);
@@ -163,8 +164,8 @@ export default function SubscribeToggle({
     setBusy(true);
     try {
       await dispatch(joinGroup(groupId)).unwrap();
-    } catch (e: any) {
-      alert(typeof e === "string" ? e : e?.message || "Action failed");
+    } catch (e) {
+      alert(errorMessage(e, "Action failed"));
     } finally {
       setBusy(false);
     }
@@ -174,8 +175,8 @@ export default function SubscribeToggle({
     setBusy(true);
     try {
       await dispatch(leaveGroup(groupId)).unwrap();
-    } catch (e: any) {
-      alert(typeof e === "string" ? e : e?.message || "Action failed");
+    } catch (e) {
+      alert(errorMessage(e, "Action failed"));
     } finally {
       setBusy(false);
       setShowConfirm(false);

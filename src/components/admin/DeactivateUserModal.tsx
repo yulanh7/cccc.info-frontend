@@ -8,6 +8,7 @@ import { setUserActive } from "@/app/features/admin/usersSlice";
 import type { UserProps, AdminUsersListData } from "@/app/types/user";
 import Button from "@/components/ui/Button";
 import LibraryModal from "@/components/library/LibraryModal";
+import { errorMessage } from "@/app/lib/errors";
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -47,8 +48,8 @@ export default function DeactivateUserModal({
         const qs = new URLSearchParams({ q: term, per_page: "10" });
         const data = unwrapData(await apiRequest<AdminUsersListData>("GET", `/admin/users?${qs}`));
         if (!cancelled) setResults((data.users ?? []).filter((u) => u.id !== user.id && u.is_active !== false));
-      } catch (e: any) {
-        if (!cancelled) setError(e?.message || "Search failed");
+      } catch (e) {
+        if (!cancelled) setError(errorMessage(e, "Search failed"));
       } finally {
         if (!cancelled) setSearching(false);
       }
@@ -68,8 +69,8 @@ export default function DeactivateUserModal({
         setUserActive({ userId: user.id, active: false, transfer_groups_to: owner.id })
       ).unwrap();
       onDone(updated, owner);
-    } catch (e: any) {
-      setError(typeof e === "string" ? e : e?.message || "Deactivate failed");
+    } catch (e) {
+      setError(errorMessage(e, "Deactivate failed"));
     } finally {
       setSaving(false);
     }

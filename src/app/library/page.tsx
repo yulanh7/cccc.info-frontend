@@ -33,6 +33,7 @@ import LendItemModal from "@/components/library/LendItemModal";
 import Button from "@/components/ui/Button";
 import ConfirmModal from "@/components/ConfirmModal";
 import { useConfirm } from "@/hooks/useConfirm";
+import { errorMessage } from "@/app/lib/errors";
 
 const LIBRARY_PATH = "/library";
 const SEARCH_DEBOUNCE_MS = 400;
@@ -80,7 +81,7 @@ function LibraryPageInner() {
   const [errors, setErrors] = useState<Record<string, CatalogActionError>>({});
   const [reloadTick, setReloadTick] = useState(0);
 
-  const errText = (e: any, fallback: string) => (typeof e === "string" ? e : e?.message || fallback);
+  const errText = (e: unknown, fallback: string) => (errorMessage(e, fallback));
   const describe = ({ group, copy }: CopyAction) =>
     `"${group.title}"${copy.call_number ? ` (No. ${copy.call_number})` : ""}`;
 
@@ -91,7 +92,7 @@ function LibraryPageInner() {
     setErrors(({ [key]: _, ...rest }) => rest);
     try {
       await dispatch(borrowLibraryItem({ itemId: target.copy.id })).unwrap();
-    } catch (e: any) {
+    } catch (e) {
       setErrors((m) => ({ ...m, [key]: { message: errText(e, "Borrow failed") } }));
       refreshCatalog(); // 例如 409 别人刚借走：重新拿已加载的部分
     } finally {
@@ -108,7 +109,7 @@ function LibraryPageInner() {
     setErrors(({ [key]: _, ...rest }) => rest);
     try {
       await dispatch(returnLibraryBorrow(target.borrowId)).unwrap();
-    } catch (e: any) {
+    } catch (e) {
       setErrors((m) => ({ ...m, [key]: { message: errText(e, "Return failed") } }));
       refreshCatalog();
     } finally {
@@ -133,7 +134,7 @@ function LibraryPageInner() {
     setErrors(({ [key]: _, ...rest }) => rest);
     try {
       await action();
-    } catch (e: any) {
+    } catch (e) {
       setErrors((m) => ({ ...m, [key]: { message: errText(e, fallback) } }));
       refreshCatalog();
     } finally {

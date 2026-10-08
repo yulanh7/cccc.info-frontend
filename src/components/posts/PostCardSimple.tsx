@@ -14,6 +14,7 @@ import { ellipsize } from '@/app/ultility';
 import { getYouTubeThumbnail } from '@/app/ultility';
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
 import { likePost, unlikePost, setLikeCount, setLikedByMe, selectLikeCount, selectLikedByMe } from "@/app/features/posts/likeSlice";
+import { errorMessage } from "@/app/lib/errors";
 
 type Props = {
   post: PostListItemApi;
@@ -123,12 +124,12 @@ export default function PostCardSimple({
       } else {
         await dispatch(likePost(id)).unwrap();
       }
-    } catch (err: any) {
+    } catch (err) {
       // Rollback on error
       dispatch(setLikedByMe({ postId: id, liked: prevLiked }));
       dispatch(setLikeCount({ postId: id, like_count: prevCount }));
 
-      const message = err?.message || (prevLiked ? "Unlike failed" : "Like failed");
+      const message = errorMessage(err, prevLiked ? "Unlike failed" : "Like failed");
       console.error("Like operation failed:", err);
       // Consider using a toast notification instead of alert
       alert(message);

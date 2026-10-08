@@ -21,6 +21,7 @@ import { formatDate } from "@/app/ultility";
 import PageTitle from "@/components/layout/PageTitle";
 import CustomHeader from "@/components/layout/CustomHeader";
 import Button from "@/components/ui/Button";
+import { errorMessage } from "@/app/lib/errors";
 
 const UNAVAILABLE_TEXT = "This content is no longer available.";
 
@@ -72,14 +73,14 @@ export default function NotificationsPage() {
   const [confirmClear, setConfirmClear] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
-  const fail = (e: any, fallback: string) => setNotice(typeof e === "string" ? e : e?.message || fallback);
+  const fail = (e: unknown, fallback: string) => setNotice(errorMessage(e, fallback));
 
   const remove = async (n: AppNotification) => {
     setNotice(null);
     setDeletingId(n.id);
     try {
       await dispatch(deleteNotification(n.id)).unwrap();
-    } catch (e: any) {
+    } catch (e) {
       fail(e, "Delete failed");
     } finally {
       setDeletingId(null);
@@ -93,7 +94,7 @@ export default function NotificationsPage() {
     try {
       await dispatch(clearReadNotifications()).unwrap();
       dispatch(fetchNotifications({}));
-    } catch (e: any) {
+    } catch (e) {
       fail(e, "Clear failed");
     } finally {
       setClearing(false);
@@ -105,7 +106,7 @@ export default function NotificationsPage() {
     setSavingSettings(true);
     try {
       await dispatch(updateNotificationSettings({ auto_delete_read_after_90_days: on })).unwrap();
-    } catch (e: any) {
+    } catch (e) {
       fail(e, "Failed to save settings");
     } finally {
       setSavingSettings(false);

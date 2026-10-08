@@ -12,6 +12,7 @@ import PageTitle from '@/components/layout/PageTitle';
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
 import CustomHeader from "@/components/layout/CustomHeader";
 import { FIRST_NAME_RULE, FIRST_NAME_ERR } from '@/app/constants'
+import { errorMessage } from "@/app/lib/errors";
 
 export default function ProfilePage() {
   const dispatch = useAppDispatch();
@@ -75,8 +76,8 @@ export default function ProfilePage() {
 
       setProfileMsg('Profile updated successfully.');
       setIsEditing(false);
-    } catch (e: any) {
-      setNameErr((typeof e === 'string' ? e : e?.message) || 'Update failed.');
+    } catch (e) {
+      setNameErr(errorMessage(e, 'Update failed.'));
     }
   };
 
@@ -107,7 +108,7 @@ export default function ProfilePage() {
       setNewPwd('');
       setConfirmPwd('');
     } catch {
-      // setPwdErrMsg(e?.message || 'Change password failed.');
+      // setPwdErrMsg(errorMessage(e, 'Change password failed.'));
     }
   };
 

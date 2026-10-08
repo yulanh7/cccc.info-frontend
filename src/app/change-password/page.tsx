@@ -8,6 +8,7 @@ import PageTitle from "@/components/layout/PageTitle";
 import CustomHeader from "@/components/layout/CustomHeader";
 import Button from "@/components/ui/Button";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import { errorMessage } from "@/app/lib/errors";
 
 const MIN_PASSWORD = 6;
 
@@ -68,8 +69,8 @@ export default function ChangePasswordPage() {
     try {
       await dispatch(changePasswordThunk({ oldPassword, newPassword })).unwrap();
       router.replace("/");
-    } catch (err: any) {
-      setError(typeof err === "string" ? err : err?.message || "Change password failed");
+    } catch (err) {
+      setError(errorMessage(err, "Change password failed"));
     } finally {
       setSaving(false);
     }

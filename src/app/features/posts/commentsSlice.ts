@@ -17,6 +17,7 @@ import type {
   CommentDetailData,
   DeleteCommentData,
 } from "@/app/types/comments";
+import { errorMessage } from "@/app/lib/errors";
 
 /* ======================================================
  *                   URL Builders
@@ -81,8 +82,8 @@ export const fetchPostRootComments = createAsyncThunk<
     );
     const data = unwrapData(res);
     return { ...data, sourceKey: sourceKeyOf.root(postId), append };
-  } catch (e: any) {
-    return rejectWithValue(e.message || "Fetch comments failed") as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, "Fetch comments failed")) as any;
   }
 });
 
@@ -98,8 +99,8 @@ export const fetchChildComments = createAsyncThunk<
     );
     const data = unwrapData(res);
     return { ...data, sourceKey: sourceKeyOf.children(parentId), parentId, append };
-  } catch (e: any) {
-    return rejectWithValue(e.message || "Fetch child comments failed") as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, "Fetch child comments failed")) as any;
   }
 });
 
@@ -117,8 +118,8 @@ export const createComment = createAsyncThunk<
     const res = await apiRequest<CreateCommentData>("POST", COMMENTS_ENDPOINTS.POST_COMMENTS(postId), payload);
     const data = unwrapData(res); // { comment }
     return data.comment;
-  } catch (e: any) {
-    return rejectWithValue(e.message || "Create comment failed") as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, "Create comment failed")) as any;
   }
 });
 
@@ -131,8 +132,8 @@ export const replyToComment = createAsyncThunk<
     const res = await apiRequest<CreateCommentData>("POST", COMMENTS_ENDPOINTS.REPLY_TO_COMMENT(commentId), { body });
     const data = unwrapData(res); // { comment }
     return data.comment;
-  } catch (e: any) {
-    return rejectWithValue(e.message || "Reply comment failed") as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, "Reply comment failed")) as any;
   }
 });
 
@@ -145,8 +146,8 @@ export const fetchCommentDetail = createAsyncThunk<CommentItemApi, { commentId: 
       // 后端返回 data: { comment }；兼容直接返回评论对象的旧写法
       const data: any = unwrapData(res);
       return (data?.comment ?? data) as CommentItemApi;
-    } catch (e: any) {
-      return rejectWithValue(e.message || "Fetch comment failed") as any;
+    } catch (e) {
+      return rejectWithValue(errorMessage(e, "Fetch comment failed")) as any;
     }
   }
 );
@@ -161,8 +162,8 @@ export const updateComment = createAsyncThunk<
     const res = await apiRequest<UpdateCommentData>("PUT", COMMENTS_ENDPOINTS.UPDATE_COMMENT(commentId), payload);
     const data = unwrapData(res); // { comment }
     return data.comment;
-  } catch (e: any) {
-    return rejectWithValue(e.message || "Update comment failed") as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, "Update comment failed")) as any;
   }
 });
 
@@ -175,8 +176,8 @@ export const deleteComment = createAsyncThunk<
     const res = await apiRequest<DeleteCommentData>("DELETE", COMMENTS_ENDPOINTS.DELETE_COMMENT(commentId));
     if (!res.success) throw new Error(res.message || "Delete comment failed");
     return { commentId, parent_id };
-  } catch (e: any) {
-    return rejectWithValue(e.message || "Delete comment failed") as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, "Delete comment failed")) as any;
   }
 });
 
@@ -250,8 +251,8 @@ export const likeComment = createAsyncThunk<LikeResult, { commentId: number; lik
     try {
       const res = await apiRequest<LikeResult>(like ? "POST" : "DELETE", COMMENTS_ENDPOINTS.LIKE_COMMENT(commentId));
       return unwrapData(res);
-    } catch (e: any) {
-      return rejectWithValue(e?.message || "Like failed") as any;
+    } catch (e) {
+      return rejectWithValue(errorMessage(e, "Like failed")) as any;
     }
   }
 );

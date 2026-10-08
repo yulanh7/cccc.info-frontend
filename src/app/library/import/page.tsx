@@ -13,6 +13,7 @@ import CustomHeader from "@/components/layout/CustomHeader";
 import LoadingOverlay from "@/components/feedback/LoadingOverLay";
 import Button from "@/components/ui/Button";
 import ImportReportView from "@/components/library/ImportReportView";
+import { errorMessage } from "@/app/lib/errors";
 
 type Stage = "pick" | "preview" | "done";
 
@@ -54,8 +55,8 @@ export default function LibraryImportPage() {
         setReport(res);
         setStage(kind === "preview" ? "preview" : "done");
       }
-    } catch (e: any) {
-      setError(typeof e === "string" ? e : e?.message || "Something went wrong");
+    } catch (e) {
+      setError(errorMessage(e, "Something went wrong"));
     } finally {
       setBusy(null);
     }

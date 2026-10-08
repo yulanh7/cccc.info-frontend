@@ -7,6 +7,7 @@ import type { LibraryBorrower, LibraryItem, LibraryBorrowResult } from "@/app/ty
 import Button from "@/components/ui/Button";
 import LibraryModal from "@/components/library/LibraryModal";
 import BorrowerPicker from "@/components/library/BorrowerPicker";
+import { errorMessage } from "@/app/lib/errors";
 
 /** 代借：选借阅人 → 借这一件（带 user_id，不带 any_copy）；默认借阅人是管理员自己 */
 export default function LendItemModal({
@@ -32,8 +33,8 @@ export default function LendItemModal({
     try {
       const res = await dispatch(borrowLibraryItem({ itemId: item.id, user_id: borrower.id })).unwrap();
       onLent(res);
-    } catch (e: any) {
-      setError(typeof e === "string" ? e : e?.message || "Lend failed");
+    } catch (e) {
+      setError(errorMessage(e, "Lend failed"));
     } finally {
       setSaving(false);
     }

@@ -13,6 +13,7 @@ import type { JoinRequest } from "@/app/types/group";
 import { formatDate } from "@/app/ultility";
 import Button from "@/components/ui/Button";
 import LibraryModal from "@/components/library/LibraryModal";
+import { errorMessage } from "@/app/lib/errors";
 
 /**
  * 管理者看待处理的加入申请（旧的在前），逐条 Approve / Decline。
@@ -29,7 +30,7 @@ export default function JoinRequestsModal({ groupId, onClose }: { groupId: numbe
     setLoadError(null);
     try {
       setRequests(await dispatch(fetchJoinRequests(groupId)).unwrap());
-    } catch (e: any) {
+    } catch (e) {
       setLoadError((e as JoinRequestError)?.message || "Failed to load join requests");
     }
   }, [dispatch, groupId]);
@@ -52,13 +53,13 @@ export default function JoinRequestsModal({ groupId, onClose }: { groupId: numbe
       await dispatch(thunk({ groupId, requestId: r.id })).unwrap();
       setRequests((list) => list?.filter((x) => x.id !== r.id) ?? null);
       setNotice({ text: action === "approve" ? `${name} is now a member.` : `${name}'s request was declined.` });
-    } catch (e: any) {
+    } catch (e) {
       const err = e as JoinRequestError;
       // 已被处理 / 已经不存在：列表里这一条过时了
       if (err?.code === 409 || err?.code === 404) {
         setRequests((list) => list?.filter((x) => x.id !== r.id) ?? null);
       }
-      setNotice({ text: err?.message || "Action failed", error: true });
+      setNotice({ text: errorMessage(err, "Action failed"), error: true });
     } finally {
       setBusyId(null);
     }

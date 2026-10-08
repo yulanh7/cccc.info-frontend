@@ -16,6 +16,7 @@ import {
   ProfileUpdateData,
 } from '@/app/types/user';
 import { LoginCredentials, SignupCredentials } from '@/app/types/auth';
+import { errorMessage } from '@/app/lib/errors';
 
 interface AuthState {
   user: UserProps | null;
@@ -77,8 +78,8 @@ export const loginThunk = createAsyncThunk<
       accessToken: res.data.access_token,
       refreshToken: res.data.refresh_token,
     };
-  } catch (e: any) {
-    return rejectWithValue(e.message || 'Login failed');
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, 'Login failed'));
   }
 });
 
@@ -96,8 +97,8 @@ export const signupThunk = createAsyncThunk<
       accessToken: res.data.access_token,
       refreshToken: res.data.refresh_token,
     };
-  } catch (e: any) {
-    return rejectWithValue(e.message || 'Signup failed');
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, 'Signup failed'));
   }
 });
 
@@ -108,8 +109,8 @@ export const logoutThunk = createAsyncThunk<boolean, void, { rejectValue: string
       const res = await apiRequest<Record<string, never>>('POST', AUTH_ENDPOINTS.LOGOUT, {}, true);
       if (!res.success) throw new Error(res.message || 'Logout failed');
       return true;
-    } catch (e: any) {
-      return rejectWithValue(e.message || 'Logout failed');
+    } catch (e) {
+      return rejectWithValue(errorMessage(e, 'Logout failed'));
     }
   }
 );
@@ -125,8 +126,8 @@ export const fetchProfileThunk = createAsyncThunk<UserProps, void, { rejectValue
       if (!res.success || !res.data?.user) throw new Error(res.message || 'Failed to load profile');
       persistUser(res.data.user);
       return res.data.user;
-    } catch (e: any) {
-      return rejectWithValue(e.message || 'Failed to load profile');
+    } catch (e) {
+      return rejectWithValue(errorMessage(e, 'Failed to load profile'));
     }
   }
 );
@@ -142,8 +143,8 @@ export const refreshThunk = createAsyncThunk<
     if (!res?.success || !res?.data?.access_token) throw new Error(res?.message || 'Refresh failed');
     dispatch(accessTokenRefreshed(res.data.access_token)); // 同步到 store + localStorage
     return { accessToken: res.data.access_token };
-  } catch (e: any) {
-    return rejectWithValue(e.message || 'Refresh failed');
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, 'Refresh failed'));
   }
 });
 
@@ -163,8 +164,8 @@ export const saveProfileNameThunk = createAsyncThunk<
     }
 
     return { firstName };
-  } catch (err: any) {
-    return rejectWithValue(err?.message || 'Update profile failed');
+  } catch (err) {
+    return rejectWithValue(errorMessage(err, 'Update profile failed'));
   }
 });
 
@@ -183,8 +184,8 @@ export const changePasswordThunk = createAsyncThunk<
     const user = res.data?.user ?? null;
     if (user) persistUser(user);
     return user;
-  } catch (err: any) {
-    return rejectWithValue(err?.message || 'Change password failed');
+  } catch (err) {
+    return rejectWithValue(errorMessage(err, 'Change password failed'));
   }
 });
 

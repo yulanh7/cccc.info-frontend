@@ -10,6 +10,7 @@ import type {
   CreatePostRequest,
   PostListItemApi,
 } from "@/app/types";
+import { errorMessage } from "@/app/lib/errors";
 
 type Status = "idle" | "loading" | "succeeded" | "failed";
 
@@ -216,9 +217,9 @@ export function usePostListController<
       if (!deletePost) return;
       try {
         await dispatch(deletePost(postId)).unwrap();
-      } catch (e: any) {
+      } catch (e) {
         // 例如 leaders_only 组被拒：后端 403 文案原样展示
-        alert(typeof e === "string" ? e : e?.message || "Delete post failed");
+        alert(errorMessage(e, "Delete post failed"));
       }
       refreshCurrentPage();
     },

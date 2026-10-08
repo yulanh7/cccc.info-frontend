@@ -15,6 +15,7 @@ import type {
 import { unwrapData } from "@/app/types/api";
 import type { LoadStatus } from "@/app/types";
 import { likePost, unlikePost } from "@/app/features/posts/likeSlice";
+import { errorMessage } from "@/app/lib/errors";
 
 
 /** ---------------------------------------------
@@ -69,8 +70,8 @@ export const fetchGroupPostsList = createAsyncThunk<
   try {
     const data = await fetchPostsApi("group", { groupId, page, per_page });
     return { ...data, append, sourceKey: sourceKeyOf("group", groupId) };
-  } catch (e: any) {
-    return rejectWithValue(e.message || "Fetch posts failed") as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, "Fetch posts failed")) as any;
   }
 });
 
@@ -81,8 +82,8 @@ export const fetchMyPosts = createAsyncThunk<
   try {
     const data = await fetchPostsApi("mine", { page, per_page });
     return { ...data, append, sourceKey: sourceKeyOf("mine") };
-  } catch (e: any) {
-    return rejectWithValue(e.message || "Fetch my posts failed") as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, "Fetch my posts failed")) as any;
   }
 });
 
@@ -93,8 +94,8 @@ export const fetchSubscribedPosts = createAsyncThunk<
   try {
     const data = await fetchPostsApi("subscribed", { page, per_page });
     return { ...data, append, sourceKey: sourceKeyOf("subscribed") };
-  } catch (e: any) {
-    return rejectWithValue(e.message || "Fetch subscribed posts failed") as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, "Fetch subscribed posts failed")) as any;
   }
 });
 
@@ -125,8 +126,8 @@ export const createPost = createAsyncThunk<
     const res = await apiRequest<CreatedPostData>("POST", POSTS_ENDPOINTS.CREATE(groupId), body);
     const data = unwrapData(res);
     return data.post;
-  } catch (e: any) {
-    return rejectWithValue(e.message || "Create post failed") as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, "Create post failed")) as any;
   }
 });
 
@@ -138,8 +139,8 @@ export const fetchPostDetail = createAsyncThunk<PostDetailData, { postId: number
       const res = await apiRequest<PostDetailData>("GET", POSTS_ENDPOINTS.GET(postId));
       if (!res.success || !res.data) throw new Error(res.message || "Fetch post failed");
       return res.data;
-    } catch (e: any) {
-      return rejectWithValue(e.message || "Fetch post failed") as any;
+    } catch (e) {
+      return rejectWithValue(errorMessage(e, "Fetch post failed")) as any;
     }
   }
 );
@@ -156,8 +157,8 @@ export const updatePost = createAsyncThunk<
     const res = await apiRequest<UpdatePostData>("PUT", POSTS_ENDPOINTS.UPDATE(postId), body);
     if (!res.success || !res.data?.post) throw new Error(res.message || "Update post failed");
     return res.data.post;
-  } catch (e: any) {
-    return rejectWithValue(e.message || "Update post failed") as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, "Update post failed")) as any;
   }
 });
 
@@ -169,8 +170,8 @@ export const deletePost = createAsyncThunk<{ id: number }, number>(
       const res = await apiRequest<Record<string, never>>("DELETE", POSTS_ENDPOINTS.DELETE(postId));
       if (!res.success) throw new Error(res.message || "Delete post failed");
       return { id: postId };
-    } catch (e: any) {
-      return rejectWithValue(e.message || "Delete post failed") as any;
+    } catch (e) {
+      return rejectWithValue(errorMessage(e, "Delete post failed")) as any;
     }
   }
 );
@@ -183,8 +184,8 @@ export const fetchPostFileIds = createAsyncThunk<{ postId: number; file_ids: num
       const res = await apiRequest<PostFileIdsData>("GET", POSTS_ENDPOINTS.FILE_IDS(postId));
       if (!res.success || !res.data) throw new Error(res.message || "Fetch file ids failed");
       return { postId, file_ids: res.data.file_ids || [] };
-    } catch (e: any) {
-      return rejectWithValue(e.message || "Fetch file ids failed") as any;
+    } catch (e) {
+      return rejectWithValue(errorMessage(e, "Fetch file ids failed")) as any;
     }
   }
 );

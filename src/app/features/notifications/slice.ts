@@ -4,6 +4,7 @@ import { unwrapData } from '@/app/types';
 import type { LoadStatus } from '@/app/types';
 import type { AppNotification, NotificationsPage } from '@/app/types/notification';
 import { mergeNotifications } from '@/app/types/notification';
+import { errorMessage, errorCode } from '@/app/lib/errors';
 
 const NOTIFICATION_ENDPOINTS = {
   LIST: '/notifications',
@@ -43,7 +44,7 @@ const initialState: NotificationsState = {
   settings: null,
 };
 
-const errMsg = (e: any, fallback: string) => (typeof e === 'string' ? e : e?.message) || fallback;
+const errMsg = (e: unknown, fallback: string) => errorMessage(e, fallback);
 
 // ===== 未读数：GET /api/notifications/unread-count
 export const fetchUnreadCount = createAsyncThunk<number, void>(
@@ -51,8 +52,8 @@ export const fetchUnreadCount = createAsyncThunk<number, void>(
   async (_, { rejectWithValue }) => {
     try {
       return unwrapData(await apiRequest<{ unread: number }>('GET', NOTIFICATION_ENDPOINTS.UNREAD_COUNT)).unread;
-    } catch (e: any) {
-      return rejectWithValue({ code: e?.code, message: errMsg(e, 'Failed to load notifications') }) as any;
+    } catch (e) {
+      return rejectWithValue({ code: errorCode(e), message: errMsg(e, 'Failed to load notifications') }) as any;
     }
   }
 );
@@ -65,7 +66,7 @@ export const fetchNotifications = createAsyncThunk<NotificationsPage, { beforeId
       const qs = new URLSearchParams({ limit: String(NOTIFICATIONS_PAGE_SIZE) });
       if (beforeId) qs.set('before_id', String(beforeId));
       return unwrapData(await apiRequest<NotificationsPage>('GET', `${NOTIFICATION_ENDPOINTS.LIST}?${qs}`));
-    } catch (e: any) {
+    } catch (e) {
       return rejectWithValue(errMsg(e, 'Failed to load notifications')) as any;
     }
   }
@@ -77,7 +78,7 @@ export const markNotificationRead = createAsyncThunk<AppNotification, number>(
   async (id, { rejectWithValue }) => {
     try {
       return unwrapData(await apiRequest<AppNotification>('POST', NOTIFICATION_ENDPOINTS.READ(id)));
-    } catch (e: any) {
+    } catch (e) {
       return rejectWithValue(errMsg(e, 'Failed to mark as read')) as any;
     }
   }
@@ -89,7 +90,7 @@ export const markAllNotificationsRead = createAsyncThunk<number, void>(
   async (_, { rejectWithValue }) => {
     try {
       return unwrapData(await apiRequest<{ unread: number }>('POST', NOTIFICATION_ENDPOINTS.READ_ALL)).unread;
-    } catch (e: any) {
+    } catch (e) {
       return rejectWithValue(errMsg(e, 'Failed to mark all as read')) as any;
     }
   }
@@ -102,7 +103,7 @@ export const deleteNotification = createAsyncThunk<{ id: number; unread_count: n
     try {
       const data = unwrapData(await apiRequest<{ unread_count: number }>('DELETE', NOTIFICATION_ENDPOINTS.ONE(id)));
       return { id, unread_count: data.unread_count };
-    } catch (e: any) {
+    } catch (e) {
       return rejectWithValue(errMsg(e, 'Delete failed')) as any;
     }
   }
@@ -114,7 +115,7 @@ export const clearReadNotifications = createAsyncThunk<{ deleted: number; unread
   async (_, { rejectWithValue }) => {
     try {
       return unwrapData(await apiRequest<{ deleted: number; unread_count: number }>('POST', NOTIFICATION_ENDPOINTS.CLEAR_READ));
-    } catch (e: any) {
+    } catch (e) {
       return rejectWithValue(errMsg(e, 'Clear failed')) as any;
     }
   }
@@ -126,7 +127,7 @@ export const fetchNotificationSettings = createAsyncThunk<NotificationSettings, 
   async (_, { rejectWithValue }) => {
     try {
       return unwrapData(await apiRequest<NotificationSettings>('GET', NOTIFICATION_ENDPOINTS.SETTINGS));
-    } catch (e: any) {
+    } catch (e) {
       return rejectWithValue(errMsg(e, 'Failed to load settings')) as any;
     }
   }
@@ -137,7 +138,7 @@ export const updateNotificationSettings = createAsyncThunk<NotificationSettings,
   async (body, { rejectWithValue }) => {
     try {
       return unwrapData(await apiRequest<NotificationSettings>('PUT', NOTIFICATION_ENDPOINTS.SETTINGS, body));
-    } catch (e: any) {
+    } catch (e) {
       return rejectWithValue(errMsg(e, 'Failed to save settings')) as any;
     }
   }

@@ -21,6 +21,7 @@ import { appendUnique } from '@/app/lib/infiniteList';
 import { likePost, unlikePost } from "@/app/features/posts/likeSlice";
 import { setGroupInvite, resetGroupInvite } from './inviteSlice';
 import { sendJoinRequest, withdrawJoinRequest, approveJoinRequest, declineJoinRequest } from './joinRequestSlice';
+import { errorMessage } from "@/app/lib/errors";
 
 // 简单的订阅者 UI 形状（与后端 subscribers 项一致）
 type GroupSubscriberUi = { id: number; firstName: string; email: string; is_creator?: boolean; is_leader?: boolean };
@@ -82,8 +83,8 @@ export const fetchGroupDetail = createAsyncThunk<
     }));
 
     return { group, subscriberCount, subscribers };
-  } catch (e: any) {
-    return rejectWithValue(e.message || 'Fetch group detail failed') as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, 'Fetch group detail failed')) as any;
   }
 });
 
@@ -111,8 +112,8 @@ export const fetchGroupMembers = createAsyncThunk<
       }));
 
       return { members, pagination: data.pagination };
-    } catch (e: any) {
-      return rejectWithValue(e.message || 'Fetch members failed') as any;
+    } catch (e) {
+      return rejectWithValue(errorMessage(e, 'Fetch members failed')) as any;
     }
   }
 );
@@ -134,8 +135,8 @@ export const addGroupMember = createAsyncThunk<
       },
       message: res.message,
     };
-  } catch (e: any) {
-    return rejectWithValue(e.message || 'Add member failed') as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, 'Add member failed')) as any;
   }
 });
 
@@ -148,8 +149,8 @@ export const kickGroupMember = createAsyncThunk<
     const res = await apiRequest<KickMemberResponseApi['data']>('POST', `/groups/${groupId}/members/${userId}/kick`);
     if (!res.success) throw new Error(res.message || 'Kick member failed');
     return { userId, message: res.message };
-  } catch (e: any) {
-    return rejectWithValue(e.message || 'Kick member failed') as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, 'Kick member failed')) as any;
   }
 });
 
@@ -162,8 +163,8 @@ export const addGroupLeader = createAsyncThunk<
     const res = await apiRequest<AddLeaderResponseApi['data']>('POST', `/groups/${groupId}/leaders`, { user_id: userId });
     if (!res.success) throw new Error(res.message || 'Set leader failed');
     return { userId, message: res.message };
-  } catch (e: any) {
-    return rejectWithValue(e.message || 'Set leader failed') as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, 'Set leader failed')) as any;
   }
 });
 
@@ -176,8 +177,8 @@ export const removeGroupLeader = createAsyncThunk<
     const res = await apiRequest<Record<string, never>>('DELETE', `/groups/${groupId}/leaders`, { user_id: userId });
     if (!res.success) throw new Error(res.message || 'Remove leader failed');
     return { userId, message: res.message };
-  } catch (e: any) {
-    return rejectWithValue(e.message || 'Remove leader failed') as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, 'Remove leader failed')) as any;
   }
 });
 
@@ -202,8 +203,8 @@ export const fetchGroupLeaders = createAsyncThunk<
       page += 1;
     } while (page <= pages);
     return leaders;
-  } catch (e: any) {
-    return rejectWithValue(e.message || 'Fetch leaders failed') as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, 'Fetch leaders failed')) as any;
   }
 });
 
@@ -216,8 +217,8 @@ export const transferGroupOwnership = createAsyncThunk<
     const res = await apiRequest<TransferOwnershipResponseApi['data']>('POST', `/groups/${groupId}/transfer-ownership`, { user_id: userId });
     if (!res.success || !res.data?.group) throw new Error(res.message || 'Transfer ownership failed');
     return { group: res.data.group, message: res.message };
-  } catch (e: any) {
-    return rejectWithValue(e.message || 'Transfer ownership failed') as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, 'Transfer ownership failed')) as any;
   }
 });
 

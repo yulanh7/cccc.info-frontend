@@ -7,6 +7,7 @@ import type {
   PostLikesData,
   postsPagination,
 } from "@/app/types";
+import { errorMessage } from "@/app/lib/errors";
 
 const LIKE_ENDPOINT = (postId: number) => `/posts/${postId}/like`;
 const LIKES_LIST_ENDPOINT = (postId: number) => `/posts/${postId}/likes`;
@@ -21,8 +22,8 @@ export const likePost = createAsyncThunk<{ postId: number; like_count: number },
         throw new Error(res.message || "Like post failed");
       }
       return { postId, like_count: res.data.like_count };
-    } catch (e: any) {
-      return rejectWithValue(e.message || "Like post failed") as any;
+    } catch (e) {
+      return rejectWithValue(errorMessage(e, "Like post failed")) as any;
     }
   }
 );
@@ -37,8 +38,8 @@ export const unlikePost = createAsyncThunk<{ postId: number; like_count: number 
         throw new Error(res.message || "Unlike post failed");
       }
       return { postId, like_count: res.data.like_count };
-    } catch (e: any) {
-      return rejectWithValue(e.message || "Unlike post failed") as any;
+    } catch (e) {
+      return rejectWithValue(errorMessage(e, "Unlike post failed")) as any;
     }
   }
 );
@@ -58,8 +59,8 @@ export const fetchPostLikes = createAsyncThunk<
     if (!res.success || !res.data) throw new Error(res.message || "Fetch likes failed");
 
     return { postId, likes: res.data.likes, pagination: res.data.pagination };
-  } catch (e: any) {
-    return rejectWithValue(e.message || "Fetch likes failed") as any;
+  } catch (e) {
+    return rejectWithValue(errorMessage(e, "Fetch likes failed")) as any;
   }
 });
 

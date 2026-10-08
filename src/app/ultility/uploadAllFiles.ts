@@ -1,6 +1,7 @@
 // ✅ utils/uploadAllFiles.ts
 import { uploadFile } from "@/app/features/files/uploadSlice";
 import type { AppDispatch } from "@/app/features/store";
+import { errorMessage } from "@/app/lib/errors";
 
 type UploadResult =
   | { ok: true; id: number }
@@ -25,8 +26,8 @@ export async function uploadAllFiles(
         })
       ).unwrap();
       return { ok: true, id: res.id };
-    } catch (e: any) {
-      const msg = typeof e === "string" ? e : e?.message || "Upload failed";
+    } catch (e) {
+      const msg = errorMessage(e, "Upload failed");
       return { ok: false, error: msg, name: file.name, index };
     }
   });

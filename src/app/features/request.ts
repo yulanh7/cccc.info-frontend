@@ -21,6 +21,9 @@ import {
 } from './library/access';
 
 // ====== Base configuration ======
+/** 后端错误响应的 body（只读用得到的字段） */
+type ServerErrorBody = { message?: string; code?: string; [key: string]: unknown };
+
 const BASE_URL = (process.env.NEXT_PUBLIC_BACKEND_ORIGIN || 'http://localhost:5000') + '/api'
 
 const api: AxiosInstance = axios.create({
@@ -267,7 +270,9 @@ export const apiRequest = async <T>(
 
     return normalizeApiResponse<T>(response.data, response.status);
 
-  } catch (error: any) {
+  } catch (caught) {
+    // 这里只会收到 axios 的错误（或网络错误），按它的形状读
+    const error = caught as Partial<AxiosError<ServerErrorBody>>;
     const status = error?.response?.status ?? 500;
     const code = typeof status === 'number' ? status : 500;
     const serverMsg = pickServerMessage(error?.response?.data);
@@ -276,7 +281,7 @@ export const apiRequest = async <T>(
       error?.response?.data?.message ??
       error?.message ??
       `Request failed: ${method} ${BASE_URL}${endpoint}`;
-    if (error.code === 'ECONNREFUSED') {
+    if (error?.code === 'ECONNREFUSED') {
       message = `Cannot connect to ${BASE_URL}${endpoint}. Ensure the backend server is running.`;
     }
 

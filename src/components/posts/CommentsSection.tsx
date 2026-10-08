@@ -29,6 +29,7 @@ import { HandThumbUpIcon as HandThumbUpSolid } from "@heroicons/react/24/solid";
 import { MAX_COMMENT_LEN } from '@/app/constants';
 import CollapsibleText from "@/components/ui/CollapsibleText";
 import { formatDate } from "@/app/ultility";
+import { errorMessage } from "@/app/lib/errors";
 
 
 /* ======================= Props ======================= */
@@ -106,8 +107,8 @@ export default function CommentsSection({
       // 清空
       setInputValue("");
       setReplyTo(null);
-    } catch (e: any) {
-      alert(typeof e === "string" ? e : e?.message || "Send comment failed");
+    } catch (e) {
+      alert(errorMessage(e, "Send comment failed"));
     }
   };
 
@@ -196,8 +197,8 @@ export default function CommentsSection({
                 onDelete={async (commentId, parentId) => {
                   try {
                     await dispatch(deleteComment({ commentId, parent_id: parentId })).unwrap();
-                  } catch (e: any) {
-                    alert(typeof e === "string" ? e : e?.message || "Delete comment failed");
+                  } catch (e) {
+                    alert(errorMessage(e, "Delete comment failed"));
                   }
                 }}
                 fetchChildren={(parentId, page) =>
@@ -320,8 +321,8 @@ function CommentLikeButton({ c }: { c: CommentItemApi }) {
     setBusy(true);
     try {
       await dispatch(likeComment({ commentId: c.id, like: !liked })).unwrap();
-    } catch (e: any) {
-      alert(typeof e === "string" ? e : e?.message || "Like failed");
+    } catch (e) {
+      alert(errorMessage(e, "Like failed"));
     } finally {
       setBusy(false);
     }
