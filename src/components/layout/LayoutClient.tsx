@@ -116,12 +116,11 @@ export default function LayoutClient({ children }: { children: React.ReactNode }
         <Header
           isLoggedIn={isLoggedIn}
           userName={user?.firstName || 'Guest'}
-          unreadCount={3}
         />
       </div>
       <main className="bg-bg pb-16 min-h-screen print:pb-0">{children}</main>
       <div className="print:hidden">
-        <BottomNav unreadCount={3} />
+        <BottomNav />
       </div>
     </>
   );

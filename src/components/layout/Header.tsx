@@ -8,15 +8,13 @@ import { usePathname } from 'next/navigation';
 export default function Header({
   isLoggedIn,
   userName,
-  unreadCount,
 }: {
   isLoggedIn: boolean;
   userName: string;
-  unreadCount: number;
 }) {
   const headerRef = useRef<HTMLElement>(null);
   const pathname = usePathname();
-  const hideHeader = pathname.startsWith('/messages/') || pathname.startsWith('/auth');
+  const hideHeader = pathname.startsWith('/auth');
   const [isFixed, setIsFixed] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
 
@@ -56,7 +54,7 @@ export default function Header({
             }`}
         >
           <Logo isScrolled={isFixed} />
-          <Menu isLoggedIn={isLoggedIn} userName={userName} unreadCount={unreadCount} />
+          <Menu isLoggedIn={isLoggedIn} userName={userName} />
         </div>
 
       </header>

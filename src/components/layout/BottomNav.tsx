@@ -31,11 +31,7 @@ interface NavItem {
   unreadCount?: number;
 }
 
-interface BottomNavProps {
-  unreadCount: number;
-}
-
-export default function BottomNav(_props: BottomNavProps) {
+export default function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -45,9 +41,7 @@ export default function BottomNav(_props: BottomNavProps) {
   // 2 列网格：Logout 之前的格子数为偶数时，Logout 占满一行
   const logoutFullRow = (3 + Number(showLibrary) + Number(showAdmin)) % 2 === 0;
 
-  const hideBottomNav =
-    pathname.startsWith('/messages/') ||
-    pathname.startsWith('/auth');
+  const hideBottomNav = pathname.startsWith('/auth');
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetAnim, setSheetAnim] = useState(false);
@@ -84,7 +78,6 @@ export default function BottomNav(_props: BottomNavProps) {
   const navItems: NavItem[] = [
     { href: '/', label: 'Home', outlineIcon: OutlineHomeIcon, solidIcon: SolidHomeIcon },
     { href: '/groups', label: 'Groups', outlineIcon: OutlineUsersIcon, solidIcon: SolidUsersIcon },
-    // { href: '/messages', label: 'Message', outlineIcon: OutlineBellIcon, solidIcon: SolidBellIcon, unreadCount },
   ];
 
   if (hideBottomNav) return null;

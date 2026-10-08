@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useMemo, useEffect } from "react";
-import { mockUsers } from '@/app/data/mockData';
 import type { GroupApi, PostPolicy, CommentPolicy, JoinPolicy } from '@/app/types/group';
 import {
   DEFAULT_POST_POLICY, DEFAULT_COMMENT_POLICY, COMMENT_POLICY_LABELS,
@@ -40,8 +39,8 @@ export default function GroupEditModal({
     name: '',
     description: '',
     time: new Date().toISOString(),
-    creator: (mockUsers[1]?.id as number) ?? 0,
-    creator_name: mockUsers[1]?.firstName ?? '',
+    creator: 0,
+    creator_name: '',
     subscriber_count: 0,
     is_member: false,
     is_creator: true,

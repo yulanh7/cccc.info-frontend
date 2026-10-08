@@ -20,7 +20,6 @@ export default function Menu({
 }: {
   isLoggedIn: boolean;
   userName?: string;
-  unreadCount?: number;
 }) {
   const navItems: TopNavItem[] = [
     { href: '/', label: 'Home' },
@@ -130,14 +129,6 @@ export default function Menu({
         )}
       </div>
 
-      {/* <Link href="/messages" className="text-dark-gray hover:text-dark-green relative">
-        <ChatBubbleLeftRightIcon className="h-6 w-6" />
-        {unreadCount && unreadCount > 0 && (
-          <span className="absolute -top-2 -right-2 bg-red text-white text-xs rounded-full px-1.5 py-0.5">
-            {unreadCount}
-          </span>
-        )}
-      </Link> */}
     </nav>
   );
 }

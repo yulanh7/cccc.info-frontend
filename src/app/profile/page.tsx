@@ -108,7 +108,7 @@ export default function ProfilePage() {
       setNewPwd('');
       setConfirmPwd('');
     } catch {
-      // setPwdErrMsg(errorMessage(e, 'Change password failed.'));
+      // 失败原因由 store 的 passwordError 显示（页面下方），这里不再重复设置
     }
   };
 
