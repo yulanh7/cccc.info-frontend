@@ -28,14 +28,14 @@ export default function HomePage() {
 }
 
 function useSourceListState(sourceKey: string) {
-  const feed = useAppSelector((s) => (s as any).posts?.lists?.[sourceKey]);
+  const feed = useAppSelector((s) => s.posts.lists[sourceKey]);
   const rows: PostListItemApi[] = feed?.items ?? [];
   const postsStatus: "idle" | "loading" | "succeeded" | "failed" =
     feed?.status ?? "idle";
   const rawTotalPages =
-    feed?.total_pages ?? feed?.pages ?? feed?.totalPages ?? null;
+    feed?.total_pages ?? null;
   const totalCount =
-    feed?.total_posts ?? feed?.total ?? feed?.totalCount ?? null;
+    feed?.total_posts ?? null;
   const perPageGuess = rows.length > 0 ? rows.length : null;
   const totalPages =
     rawTotalPages ??

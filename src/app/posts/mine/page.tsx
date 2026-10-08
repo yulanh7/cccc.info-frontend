@@ -20,18 +20,18 @@ import CustomHeader from "@/components/layout/CustomHeader";
 import { InformationCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 
 function useSourceListState(sourceKey: string) {
-  const feed = useAppSelector((s) => (s as any).posts?.lists?.[sourceKey]);
+  const feed = useAppSelector((s) => s.posts.lists[sourceKey]);
   const rows: PostListItemApi[] = feed?.items ?? [];
 
   // 统一兼容各种命名 & 兜底推导
   const currentPage =
-    feed?.current_page ?? feed?.currentPage ?? null;
+    feed?.current_page ?? null;
 
   const rawTotalPages =
-    feed?.total_pages ?? feed?.pages ?? feed?.totalPages ?? null;
+    feed?.total_pages ?? null;
 
   const totalCount =
-    feed?.total_posts ?? feed?.total ?? feed?.totalCount ?? null;
+    feed?.total_posts ?? null;
 
   const perPageGuess =
     rows.length > 0 ? rows.length : null;

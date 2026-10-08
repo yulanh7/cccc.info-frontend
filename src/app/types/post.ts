@@ -162,6 +162,9 @@ export const canEditPostList = (post: PostListItemApi, user?: UserProps | null) 
   !!user && Number(post.author.id) === Number(user.id);
 
 
+/** 旧接口可能用的作者 id 字段（现在都有 author.id，留着兜底） */
+type LegacyAuthorFields = { author_id?: number; created_by_id?: number };
+
 export const canEditPostDetail = (
   post?: PostDetailData | null,
   user?: UserProps | null
@@ -172,8 +175,8 @@ export const canEditPostDetail = (
   const postAuthorId =
     post.author?.id ??
     // fallback fields if your API provides creator id separately
-    (post as any).author_id ??
-    (post as any).created_by_id ??
+    (post as PostDetailData & LegacyAuthorFields).author_id ??
+    (post as PostDetailData & LegacyAuthorFields).created_by_id ??
     null;
 
   if (!postAuthorId || !user.id) return false;
@@ -187,11 +190,8 @@ export function isPostAuthor(
   if (!post || !user) return false;
 
   // 列表与详情字段略不同：列表一定有 author.id；详情可能有其他备用字段
-  const authorId =
-    (post as any).author?.id ??
-    (post as any).author_id ??
-    (post as any).created_by_id ??
-    null;
+  const legacy = post as (PostListItemApi | PostDetailData) & LegacyAuthorFields;
+  const authorId = post.author?.id ?? legacy.author_id ?? legacy.created_by_id ?? null;
 
   return authorId != null && Number(authorId) === Number(user.id);
 }
@@ -205,7 +205,7 @@ export function isGroupCreatorOfPost(
 ): boolean {
   if (!post || !user) return false;
   // group.creator 现在是 number
-  const creatorId = (post as any).group?.creator ?? null;
+  const creatorId = post.group?.creator ?? null;
   return creatorId != null && Number(creatorId) === Number(user.id);
 }
 

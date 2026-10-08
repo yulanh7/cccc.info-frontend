@@ -23,7 +23,7 @@ describe('isLockedForMe', () => {
     expect(isLockedForMe(g({ join_policy: 'open' }), user())).toBe(false);
   });
   it('does not lock group managers (admin + manage_groups)', () => {
-    expect(isLockedForMe(g({ join_policy: 'request' }), user({ admin: true, permissions: ['manage_groups'] } as any))).toBe(false);
-    expect(isLockedForMe(g({ join_policy: 'request' }), user({ admin: true } as any))).toBe(true);
+    expect(isLockedForMe(g({ join_policy: 'request' }), user({ admin: true, permissions: ['manage_groups'] } as Partial<UserProps>))).toBe(false);
+    expect(isLockedForMe(g({ join_policy: 'request' }), user({ admin: true }))).toBe(true);
   });
 });

@@ -14,6 +14,7 @@ import ConfirmModal from "@/components/ConfirmModal";
 import GroupInfoBar from "@/components/groups/GroupInfoBar";
 import PostListSection from "@/components/posts/PostListSection";
 import { usePostListController } from "@/components/posts/usePostListController";
+import type { CreatePostForm } from "@/components/posts/usePostListController";
 import type { GroupApi } from "@/app/types";
 import { formatDate, mapApiErrorToFields } from "@/app/ultility";
 import {
@@ -135,7 +136,7 @@ function GroupDetailPageInner() {
     deletePost: deletePostThunk,
     canEdit: (p) => canEditPost(p, user),
     canDelete: (p) => canDeletePost(p, user),
-    postsStatus: status.posts as any,
+    postsStatus: status.posts,
     // 先拿到小组，确认能看帖子再请求
     enabled: groupReady && !locked,
   });
@@ -204,7 +205,7 @@ function GroupDetailPageInner() {
     setSelectedIds(new Set());
   }, [ctrl]);
 
-  const onCreatePost = useCallback(async (item: any) => {
+  const onCreatePost = useCallback(async (item: CreatePostForm) => {
     await ctrl.onCreatePost?.(item);
   }, [ctrl]);
 

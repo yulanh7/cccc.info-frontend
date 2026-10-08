@@ -21,7 +21,7 @@ export const setGroupInvite = createAsyncThunk<GroupInviteState, { groupId: numb
     try {
       return unwrapData(await apiRequest<GroupInviteState>('PUT', GROUP_INVITE_ENDPOINTS.SET(groupId), { enabled }));
     } catch (e) {
-      return rejectWithValue(errMsg(e, 'Failed to update the invite link')) as any;
+      return rejectWithValue(errMsg(e, 'Failed to update the invite link'));
     }
   }
 );
@@ -33,7 +33,7 @@ export const resetGroupInvite = createAsyncThunk<GroupInviteState, number>(
     try {
       return unwrapData(await apiRequest<GroupInviteState>('POST', GROUP_INVITE_ENDPOINTS.RESET(groupId)));
     } catch (e) {
-      return rejectWithValue(errMsg(e, 'Failed to reset the invite link')) as any;
+      return rejectWithValue(errMsg(e, 'Failed to reset the invite link'));
     }
   }
 );
@@ -45,7 +45,7 @@ export const fetchInvite = createAsyncThunk<InvitePreview, string>(
     try {
       return unwrapData(await apiRequest<InvitePreview>('GET', GROUP_INVITE_ENDPOINTS.PREVIEW(code)));
     } catch (e) {
-      return rejectWithValue({ code: errorCode(e), message: errMsg(e, 'This invite link is no longer valid') }) as any;
+      return rejectWithValue({ code: errorCode(e), message: errMsg(e, 'This invite link is no longer valid') });
     }
   }
 );
@@ -57,7 +57,7 @@ export const joinByInvite = createAsyncThunk<InviteJoinResult, string>(
     try {
       return unwrapData(await apiRequest<InviteJoinResult>('POST', GROUP_INVITE_ENDPOINTS.JOIN(code)));
     } catch (e) {
-      return rejectWithValue({ code: errorCode(e), message: errMsg(e, 'Join failed') }) as any;
+      return rejectWithValue({ code: errorCode(e), message: errMsg(e, 'Join failed') });
     }
   }
 );

@@ -10,6 +10,7 @@ import BottomNav from './BottomNav';
 import { useNavigationTracker } from '@/hooks/useBackNavigation';
 import { CHANGE_PASSWORD_PATH } from '@/app/features/request';
 import { fetchUnreadCount, resetNotifications } from '@/app/features/notifications/slice';
+import { errorCode } from "@/app/lib/errors";
 
 const PUBLIC_PATHS = ['/', '/auth'];
 const PROFILE_REFRESH_MS = 30_000;
@@ -87,7 +88,7 @@ export default function LayoutClient({ children }: { children: React.ReactNode }
     const poll = async () => {
       if (stopped || document.hidden) return;
       const res = await dispatch(fetchUnreadCount());
-      if (fetchUnreadCount.rejected.match(res) && (res.payload as any)?.code === 401) stopped = true;
+      if (fetchUnreadCount.rejected.match(res) && errorCode(res.payload) === 401) stopped = true;
     };
     poll();
     const timer = window.setInterval(poll, UNREAD_POLL_MS);

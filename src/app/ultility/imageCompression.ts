@@ -87,7 +87,7 @@ export async function compressImageFile(
       canvas.height = h;
       const ctx = canvas.getContext("2d", { alpha: true })!;
       // 提升缩放质量（部分浏览器支持）
-      (ctx as any).imageSmoothingQuality = "high";
+      ctx.imageSmoothingQuality = "high";
       ctx.drawImage(bitmap, 0, 0, w, h);
 
       outBlob = await canvasToBlob(canvas, mime, q);

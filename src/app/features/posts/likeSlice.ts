@@ -23,7 +23,7 @@ export const likePost = createAsyncThunk<{ postId: number; like_count: number },
       }
       return { postId, like_count: res.data.like_count };
     } catch (e) {
-      return rejectWithValue(errorMessage(e, "Like post failed")) as any;
+      return rejectWithValue(errorMessage(e, "Like post failed"));
     }
   }
 );
@@ -39,7 +39,7 @@ export const unlikePost = createAsyncThunk<{ postId: number; like_count: number 
       }
       return { postId, like_count: res.data.like_count };
     } catch (e) {
-      return rejectWithValue(errorMessage(e, "Unlike post failed")) as any;
+      return rejectWithValue(errorMessage(e, "Unlike post failed"));
     }
   }
 );
@@ -60,7 +60,7 @@ export const fetchPostLikes = createAsyncThunk<
 
     return { postId, likes: res.data.likes, pagination: res.data.pagination };
   } catch (e) {
-    return rejectWithValue(errorMessage(e, "Fetch likes failed")) as any;
+    return rejectWithValue(errorMessage(e, "Fetch likes failed"));
   }
 });
 
@@ -167,16 +167,19 @@ const likesSlice = createSlice({
 export const { setLikeCount, setLikedByMe, resetLikesState } = likesSlice.actions;
 export default likesSlice.reducer;
 
+/** selector 只需要 likes 这一块（不从 store 引入 RootState，避免循环引用） */
+type WithLikes = { likes: LikesState };
+
 /** ============ Selectors（可选） ============ */
 export const selectLikeCount =
-  (postId: number) => (state: any): number | undefined =>
+  (postId: number) => (state: WithLikes): number | undefined =>
     state.likes?.countByPostId?.[postId];
 
 export const selectLikedByMe =
-  (postId: number) => (state: any): boolean | undefined =>
+  (postId: number) => (state: WithLikes): boolean | undefined =>
     state.likes?.likedByMeByPostId?.[postId];
 
 export const selectLikesList =
   (postId: number) =>
-    (state: any /* RootState */): LikesListPerPost | undefined =>
+    (state: WithLikes): LikesListPerPost | undefined =>
       state.likes?.listByPostId?.[postId];

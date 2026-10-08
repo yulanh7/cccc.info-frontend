@@ -46,7 +46,7 @@ type FormState = { item_type: LibraryItemType } & Record<FieldKey, string>;
 const toForm = (item?: LibraryItem | null): FormState => {
   const f = { item_type: item?.item_type ?? "book" } as FormState;
   ALL_KEYS.forEach((k) => {
-    const v = item ? (item as any)[k] : null;
+    const v = item ? (item as unknown as Record<FieldKey, unknown>)[k] : null;
     f[k] = v === null || v === undefined ? "" : String(v);
   });
   return f;
@@ -78,16 +78,17 @@ export default function LibraryItemFormModal({
 
   const buildBody = (): LibraryItemInput => {
     const body: LibraryItemInput = {};
+    const fieldsOut = body as Record<string, string | number>;
     const visible = new Set(fields.map((f) => f.key));
     if (isNew || form.item_type !== initial.item_type) body.item_type = form.item_type;
     ALL_KEYS.forEach((k) => {
       const v = form[k].trim();
       if (isNew) {
         // 新增：只传当前类型显示的、有值的栏位
-        if (visible.has(k) && v) (body as any)[k] = k === "disc_count" ? Number(v) : v;
+        if (visible.has(k) && v) fieldsOut[k] = k === "disc_count" ? Number(v) : v;
       } else if (v !== initial[k].trim()) {
         // 编辑：只传改过的；空字符串 = 清空
-        (body as any)[k] = k === "disc_count" && v ? Number(v) : v;
+        fieldsOut[k] = k === "disc_count" && v ? Number(v) : v;
       }
     });
     return body;

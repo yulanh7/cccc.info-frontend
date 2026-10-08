@@ -83,7 +83,7 @@ export const fetchPostRootComments = createAsyncThunk<
     const data = unwrapData(res);
     return { ...data, sourceKey: sourceKeyOf.root(postId), append };
   } catch (e) {
-    return rejectWithValue(errorMessage(e, "Fetch comments failed")) as any;
+    return rejectWithValue(errorMessage(e, "Fetch comments failed"));
   }
 });
 
@@ -100,7 +100,7 @@ export const fetchChildComments = createAsyncThunk<
     const data = unwrapData(res);
     return { ...data, sourceKey: sourceKeyOf.children(parentId), parentId, append };
   } catch (e) {
-    return rejectWithValue(errorMessage(e, "Fetch child comments failed")) as any;
+    return rejectWithValue(errorMessage(e, "Fetch child comments failed"));
   }
 });
 
@@ -119,7 +119,7 @@ export const createComment = createAsyncThunk<
     const data = unwrapData(res); // { comment }
     return data.comment;
   } catch (e) {
-    return rejectWithValue(errorMessage(e, "Create comment failed")) as any;
+    return rejectWithValue(errorMessage(e, "Create comment failed"));
   }
 });
 
@@ -133,7 +133,7 @@ export const replyToComment = createAsyncThunk<
     const data = unwrapData(res); // { comment }
     return data.comment;
   } catch (e) {
-    return rejectWithValue(errorMessage(e, "Reply comment failed")) as any;
+    return rejectWithValue(errorMessage(e, "Reply comment failed"));
   }
 });
 
@@ -144,10 +144,10 @@ export const fetchCommentDetail = createAsyncThunk<CommentItemApi, { commentId: 
     try {
       const res = await apiRequest<CommentDetailData>("GET", COMMENTS_ENDPOINTS.COMMENT_DETAIL(commentId));
       // 后端返回 data: { comment }；兼容直接返回评论对象的旧写法
-      const data: any = unwrapData(res);
-      return (data?.comment ?? data) as CommentItemApi;
+      const data = unwrapData(res) as CommentDetailData & { comment?: CommentItemApi };
+      return data?.comment ?? data;
     } catch (e) {
-      return rejectWithValue(errorMessage(e, "Fetch comment failed")) as any;
+      return rejectWithValue(errorMessage(e, "Fetch comment failed"));
     }
   }
 );
@@ -163,7 +163,7 @@ export const updateComment = createAsyncThunk<
     const data = unwrapData(res); // { comment }
     return data.comment;
   } catch (e) {
-    return rejectWithValue(errorMessage(e, "Update comment failed")) as any;
+    return rejectWithValue(errorMessage(e, "Update comment failed"));
   }
 });
 
@@ -177,7 +177,7 @@ export const deleteComment = createAsyncThunk<
     if (!res.success) throw new Error(res.message || "Delete comment failed");
     return { commentId, parent_id };
   } catch (e) {
-    return rejectWithValue(errorMessage(e, "Delete comment failed")) as any;
+    return rejectWithValue(errorMessage(e, "Delete comment failed"));
   }
 });
 
@@ -252,7 +252,7 @@ export const likeComment = createAsyncThunk<LikeResult, { commentId: number; lik
       const res = await apiRequest<LikeResult>(like ? "POST" : "DELETE", COMMENTS_ENDPOINTS.LIKE_COMMENT(commentId));
       return unwrapData(res);
     } catch (e) {
-      return rejectWithValue(errorMessage(e, "Like failed")) as any;
+      return rejectWithValue(errorMessage(e, "Like failed"));
     }
   }
 );
@@ -494,21 +494,24 @@ const commentsSlice = createSlice({
 export const { resetCommentsState, clearCommentsFeed } = commentsSlice.actions;
 export default commentsSlice.reducer;
 
+/** selector 只需要 comments 这一块（不从 store 引入 RootState，避免循环引用） */
+type WithComments = { comments: CommentsState };
+
 /* ======================================================
  *                    Selectors (常用)
  * ====================================================== */
 
-export const selectRootCommentsFeed = (state: any, postId: number) =>
+export const selectRootCommentsFeed = (state: WithComments, postId: number) =>
   state.comments?.lists?.[sourceKeyOf.root(postId)] || initFeed();
 
-export const selectChildCommentsFeed = (state: any, parentId: number) =>
+export const selectChildCommentsFeed = (state: WithComments, parentId: number) =>
   state.comments?.lists?.[sourceKeyOf.children(parentId)] || initFeed();
 
-export const selectCommentById = (state: any, commentId: number) =>
+export const selectCommentById = (state: WithComments, commentId: number) =>
   state.comments?.byId?.[commentId] || null;
 
-export const selectCommentsStatus = (state: any, key: string) =>
+export const selectCommentsStatus = (state: WithComments, key: string) =>
   (state.comments?.status?.[key] as LoadStatus | undefined) || "idle";
 
-export const selectCommentsError = (state: any, key: string) =>
+export const selectCommentsError = (state: WithComments, key: string) =>
   (state.comments?.error?.[key] as string | null | undefined) ?? null;

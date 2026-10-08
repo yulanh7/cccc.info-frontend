@@ -1,5 +1,6 @@
 import { notificationText, notificationDetail, badgeText, mergeNotifications, notificationHref } from './notification';
 import type { AppNotification } from './notification';
+import type { JoinRequestStatus } from './group';
 
 const n = (over: Partial<AppNotification>): AppNotification => ({
   id: 1, type: 'post_like', created_at: '2026-10-07T10:00:00', read: false,
@@ -58,7 +59,7 @@ describe('join request notifications', () => {
 
   it('shows the message, and the result once handled', () => {
     expect(notificationDetail(jr({}))).toEqual({ message: 'New here', result: null });
-    const handled = (status: any, handled_by: any = null) =>
+    const handled = (status: JoinRequestStatus, handled_by: { id: number; firstName: string } | null = null) =>
       notificationDetail(jr({ join_request: { id: 31, status, message: null, handled_by } })).result;
     expect(handled('approved', { id: 3, firstName: 'Alice' })).toBe('Approved by Alice');
     expect(handled('approved')).toBe('Joined via invite link');

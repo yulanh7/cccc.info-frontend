@@ -7,6 +7,7 @@ import { verifyLibraryAccess } from "@/app/features/library/slice";
 import { setLibraryAccessCode, clearLibraryAccessCode } from "@/app/features/library/access";
 import CustomHeader from "@/components/layout/CustomHeader";
 import PageTitle from "@/components/layout/PageTitle";
+import { errorMessage } from "@/app/lib/errors";
 
 /** 扫二维码 / 打开图书馆链接进来：验证访问码，存进本次会话，再进入图书馆。没登录时登录守卫会先去登录，再回到这里 */
 export default function LibraryAccessPage() {
@@ -26,10 +27,10 @@ export default function LibraryAccessPage() {
         setLibraryAccessCode(code);
         router.replace("/library");
       })
-      .catch((e: any) => {
+      .catch((e: unknown) => {
         if (cancelled) return;
         clearLibraryAccessCode();
-        setError(typeof e === "string" ? e : e?.message || "This library link is no longer valid");
+        setError(errorMessage(e, "This library link is no longer valid"));
       });
     return () => {
       cancelled = true;

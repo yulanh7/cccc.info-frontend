@@ -16,6 +16,7 @@ type Status = "idle" | "loading" | "succeeded" | "failed";
 
 /** 与 PostModal 对齐的表单类型（本 Hook 内部用） */
 import type { CommentPolicy } from "@/app/types/group";
+import type { AppDispatch, RootState } from "@/app/features/store";
 
 export type CreatePostForm = {
   title: string;
@@ -32,13 +33,20 @@ export type CreatePostForm = {
  * CArgs: createPost 的参数类型（例如：{ groupId: number; body: CreatePostRequest }）
  * DArg : deletePost 的参数类型（通常就是 number）
  */
+/** createAsyncThunk 生成的 thunk 动作：dispatch 之后可以 unwrap */
+type PostThunkAction = (
+  dispatch: AppDispatch,
+  getState: () => RootState,
+  extra: unknown
+) => Promise<unknown> & { unwrap(): Promise<unknown> };
+
 export type UsePostListControllerOptions<
-  FArgs = any,
-  CArgs = any,
+  FArgs = unknown,
+  CArgs = unknown,
   DArg = number
 > = {
   // 基础
-  dispatch: any;
+  dispatch: AppDispatch;
   perPage: number;
 
   // —— 无限滚动：已加载到第几页、一共几页、现在有没有内容（来自页面读取的 store）
@@ -47,11 +55,11 @@ export type UsePostListControllerOptions<
   hasItems: boolean;
 
   // —— 数据源策略（注入各页面不同的 thunk/参数）
-  fetchPosts: (args: FArgs) => any;       // 例如 fetchGroupPosts
+  fetchPosts: (args: FArgs) => PostThunkAction;       // 例如 fetchGroupPosts
   buildFetchArgs: (page: number, append: boolean) => FArgs;// 例如 ({ groupId, page, per_page, append })
-  createPost?: (args: CArgs) => any;      // 例如 createPost
+  createPost?: (args: CArgs) => PostThunkAction;      // 例如 createPost
   buildCreateArgs?: (body: CreatePostRequest) => CArgs;
-  deletePost?: (postId: DArg) => any;     // 例如 deletePostThunk
+  deletePost?: (postId: DArg) => PostThunkAction;     // 例如 deletePostThunk
 
   // —— 权限 & UI 注入
   canEdit: (p: PostListItemApi) => boolean;
@@ -65,8 +73,8 @@ export type UsePostListControllerOptions<
 };
 
 export function usePostListController<
-  FArgs = any,
-  CArgs = any,
+  FArgs = unknown,
+  CArgs = unknown,
   DArg = number
 >(opts: UsePostListControllerOptions<FArgs, CArgs, DArg>) {
   const {

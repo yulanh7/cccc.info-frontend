@@ -53,7 +53,7 @@ export const fetchUnreadCount = createAsyncThunk<number, void>(
     try {
       return unwrapData(await apiRequest<{ unread: number }>('GET', NOTIFICATION_ENDPOINTS.UNREAD_COUNT)).unread;
     } catch (e) {
-      return rejectWithValue({ code: errorCode(e), message: errMsg(e, 'Failed to load notifications') }) as any;
+      return rejectWithValue({ code: errorCode(e), message: errMsg(e, 'Failed to load notifications') });
     }
   }
 );
@@ -67,7 +67,7 @@ export const fetchNotifications = createAsyncThunk<NotificationsPage, { beforeId
       if (beforeId) qs.set('before_id', String(beforeId));
       return unwrapData(await apiRequest<NotificationsPage>('GET', `${NOTIFICATION_ENDPOINTS.LIST}?${qs}`));
     } catch (e) {
-      return rejectWithValue(errMsg(e, 'Failed to load notifications')) as any;
+      return rejectWithValue(errMsg(e, 'Failed to load notifications'));
     }
   }
 );
@@ -79,7 +79,7 @@ export const markNotificationRead = createAsyncThunk<AppNotification, number>(
     try {
       return unwrapData(await apiRequest<AppNotification>('POST', NOTIFICATION_ENDPOINTS.READ(id)));
     } catch (e) {
-      return rejectWithValue(errMsg(e, 'Failed to mark as read')) as any;
+      return rejectWithValue(errMsg(e, 'Failed to mark as read'));
     }
   }
 );
@@ -91,7 +91,7 @@ export const markAllNotificationsRead = createAsyncThunk<number, void>(
     try {
       return unwrapData(await apiRequest<{ unread: number }>('POST', NOTIFICATION_ENDPOINTS.READ_ALL)).unread;
     } catch (e) {
-      return rejectWithValue(errMsg(e, 'Failed to mark all as read')) as any;
+      return rejectWithValue(errMsg(e, 'Failed to mark all as read'));
     }
   }
 );
@@ -104,7 +104,7 @@ export const deleteNotification = createAsyncThunk<{ id: number; unread_count: n
       const data = unwrapData(await apiRequest<{ unread_count: number }>('DELETE', NOTIFICATION_ENDPOINTS.ONE(id)));
       return { id, unread_count: data.unread_count };
     } catch (e) {
-      return rejectWithValue(errMsg(e, 'Delete failed')) as any;
+      return rejectWithValue(errMsg(e, 'Delete failed'));
     }
   }
 );
@@ -116,7 +116,7 @@ export const clearReadNotifications = createAsyncThunk<{ deleted: number; unread
     try {
       return unwrapData(await apiRequest<{ deleted: number; unread_count: number }>('POST', NOTIFICATION_ENDPOINTS.CLEAR_READ));
     } catch (e) {
-      return rejectWithValue(errMsg(e, 'Clear failed')) as any;
+      return rejectWithValue(errMsg(e, 'Clear failed'));
     }
   }
 );
@@ -128,7 +128,7 @@ export const fetchNotificationSettings = createAsyncThunk<NotificationSettings, 
     try {
       return unwrapData(await apiRequest<NotificationSettings>('GET', NOTIFICATION_ENDPOINTS.SETTINGS));
     } catch (e) {
-      return rejectWithValue(errMsg(e, 'Failed to load settings')) as any;
+      return rejectWithValue(errMsg(e, 'Failed to load settings'));
     }
   }
 );
@@ -139,7 +139,7 @@ export const updateNotificationSettings = createAsyncThunk<NotificationSettings,
     try {
       return unwrapData(await apiRequest<NotificationSettings>('PUT', NOTIFICATION_ENDPOINTS.SETTINGS, body));
     } catch (e) {
-      return rejectWithValue(errMsg(e, 'Failed to save settings')) as any;
+      return rejectWithValue(errMsg(e, 'Failed to save settings'));
     }
   }
 );

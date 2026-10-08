@@ -117,7 +117,8 @@ export default function PostModal({
   /* ---------- 初始化/回填 ---------- */
   // 仅在首次打开（或切换到不同的 post.id）时，把外部数据灌入本地状态
   const didInitRef = React.useRef(false);
-  const seedId = item && (item as any).id ? String((item as any).id) : "new";
+  const itemId = (item as (Partial<FormModel> & { id?: number }) | undefined)?.id;
+  const seedId = item && itemId ? String(itemId) : "new";
   useEffect(() => {
     if (!item) return;
     // 如果是新建：只在首次挂载时初始化

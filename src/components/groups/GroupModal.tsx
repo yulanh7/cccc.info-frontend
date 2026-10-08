@@ -18,7 +18,8 @@ const MIN_DESC = 2;
 const MAX_DESC = 500;
 
 type GroupEditModalProps = {
-  group?: GroupApi | any;
+  /** 编辑时是要改的小组；新建时不传 */
+  group?: Partial<GroupApi>;
   isNew?: boolean;
   onSave: (updatedGroup: GroupApi) => void | Promise<void>;
   onClose: () => void;
@@ -90,7 +91,7 @@ export default function GroupEditModal({
     [externalErrors, errors]
   );
 
-  const handleChange = (field: keyof GroupApi, value: any) => {
+  const handleChange = <K extends keyof GroupApi>(field: K, value: GroupApi[K]) => {
     setEditedItem((prev) => ({ ...prev, [field]: value }));
     if (field === "name" && errors.name) setErrors((e) => ({ ...e, name: undefined }));
     if (field === "description" && errors.description) setErrors((e) => ({ ...e, description: undefined }));
@@ -308,7 +309,7 @@ export default function GroupEditModal({
             )}
 
             {/* 邀请链接：编辑时、request / private 组才有；响应里有 invite_enabled（= 能管理）才显示 */}
-            {!isNew && editedItem.join_policy !== "open" && typeof group?.invite_enabled === "boolean" && (
+            {!isNew && group?.id != null && editedItem.join_policy !== "open" && typeof group?.invite_enabled === "boolean" && (
               savedJoinPolicy !== "open" ? (
                 <GroupInviteSection
                   groupId={group.id}

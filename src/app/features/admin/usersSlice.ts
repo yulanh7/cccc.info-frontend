@@ -48,7 +48,7 @@ export const fetchAdminUsers = createAsyncThunk<
     const res = await apiRequest<AdminUsersListData>('GET', `${ADMIN_ENDPOINTS.USERS}?${qs.toString()}`);
     return unwrapData(res);
   } catch (e) {
-    return rejectWithValue(errorMessage(e, 'Fetch users failed')) as any;
+    return rejectWithValue(errorMessage(e, 'Fetch users failed'));
   }
 });
 
@@ -62,7 +62,7 @@ export const setUserPermission = createAsyncThunk<
     const res = await apiRequest<UserProps>('PATCH', ADMIN_ENDPOINTS.USER_PERMISSIONS(userId), body);
     return unwrapData(res);
   } catch (e) {
-    return rejectWithValue(errorMessage(e, 'Update permission failed')) as any;
+    return rejectWithValue(errorMessage(e, 'Update permission failed'));
   }
 });
 
@@ -75,7 +75,7 @@ export const setUserAdmin = createAsyncThunk<UserProps, { userId: number; admin:
       const res = await apiRequest<UserProps>('PATCH', ADMIN_ENDPOINTS.USER_ADMIN(userId), { admin });
       return unwrapData(res);
     } catch (e) {
-      return rejectWithValue(errorMessage(e, 'Update admin role failed')) as any;
+      return rejectWithValue(errorMessage(e, 'Update admin role failed'));
     }
   }
 );
@@ -99,7 +99,7 @@ export const setUserActive = createAsyncThunk<
       const res = await apiRequest<UserProps>('PATCH', ADMIN_ENDPOINTS.USER_ACTIVE(userId), body);
       return unwrapData(res);
     } catch (e) {
-      return rejectWithValue(errorMessage(e, 'Update account status failed')) as any;
+      return rejectWithValue(errorMessage(e, 'Update account status failed'));
     }
   }
 );
@@ -111,7 +111,7 @@ export const resetUserPassword = createAsyncThunk<UserProps, number>(
       const res = await apiRequest<UserProps>('POST', ADMIN_ENDPOINTS.RESET_PASSWORD(userId));
       return unwrapData(res);
     } catch (e) {
-      return rejectWithValue(errorMessage(e, 'Reset password failed')) as any;
+      return rejectWithValue(errorMessage(e, 'Reset password failed'));
     }
   }
 );

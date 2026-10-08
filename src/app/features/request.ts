@@ -60,11 +60,15 @@ const promptLoginRedirect = (msg?: string) => {
 export const AUTH_NOTICE_KEY = 'authNotice';
 const ACCOUNT_DEACTIVATED = 'ACCOUNT_DEACTIVATED';
 
-const isDeactivated = (status: number | undefined, payload: any) =>
-  (status === 401 || status === 403) && payload?.code === ACCOUNT_DEACTIVATED;
+/** 后端的错误 body 是一个对象；不是对象就当没有 */
+const asRecord = (v: unknown): Record<string, unknown> | undefined =>
+  v && typeof v === 'object' ? (v as Record<string, unknown>) : undefined;
+
+const isDeactivated = (status: number | undefined, payload: unknown) =>
+  (status === 401 || status === 403) && asRecord(payload)?.code === ACCOUNT_DEACTIVATED;
 
 /** 统一登出并回到登录页，登录页显示后端的原因 */
-function handleDeactivated(payload: any) {
+function handleDeactivated(payload: unknown) {
   if (typeof window === 'undefined') return;
   clearAuth();
   redirectingToAuth = true;
@@ -80,9 +84,9 @@ function handleDeactivated(payload: any) {
 export const CHANGE_PASSWORD_PATH = '/change-password';
 export const LIBRARY_ACCESS_EVENT = 'library-access-required';
 
-function handleBlockingErrorCode(status: number | undefined, payload: any) {
+function handleBlockingErrorCode(status: number | undefined, payload: unknown) {
   if (typeof window === 'undefined' || status !== 403) return;
-  const code = payload?.code;
+  const code = asRecord(payload)?.code;
   if (code === 'PASSWORD_CHANGE_REQUIRED') {
     // 任何接口被挡住都去改密码页（已经在那一页就不动）
     if (window.location.pathname !== CHANGE_PASSWORD_PATH) window.location.href = CHANGE_PASSWORD_PATH;
@@ -93,9 +97,11 @@ function handleBlockingErrorCode(status: number | undefined, payload: any) {
   }
 }
 
-function pickServerMessage(payload: any): string | undefined {
+function pickServerMessage(raw: unknown): string | undefined {
+  if (!raw) return;
+  if (typeof raw === "string" && raw.trim()) return raw;
+  const payload = asRecord(raw);
   if (!payload) return;
-  if (typeof payload === "string" && payload.trim()) return payload;
   if (payload.message && typeof payload.message === "string" && payload.message.trim()) {
     return payload.message;
   }
@@ -120,7 +126,7 @@ function pickServerMessage(payload: any): string | undefined {
 let isRefreshing = false;
 let failedQueue: Array<{
   resolve: (value: unknown) => void;
-  reject: (reason?: any) => void;
+  reject: (reason?: unknown) => void;
 }> = [];
 
 // Process all queued requests once refresh is complete
@@ -144,7 +150,7 @@ api.interceptors.request.use((config) => {
     const libraryCode = getLibraryAccessCode();
     if (libraryCode && needsLibraryAccessHeader(String(config.url || ''))) {
       config.headers = config.headers ?? {};
-      (config.headers as any)[LIBRARY_ACCESS_HEADER] = libraryCode;
+      config.headers[LIBRARY_ACCESS_HEADER] = libraryCode;
     }
   }
   return config;
@@ -153,7 +159,7 @@ api.interceptors.request.use((config) => {
 // ====== Response interceptor: handle 401 → refresh token → retry ======
 api.interceptors.response.use(
   (response) => response,
-  async (error: AxiosError<any>) => {
+  async (error: AxiosError<ServerErrorBody>) => {
     const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
 
     // ✨ 鉴权端点检测（保持你的逻辑不变）
@@ -168,7 +174,7 @@ api.interceptors.response.use(
     const isLogin = /^\/?auth\/login/i.test(url);
     if (!isLogin && isDeactivated(status, error.response?.data)) {
       const serverMsg = pickServerMessage(error.response?.data);
-      if (serverMsg) (error as any).message = serverMsg;
+      if (serverMsg) error.message = serverMsg;
       handleDeactivated(error.response?.data);
       throw error;
     }
@@ -176,7 +182,7 @@ api.interceptors.response.use(
     // 非 401 或已重试 或 鉴权端点 → 直接抛出（并在 5xx 时广播事件）
     if (error.response?.status !== 401 || originalRequest?._retry || isAuthEndpoint) {
       const serverMsg = pickServerMessage(error.response?.data);
-      if (serverMsg) (error as any).message = serverMsg;
+      if (serverMsg) error.message = serverMsg;
       handleBlockingErrorCode(error.response?.status, error.response?.data);
 
 
@@ -200,7 +206,7 @@ api.interceptors.response.use(
           resolve: (token: unknown) => {
             if (typeof token === 'string') {
               originalRequest.headers = originalRequest.headers ?? {};
-              (originalRequest.headers as any).Authorization = `Bearer ${token}`;
+              (originalRequest.headers as Record<string, unknown>).Authorization = `Bearer ${token}`;
             }
             resolve(api(originalRequest));
           },
@@ -225,11 +231,11 @@ api.interceptors.response.use(
       processQueue(null, newAccess);
 
       originalRequest.headers = originalRequest.headers ?? {};
-      (originalRequest.headers as any).Authorization = `Bearer ${newAccess}`;
+      (originalRequest.headers as Record<string, unknown>).Authorization = `Bearer ${newAccess}`;
       return api(originalRequest);
     } catch (err) {
       processQueue(err, null);
-      const refreshErr = err as AxiosError<any>;
+      const refreshErr = err as AxiosError<ServerErrorBody>;
       if (isDeactivated(refreshErr.response?.status, refreshErr.response?.data)) {
         handleDeactivated(refreshErr.response?.data);
         throw err;
@@ -248,7 +254,7 @@ api.interceptors.response.use(
 export const apiRequest = async <T>(
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   endpoint: string,
-  data?: any,
+  data?: unknown,
   requireAuth: boolean = true
 ): Promise<ApiResponseProps<T>> => {
   try {

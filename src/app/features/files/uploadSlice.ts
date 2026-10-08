@@ -2,6 +2,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AxiosProgressEvent, AxiosResponse } from "axios";
 import api from "@/app/features/request";
 import type { ApiResponseRaw } from "@/app/types/api";
+import type { FileMetaData } from "@/app/types/files";
 import { errorMessage } from "@/app/lib/errors";
 
 export type FileCategory = "avatar" | "content" | "attachment";
@@ -32,12 +33,12 @@ export const uploadFile = createAsyncThunk<UploadedFile, UploadApiPayload>(
     // —— 前端快速校验（可选，避免多余请求）
     const MAX_SIZE = 40 * 1024 * 1024; // 40MB
     if (file.size > MAX_SIZE) {
-      return rejectWithValue("File exceeds 40MB limit") as any;
+      return rejectWithValue("File exceeds 40MB limit");
     }
     // 允许类型（和后端保持一致）
     const okExt = /\.(doc|docx|pdf|png|jpe?g|gif|bmp|webp)$/i.test(file.name);
     if (!okExt) {
-      return rejectWithValue("Unsupported file type") as any;
+      return rejectWithValue("Unsupported file type");
     }
 
     try {
@@ -47,7 +48,7 @@ export const uploadFile = createAsyncThunk<UploadedFile, UploadApiPayload>(
       if (typeof post_id === "number") form.append("post_id", String(post_id));
       if (description) form.append("description", description);
 
-      const res: AxiosResponse<ApiResponseRaw<any>> = await api.post(
+      const res: AxiosResponse<ApiResponseRaw<FileMetaData>> = await api.post(
         "/upload",
         form,
         {
@@ -78,7 +79,7 @@ export const uploadFile = createAsyncThunk<UploadedFile, UploadApiPayload>(
       };
       return normalized;
     } catch (e) {
-      return rejectWithValue(errorMessage(e, "Upload failed")) as any;
+      return rejectWithValue(errorMessage(e, "Upload failed"));
     }
   }
 );

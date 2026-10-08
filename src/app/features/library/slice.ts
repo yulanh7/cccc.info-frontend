@@ -104,7 +104,7 @@ export const fetchLibraryCatalog = createAsyncThunk<LibraryCatalogData, LibraryC
       const res = await apiRequest<LibraryCatalogData>('GET', LIBRARY_ENDPOINTS.CATALOG + toQuery(query));
       return unwrapData(res);
     } catch (e) {
-      return rejectWithValue(errMsg(e, 'Failed to load the catalog')) as any;
+      return rejectWithValue(errMsg(e, 'Failed to load the catalog'));
     }
   }
 );
@@ -117,7 +117,7 @@ export const fetchLibraryCategories = createAsyncThunk<LibraryCategory[], void>(
       const res = await apiRequest<{ categories: LibraryCategory[] }>('GET', LIBRARY_ENDPOINTS.CATEGORIES);
       return unwrapData(res).categories ?? [];
     } catch (e) {
-      return rejectWithValue(errMsg(e, 'Failed to load categories')) as any;
+      return rejectWithValue(errMsg(e, 'Failed to load categories'));
     }
   }
 );
@@ -130,7 +130,7 @@ export const fetchLibraryItem = createAsyncThunk<LibraryItemDetail, number>(
       const res = await apiRequest<LibraryItemDetail>('GET', LIBRARY_ENDPOINTS.ITEM(id));
       return unwrapData(res);
     } catch (e) {
-      return rejectWithValue(errMsg(e, 'Failed to load the item')) as any;
+      return rejectWithValue(errMsg(e, 'Failed to load the item'));
     }
   }
 );
@@ -144,7 +144,7 @@ export const lookupLibraryItem = createAsyncThunk<LibraryItemDetail, string>(
       const res = await apiRequest<LibraryItemDetail>('GET', LIBRARY_ENDPOINTS.LOOKUP + toQuery({ code }));
       return unwrapData(res);
     } catch (e) {
-      return rejectWithValue(errMsg(e, 'Item not found')) as any;
+      return rejectWithValue(errMsg(e, 'Item not found'));
     }
   }
 );
@@ -159,7 +159,7 @@ export const borrowLibraryItem = createAsyncThunk<
     const res = await apiRequest<LibraryBorrowResult>('POST', LIBRARY_ENDPOINTS.BORROW(itemId), body);
     return unwrapData(res);
   } catch (e) {
-    return rejectWithValue(errMsg(e, 'Borrow failed')) as any;
+    return rejectWithValue(errMsg(e, 'Borrow failed'));
   }
 });
 
@@ -171,7 +171,7 @@ export const returnLibraryBorrow = createAsyncThunk<LibraryBorrow, number>(
       const res = await apiRequest<{ borrow: LibraryBorrow }>('POST', LIBRARY_ENDPOINTS.RETURN(borrowId));
       return unwrapData(res).borrow;
     } catch (e) {
-      return rejectWithValue(errMsg(e, 'Return failed')) as any;
+      return rejectWithValue(errMsg(e, 'Return failed'));
     }
   }
 );
@@ -188,7 +188,7 @@ export const fetchMyBorrows = createAsyncThunk<
     );
     return unwrapData(res);
   } catch (e) {
-    return rejectWithValue(errMsg(e, 'Failed to load your borrows')) as any;
+    return rejectWithValue(errMsg(e, 'Failed to load your borrows'));
   }
 });
 
@@ -204,7 +204,7 @@ export const createLibraryItem = createAsyncThunk<LibraryItem, LibraryItemInput>
       const res = await apiRequest<LibraryItem>('POST', LIBRARY_ENDPOINTS.ITEMS, body);
       return unwrapData(res);
     } catch (e) {
-      return rejectWithValue(errMsg(e, 'Create item failed')) as any;
+      return rejectWithValue(errMsg(e, 'Create item failed'));
     }
   }
 );
@@ -218,7 +218,7 @@ export const updateLibraryItem = createAsyncThunk<
     const res = await apiRequest<LibraryItem>('PUT', LIBRARY_ENDPOINTS.ITEM(id), body);
     return unwrapData(res);
   } catch (e) {
-    return rejectWithValue(errMsg(e, 'Update item failed')) as any;
+    return rejectWithValue(errMsg(e, 'Update item failed'));
   }
 });
 
@@ -230,7 +230,7 @@ export const deactivateLibraryItem = createAsyncThunk<LibraryItem, number>(
       const res = await apiRequest<LibraryItem>('DELETE', LIBRARY_ENDPOINTS.ITEM(id));
       return unwrapData(res);
     } catch (e) {
-      return rejectWithValue(errMsg(e, 'Deactivate item failed')) as any;
+      return rejectWithValue(errMsg(e, 'Deactivate item failed'));
     }
   }
 );
@@ -243,7 +243,7 @@ export const restoreLibraryItem = createAsyncThunk<LibraryItem, number>(
       const res = await apiRequest<LibraryItem>('POST', LIBRARY_ENDPOINTS.RESTORE(id));
       return unwrapData(res);
     } catch (e) {
-      return rejectWithValue(errMsg(e, 'Restore item failed')) as any;
+      return rejectWithValue(errMsg(e, 'Restore item failed'));
     }
   }
 );
@@ -259,7 +259,7 @@ export const fetchAdminBorrows = createAsyncThunk<LibraryBorrowsData, LibraryAdm
       );
       return unwrapData(res);
     } catch (e) {
-      return rejectWithValue(errMsg(e, 'Failed to load borrows')) as any;
+      return rejectWithValue(errMsg(e, 'Failed to load borrows'));
     }
   }
 );
@@ -272,7 +272,7 @@ export const searchLibraryBorrowers = createAsyncThunk<LibraryBorrower[], string
       const res = await apiRequest<{ users: LibraryBorrower[] }>('GET', LIBRARY_ENDPOINTS.BORROWERS + toQuery({ q }));
       return unwrapData(res).users ?? [];
     } catch (e) {
-      return rejectWithValue(errMsg(e, 'Failed to search users')) as any;
+      return rejectWithValue(errMsg(e, 'Failed to search users'));
     }
   }
 );
@@ -300,7 +300,7 @@ export const previewLibraryImport = createAsyncThunk<LibraryImportReport, File>(
     try {
       return await postImportFile(LIBRARY_ENDPOINTS.IMPORT_PREVIEW, file);
     } catch (e) {
-      return rejectWithValue(errMsg(e, 'Import preview failed')) as any;
+      return rejectWithValue(errMsg(e, 'Import preview failed'));
     }
   }
 );
@@ -311,7 +311,7 @@ export const importLibrary = createAsyncThunk<LibraryImportReport, File>(
     try {
       return await postImportFile(LIBRARY_ENDPOINTS.IMPORT, file);
     } catch (e) {
-      return rejectWithValue(errMsg(e, 'Import failed')) as any;
+      return rejectWithValue(errMsg(e, 'Import failed'));
     }
   }
 );
@@ -347,7 +347,7 @@ export const exportLibrary = createAsyncThunk<void, void>(
           message = JSON.parse(await data.text())?.message || message;
         } catch { /* 不是 JSON，保留默认文案 */ }
       }
-      return rejectWithValue(message) as any;
+      return rejectWithValue(message);
     }
   }
 );
@@ -363,7 +363,7 @@ export const verifyLibraryAccess = createAsyncThunk<boolean, string>(
     try {
       return !!unwrapData(await apiRequest<{ valid: boolean }>('GET', LIBRARY_ENDPOINTS.ACCESS_CHECK(code))).valid;
     } catch (e) {
-      return rejectWithValue(errMsg(e, 'This library link is no longer valid')) as any;
+      return rejectWithValue(errMsg(e, 'This library link is no longer valid'));
     }
   }
 );
@@ -375,7 +375,7 @@ export const fetchAccessLink = createAsyncThunk<LibraryAccessLink, void>(
     try {
       return unwrapData(await apiRequest<LibraryAccessLink>('GET', LIBRARY_ENDPOINTS.ACCESS_LINK));
     } catch (e) {
-      return rejectWithValue(errMsg(e, 'Failed to load the library link')) as any;
+      return rejectWithValue(errMsg(e, 'Failed to load the library link'));
     }
   }
 );
@@ -387,7 +387,7 @@ export const setAccessLinkEnabled = createAsyncThunk<LibraryAccessLink, boolean>
     try {
       return unwrapData(await apiRequest<LibraryAccessLink>('PUT', LIBRARY_ENDPOINTS.ACCESS_LINK, { enabled }));
     } catch (e) {
-      return rejectWithValue(errMsg(e, 'Failed to update the library link')) as any;
+      return rejectWithValue(errMsg(e, 'Failed to update the library link'));
     }
   }
 );
@@ -399,7 +399,7 @@ export const resetAccessLink = createAsyncThunk<LibraryAccessLink, void>(
     try {
       return unwrapData(await apiRequest<LibraryAccessLink>('POST', LIBRARY_ENDPOINTS.ACCESS_LINK_RESET));
     } catch (e) {
-      return rejectWithValue(errMsg(e, 'Failed to reset the library link')) as any;
+      return rejectWithValue(errMsg(e, 'Failed to reset the library link'));
     }
   }
 );

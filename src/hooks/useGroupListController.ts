@@ -84,7 +84,7 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
   // ===== 数据加载（无限滚动）：滚到底追加下一页；通过“返回”回来时沿用已加载的内容
   /** 按当前模式请求某一页，返回这一页的小组和分页 */
   const requestPage = useCallback(async (page: number): Promise<{ groups: GroupApi[]; pages: number } | null> => {
-    let action: any;
+    let action: { error?: unknown; payload?: unknown } | undefined;
     if (mode === "visibleWithSearch") {
       if (qParam) {
         dispatch(setSearchQueryAction(qParam));
@@ -104,11 +104,14 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
       action = await dispatch(searchVisibleGroups({ q: q || "", page, per_page: pageSize }));
     }
     if (!action || action.error) return null;
-    const pg = action.payload?.pagination;
+    const payload = action.payload as
+      | { groups?: GroupApi[]; pagination?: { pages?: number; total?: number; per_page?: number } }
+      | undefined;
+    const pg = payload?.pagination;
     const pages = typeof pg?.pages === "number"
       ? pg.pages
       : Math.ceil(Number(pg?.total ?? 0) / Math.max(1, Number(pg?.per_page ?? pageSize)));
-    return { groups: action.payload?.groups ?? [], pages: Math.max(1, pages) };
+    return { groups: payload?.groups ?? [], pages: Math.max(1, pages) };
   }, [dispatch, mode, qParam, searchQuery, pageSize]);
 
   const cacheKey = `${mode}|${qParam}|${pageSize}`;

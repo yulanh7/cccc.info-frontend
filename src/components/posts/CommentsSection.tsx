@@ -30,6 +30,7 @@ import { MAX_COMMENT_LEN } from '@/app/constants';
 import CollapsibleText from "@/components/ui/CollapsibleText";
 import { formatDate } from "@/app/ultility";
 import { errorMessage } from "@/app/lib/errors";
+import type { RootState } from "@/app/features/store";
 
 
 /* ======================= Props ======================= */
@@ -204,7 +205,7 @@ export default function CommentsSection({
                 fetchChildren={(parentId, page) =>
                   dispatch(fetchChildComments({ postId, parentId, page, per_page: perPage }))
                 }
-                selectChildren={(state, parentId) => selectChildCommentsFeed(state as any, parentId)}
+                selectChildren={(state, parentId) => selectChildCommentsFeed(state, parentId)}
               />
             </li>
           ))}
@@ -354,8 +355,8 @@ type ItemProps = {
   autoExpand?: boolean;
   onReply?: (t: { commentId: number; nickname: string }) => void;
   onDelete: (commentId: number, parentId: number | null) => void;
-  fetchChildren: (parentId: number, page: number) => any;
-  selectChildren: (state: unknown, parentId: number) => {
+  fetchChildren: (parentId: number, page: number) => unknown;
+  selectChildren: (state: RootState, parentId: number) => {
     items: CommentItemApi[];
     pagination: { current_page: number; total_pages: number; total_comments: number };
     status: "idle" | "loading" | "succeeded" | "failed";

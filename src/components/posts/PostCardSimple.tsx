@@ -56,7 +56,7 @@ export default function PostCardSimple({
 
   // Computed values
   const count = storeCount ?? like_count ?? 0;
-  const initialLiked = (post as any)?.clicked_like as boolean | undefined;
+  const initialLiked = post?.clicked_like as boolean | undefined;
   const liked = Boolean(storeLiked ?? initialLiked ?? false);
 
   const inFlightRef = useRef(false);
@@ -82,8 +82,9 @@ export default function PostCardSimple({
     const isImageUrl = (url: string) =>
       typeof url === 'string' && /\.(png|jpe?g|gif|bmp|webp)(\?|#|$)/i.test(url);
 
-    const candidates = (post.files ?? [])
-      .map((f: any) => (typeof f === 'string' ? f : f?.url))
+    // 列表里一般是网址字符串；兼容旧的 { url } 对象
+    const candidates = ((post.files ?? []) as Array<string | { url?: string } | null>)
+      .map((f) => (typeof f === 'string' ? f : f?.url))
       .filter((u: unknown): u is string => typeof u === 'string');
 
     const raw = candidates.find(isImageUrl);

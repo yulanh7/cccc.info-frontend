@@ -13,7 +13,7 @@ describe('appendUnique', () => {
 
 describe('catalogGroupKey', () => {
   it('builds a key from category, title, creator, publisher and type', () => {
-    const g = { category: 'C', title: 'T', creator: null, publisher: 'P', item_type: 'book' } as any;
+    const g = { category: 'C', title: 'T', creator: null, publisher: 'P', item_type: 'book' };
     expect(catalogGroupKey(g)).toBe('C|T||P|book');
   });
 });

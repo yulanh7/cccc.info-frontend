@@ -71,7 +71,7 @@ export const fetchGroupPostsList = createAsyncThunk<
     const data = await fetchPostsApi("group", { groupId, page, per_page });
     return { ...data, append, sourceKey: sourceKeyOf("group", groupId) };
   } catch (e) {
-    return rejectWithValue(errorMessage(e, "Fetch posts failed")) as any;
+    return rejectWithValue(errorMessage(e, "Fetch posts failed"));
   }
 });
 
@@ -83,7 +83,7 @@ export const fetchMyPosts = createAsyncThunk<
     const data = await fetchPostsApi("mine", { page, per_page });
     return { ...data, append, sourceKey: sourceKeyOf("mine") };
   } catch (e) {
-    return rejectWithValue(errorMessage(e, "Fetch my posts failed")) as any;
+    return rejectWithValue(errorMessage(e, "Fetch my posts failed"));
   }
 });
 
@@ -95,7 +95,7 @@ export const fetchSubscribedPosts = createAsyncThunk<
     const data = await fetchPostsApi("subscribed", { page, per_page });
     return { ...data, append, sourceKey: sourceKeyOf("subscribed") };
   } catch (e) {
-    return rejectWithValue(errorMessage(e, "Fetch subscribed posts failed")) as any;
+    return rejectWithValue(errorMessage(e, "Fetch subscribed posts failed"));
   }
 });
 
@@ -127,7 +127,7 @@ export const createPost = createAsyncThunk<
     const data = unwrapData(res);
     return data.post;
   } catch (e) {
-    return rejectWithValue(errorMessage(e, "Create post failed")) as any;
+    return rejectWithValue(errorMessage(e, "Create post failed"));
   }
 });
 
@@ -140,7 +140,7 @@ export const fetchPostDetail = createAsyncThunk<PostDetailData, { postId: number
       if (!res.success || !res.data) throw new Error(res.message || "Fetch post failed");
       return res.data;
     } catch (e) {
-      return rejectWithValue(errorMessage(e, "Fetch post failed")) as any;
+      return rejectWithValue(errorMessage(e, "Fetch post failed"));
     }
   }
 );
@@ -158,7 +158,7 @@ export const updatePost = createAsyncThunk<
     if (!res.success || !res.data?.post) throw new Error(res.message || "Update post failed");
     return res.data.post;
   } catch (e) {
-    return rejectWithValue(errorMessage(e, "Update post failed")) as any;
+    return rejectWithValue(errorMessage(e, "Update post failed"));
   }
 });
 
@@ -171,7 +171,7 @@ export const deletePost = createAsyncThunk<{ id: number }, number>(
       if (!res.success) throw new Error(res.message || "Delete post failed");
       return { id: postId };
     } catch (e) {
-      return rejectWithValue(errorMessage(e, "Delete post failed")) as any;
+      return rejectWithValue(errorMessage(e, "Delete post failed"));
     }
   }
 );
@@ -185,7 +185,7 @@ export const fetchPostFileIds = createAsyncThunk<{ postId: number; file_ids: num
       if (!res.success || !res.data) throw new Error(res.message || "Fetch file ids failed");
       return { postId, file_ids: res.data.file_ids || [] };
     } catch (e) {
-      return rejectWithValue(errorMessage(e, "Fetch file ids failed")) as any;
+      return rejectWithValue(errorMessage(e, "Fetch file ids failed"));
     }
   }
 );
@@ -429,20 +429,18 @@ const postsSlice = createSlice({
       .addCase(likePost.fulfilled, (s, a) => {
         const { postId, like_count } = a.payload;
         patchInAllFeeds(s, postId, { like_count, clicked_like: true });
+        // 新建帖子的类型里没有 clicked_like，用 Object.assign 直接改草稿（Immer）
         const cur = s.byId[postId];
-        if (cur) s.byId[postId] = { ...cur, like_count, clicked_like: true } as any;
-        if (s.current?.id === postId) {
-          s.current = { ...s.current, like_count, clicked_like: true } as any;
-        }
+        if (cur) Object.assign(cur, { like_count, clicked_like: true });
+        if (s.current?.id === postId) Object.assign(s.current, { like_count, clicked_like: true });
       })
       .addCase(unlikePost.fulfilled, (s, a) => {
         const { postId, like_count } = a.payload;
         patchInAllFeeds(s, postId, { like_count, clicked_like: false });
+        // 新建帖子的类型里没有 clicked_like，用 Object.assign 直接改草稿（Immer）
         const cur = s.byId[postId];
-        if (cur) s.byId[postId] = { ...cur, like_count, clicked_like: false } as any;
-        if (s.current?.id === postId) {
-          s.current = { ...s.current, like_count, clicked_like: false } as any;
-        }
+        if (cur) Object.assign(cur, { like_count, clicked_like: false });
+        if (s.current?.id === postId) Object.assign(s.current, { like_count, clicked_like: false });
       });
 
   },

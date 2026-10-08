@@ -84,7 +84,7 @@ export const fetchGroupDetail = createAsyncThunk<
 
     return { group, subscriberCount, subscribers };
   } catch (e) {
-    return rejectWithValue(errorMessage(e, 'Fetch group detail failed')) as any;
+    return rejectWithValue(errorMessage(e, 'Fetch group detail failed'));
   }
 });
 
@@ -113,7 +113,7 @@ export const fetchGroupMembers = createAsyncThunk<
 
       return { members, pagination: data.pagination };
     } catch (e) {
-      return rejectWithValue(errorMessage(e, 'Fetch members failed')) as any;
+      return rejectWithValue(errorMessage(e, 'Fetch members failed'));
     }
   }
 );
@@ -136,7 +136,7 @@ export const addGroupMember = createAsyncThunk<
       message: res.message,
     };
   } catch (e) {
-    return rejectWithValue(errorMessage(e, 'Add member failed')) as any;
+    return rejectWithValue(errorMessage(e, 'Add member failed'));
   }
 });
 
@@ -150,7 +150,7 @@ export const kickGroupMember = createAsyncThunk<
     if (!res.success) throw new Error(res.message || 'Kick member failed');
     return { userId, message: res.message };
   } catch (e) {
-    return rejectWithValue(errorMessage(e, 'Kick member failed')) as any;
+    return rejectWithValue(errorMessage(e, 'Kick member failed'));
   }
 });
 
@@ -164,7 +164,7 @@ export const addGroupLeader = createAsyncThunk<
     if (!res.success) throw new Error(res.message || 'Set leader failed');
     return { userId, message: res.message };
   } catch (e) {
-    return rejectWithValue(errorMessage(e, 'Set leader failed')) as any;
+    return rejectWithValue(errorMessage(e, 'Set leader failed'));
   }
 });
 
@@ -178,7 +178,7 @@ export const removeGroupLeader = createAsyncThunk<
     if (!res.success) throw new Error(res.message || 'Remove leader failed');
     return { userId, message: res.message };
   } catch (e) {
-    return rejectWithValue(errorMessage(e, 'Remove leader failed')) as any;
+    return rejectWithValue(errorMessage(e, 'Remove leader failed'));
   }
 });
 
@@ -204,7 +204,7 @@ export const fetchGroupLeaders = createAsyncThunk<
     } while (page <= pages);
     return leaders;
   } catch (e) {
-    return rejectWithValue(errorMessage(e, 'Fetch leaders failed')) as any;
+    return rejectWithValue(errorMessage(e, 'Fetch leaders failed'));
   }
 });
 
@@ -218,7 +218,7 @@ export const transferGroupOwnership = createAsyncThunk<
     if (!res.success || !res.data?.group) throw new Error(res.message || 'Transfer ownership failed');
     return { group: res.data.group, message: res.message };
   } catch (e) {
-    return rejectWithValue(errorMessage(e, 'Transfer ownership failed')) as any;
+    return rejectWithValue(errorMessage(e, 'Transfer ownership failed'));
   }
 });
 

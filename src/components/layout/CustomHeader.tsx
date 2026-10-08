@@ -8,7 +8,7 @@ import Logo from "@/components/Logo";
 import { useBackNavigation } from "@/hooks/useBackNavigation";
 
 interface CustomHeaderProps {
-  item?: any;
+  item?: { id?: number; author?: string | null };
   showEdit?: boolean;
   showDelete?: boolean;
   showAdd?: boolean;

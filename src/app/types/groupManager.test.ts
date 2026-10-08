@@ -3,6 +3,7 @@ import { canEditGroup, canDeleteGroup, canTransferOwnership } from './group';
 import { canWritePosts, canEditPost, canDeletePost } from './post';
 import type { UserProps } from './user';
 import type { GroupApi } from './group';
+import type { PostListItemApi } from './post';
 
 const user = (over: Partial<UserProps>): UserProps =>
   ({ id: 1, email: 'a@x.com', firstName: 'A', admin: false, permissions: [], ...over }) as UserProps;
@@ -11,7 +12,7 @@ const manager = user({ admin: true, permissions: ['manage_groups'] });
 const strayGrant = user({ admin: false, permissions: ['manage_groups'] });
 const group = { id: 5, is_creator: false, is_leader: false, post_policy: 'leaders_only' } as GroupApi;
 const post = (policy: 'members' | 'leaders_only') =>
-  ({ id: 9, author: { id: 2, firstName: 'B' }, group: { id: 5, creator: 3, is_creator: false, is_leader: false, post_policy: policy } }) as any;
+  ({ id: 9, author: { id: 2, firstName: 'B' }, group: { id: 5, creator: 3, is_creator: false, is_leader: false, post_policy: policy } }) as unknown as PostListItemApi;
 
 describe('group manager = admin + manage_groups', () => {
   it('needs both admin and the grant', () => {

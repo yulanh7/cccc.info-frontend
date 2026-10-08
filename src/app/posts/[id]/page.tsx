@@ -99,8 +99,8 @@ function PostDetailPageInner() {
   const post: PostDetailData | null = postFromStore;
   const user = useAppSelector((s) => s.auth.user as UserProps | null);
   const isEdit = searchParams.get("edit") === "1";
-  const likeCount = storeCount ?? (post as any)?.like_count ?? 0;
-  const liked = Boolean(storeLiked ?? (post as any)?.clicked_like ?? false);
+  const likeCount = storeCount ?? post?.like_count ?? 0;
+  const liked = Boolean(storeLiked ?? post?.clicked_like ?? false);
   const inFlightRef = useRef(false);
   const [likeBusy, setLikeBusy] = useState(false);
 
@@ -133,8 +133,8 @@ function PostDetailPageInner() {
     if (typeof post.like_count === "number") {
       dispatch(setLikeCount({ postId: post.id, like_count: post.like_count }));
     }
-    if (typeof (post as any).clicked_like === "boolean") {
-      dispatch(setLikedByMe({ postId: post.id, liked: (post as any).clicked_like }));
+    if (typeof post.clicked_like === "boolean") {
+      dispatch(setLikedByMe({ postId: post.id, liked: post.clicked_like }));
     }
     // 只在换了帖子时写一次初值；之后点赞数以 likes store 为准，不能被详情里的旧值盖掉
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -460,9 +460,9 @@ function PostDetailPageInner() {
                 }}
                 isNew={false}
                 groupCommentPolicy={post.group?.comment_policy}
-                onSave={handleEditSave as any}    // 你的 PostModal 若有专门类型，可调整此处
+                onSave={handleEditSave}
                 onClose={handleEditClose}
-                existingFiles={post.files as any}
+                existingFiles={post.files}
                 saving={editSaving}
                 uploadingPercent={editUploadingPercent}
               />

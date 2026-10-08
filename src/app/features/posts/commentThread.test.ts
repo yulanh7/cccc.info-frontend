@@ -1,8 +1,9 @@
 import { insertReplyInOrder, applyLikeResult } from './commentThread';
+import type { CommentItemApi } from '@/app/types/comments';
 
 const c = (id: number, created_at: string, extra: object = {}) =>
   ({ id, created_at, body: 'x', user: { id: 1, firstName: 'A' }, post_id: 1, parent_id: 10, reply_to: null,
-     updated_at: created_at, is_edited: false, edit_count: 0, like_count: 0, clicked_like: false, children_count: 0, ...extra }) as any;
+     updated_at: created_at, is_edited: false, edit_count: 0, like_count: 0, clicked_like: false, children_count: 0, ...extra }) as unknown as CommentItemApi;
 
 describe('insertReplyInOrder', () => {
   it('appends a new reply after older ones (oldest first)', () => {

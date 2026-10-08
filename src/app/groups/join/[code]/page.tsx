@@ -36,9 +36,9 @@ export default function JoinByInvitePage() {
     dispatch(fetchInvite(code))
       .unwrap()
       .then((preview) => !cancelled && setView({ kind: "ready", preview }))
-      .catch((e: any) => {
+      .catch((e: unknown) => {
         if (cancelled) return;
-        setView(e?.code === 404 ? { kind: "invalid" } : { kind: "error", message: errorMessage(e, "Something went wrong") });
+        setView(errorCode(e) === 404 ? { kind: "invalid" } : { kind: "error", message: errorMessage(e, "Something went wrong") });
       });
     return () => {
       cancelled = true;

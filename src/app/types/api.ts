@@ -1,8 +1,8 @@
-export type ApiResponseProps<T = any> =
+export type ApiResponseProps<T = unknown> =
   | { success: true; code: number; message: string; data: T }
   | { success: false; code: number; message: string; data: null };
 
-export type ApiResponseRaw<T = any> = Partial<{
+export type ApiResponseRaw<T = unknown> = Partial<{
   success: boolean;
   code: number;
   message: string;
