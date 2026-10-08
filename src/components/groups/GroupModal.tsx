@@ -14,6 +14,7 @@ import GroupInviteSection from "./GroupInviteSection";
 
 const MIN_NAME = 2;
 const MAX_NAME = 50;
+const MIN_DESC = 2;
 const MAX_DESC = 500;
 
 type GroupEditModalProps = {
@@ -78,10 +79,10 @@ export default function GroupEditModal({
   const nameTrimmed = (editedItem.name ?? "").trim();
   const nameLen = nameTrimmed.length;
   const descLen = (editedItem.description ?? "").length;
+  const descTrimmedLen = (editedItem.description ?? "").trim().length;
 
   const overNameMax = Math.max(0, nameLen - MAX_NAME);
   const underNameMin = Math.max(0, MIN_NAME - nameLen);
-  const overDesc = Math.max(0, descLen - MAX_DESC);
 
   const displayErrors = useMemo(
     () => ({
@@ -111,6 +112,8 @@ export default function GroupEditModal({
 
     if (!editedItem.description?.trim()) {
       next.description = "Description is required";
+    } else if (descTrimmedLen < MIN_DESC) {
+      next.description = `Group description must be at least ${MIN_DESC} characters`;
     } else if (descLen > MAX_DESC) {
       next.description = `Group description cannot exceed ${MAX_DESC} characters.`;
     }
@@ -224,6 +227,8 @@ export default function GroupEditModal({
     if (editedItem.join_policy === "private") return `${n} will be cancelled when you save. The people who asked will be told their request was not approved.`;
     return null;
   })();
+
+  const isDescInvalid = Boolean(displayErrors.description || descTrimmedLen < MIN_DESC || descLen > MAX_DESC);
 
   const isNameInvalid = Boolean(
     displayErrors.name ||
@@ -362,11 +367,13 @@ export default function GroupEditModal({
             ref={descRef}
             value={editedItem.description}
             onChange={(e) => handleChange("description", e.target.value)}
-            className={`w-full p-2 mb-1 border rounded-sm ${displayErrors.description ? "border-red-500" : "border-border"}`}
+            aria-invalid={isDescInvalid}
+            aria-describedby={`${descId}-help`}
+            className={`w-full p-2 mb-1 border rounded-sm ${isDescInvalid ? "border-red-500" : "border-border"}`}
             rows={5}
           />
-          <div className={`text-xs mb-1 ${overDesc ? "text-red-600" : "text-dark-gray"}`}>
-            {descLen}/{MAX_DESC}
+          <div id={`${descId}-help`} className={`text-xs mb-1 ${isDescInvalid ? "text-red-600" : "text-dark-gray"}`}>
+            {descLen}/{MAX_DESC} {`(min ${MIN_DESC})`}
           </div>
           {displayErrors.description && <p className="text-red-600 text-sm mb-3">{displayErrors.description}</p>}
 
@@ -392,7 +399,7 @@ export default function GroupEditModal({
               nameLen < MIN_NAME ||
               nameLen > MAX_NAME ||
               !nameTrimmed ||
-              !editedItem.description?.trim() ||
+              descTrimmedLen < MIN_DESC ||
               descLen > MAX_DESC
             }
           >
