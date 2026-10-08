@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { AUTH_NOTICE_KEY } from '@/app/features/request';
 import Image from 'next/image';
 import LoginForm from '@/components/LoginForm';
 import SignUpForm from '@/components/SignUpForm';
@@ -9,6 +10,19 @@ import ConfirmModal from '@/components/ConfirmModal';
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [forgotOpen, setForgotOpen] = useState(false);
+  // 被登出的原因（例如帐号已停用），只显示一次
+  const [notice, setNotice] = useState<string | null>(null);
+  useEffect(() => {
+    try {
+      const n = sessionStorage.getItem(AUTH_NOTICE_KEY);
+      if (n) {
+        setNotice(n);
+        sessionStorage.removeItem(AUTH_NOTICE_KEY);
+      }
+    } catch {
+      /* 忽略 */
+    }
+  }, []);
 
   const openForgot = useCallback(() => setForgotOpen(true), []);
   const closeForgot = useCallback(() => setForgotOpen(false), []);
@@ -44,10 +58,17 @@ Thanks.`
             sizes="(max-width: 767px) 40px, (max-width: 1023px) 80px, 120px"
             priority
           />
+          {/* 手机上置中、固定分成两行；sm 以上一行 */}
           <h1 className="text-lg md:text-xl font-semibold">
             Canberra Chinese Christian Chur Info
           </h1>
         </div>
+
+        {notice && (
+          <p className="mb-4 rounded-sm border border-red-300 bg-red-50 p-3 text-sm text-red-700" role="alert">
+            {notice}
+          </p>
+        )}
 
         {isLogin ? <LoginForm /> : <SignUpForm />}
 

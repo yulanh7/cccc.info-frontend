@@ -9,6 +9,12 @@ export interface UserProps {
   created_at?: string; // 新增（可选，对应后端返回）
   /** admin 重置过密码、用户还没改：必须先改密码才能用其他功能 */
   must_change_password?: boolean;
+  /** false = 被 admin 停用（不能登录，可以恢复） */
+  is_active?: boolean;
+  /** 仅 admin 用户列表：他创建的小组（停用时要选人接手） */
+  created_groups?: { id: number; name: string }[];
+  /** 仅 admin 用户列表、被停用的人：停用期间保留成员关系的小组（恢复时选要回哪些） */
+  member_groups?: { id: number; name: string }[];
 }
 
 export interface AuthResponseData {

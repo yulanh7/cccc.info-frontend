@@ -4,11 +4,13 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 import { useAppDispatch, useAppSelector } from "@/app/features/hooks";
-import { fetchAdminUsers, setUserPermission, setUserAdmin, resetUserPassword } from "@/app/features/admin/usersSlice";
+import { fetchAdminUsers, setUserPermission, setUserAdmin, resetUserPassword, setUserActive } from "@/app/features/admin/usersSlice";
 import Button from "@/components/ui/Button";
 import { fetchProfileThunk } from "@/app/features/auth/slice";
 import { isAdmin, PERMISSION_CREATE_GROUP, PERMISSION_MANAGE_GROUPS } from "@/app/types/user";
 import ConfirmModal from "@/components/ConfirmModal";
+import DeactivateUserModal from "@/components/admin/DeactivateUserModal";
+import ReactivateUserModal from "@/components/admin/ReactivateUserModal";
 import { useConfirm } from "@/hooks/useConfirm";
 import { PERMISSION_MANAGE_LIBRARY } from "@/app/types/library";
 import type { UserProps } from "@/app/types/user";
@@ -93,6 +95,26 @@ function AdminUsersPageInner() {
     }
   };
 
+  // ===== 停用 / 恢复帐号（先确认；不能停用自己）。创建过小组的人停用时要选人接手（另一个弹窗）
+  const confirmActive = useConfirm<{ user: UserProps; active: boolean }>("Change account status?");
+  const [deactivating, setDeactivating] = useState<UserProps | null>(null);
+  // 停用期间还保留小组成员关系的人：恢复时选要回哪些组（另一个弹窗）
+  const [reactivating, setReactivating] = useState<UserProps | null>(null);
+  const doSetActive = async (target: { user: UserProps; active: boolean } | null) => {
+    if (!target) return;
+    setNotice(null);
+    try {
+      await dispatch(setUserActive({ userId: target.user.id, active: target.active })).unwrap();
+      setNotice(
+        target.active
+          ? `${target.user.firstName}'s account has been reactivated.`
+          : `${target.user.firstName}'s account has been deactivated. They can't log in until it is reactivated.`
+      );
+    } catch (e: any) {
+      alert(typeof e === "string" ? e : e?.message || "Update account status failed");
+    }
+  };
+
   const togglePermission = async (u: UserProps, permission: string, granted: boolean) => {
     try {
       await dispatch(setUserPermission({ userId: u.id, permission, granted })).unwrap();
@@ -150,9 +172,13 @@ function AdminUsersPageInner() {
                 const hasManageLibrary = !!u.permissions?.includes(PERMISSION_MANAGE_LIBRARY);
                 const hasManageGroups = !!u.permissions?.includes(PERMISSION_MANAGE_GROUPS);
                 const isSelf = currentUser?.id === u.id;
+                const deactivated = u.is_active === false;
                 const updating = updatingIds.includes(u.id);
                 return (
-                  <div key={u.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-border last:border-b-0 p-3 text-sm">
+                  <div
+                    key={u.id}
+                    className={`flex flex-wrap items-center justify-between gap-3 border-b border-border last:border-b-0 p-3 text-sm ${deactivated ? "bg-gray-50" : ""}`}
+                  >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-dark-gray">{u.firstName}</span>
@@ -161,6 +187,9 @@ function AdminUsersPageInner() {
                             <ShieldCheckIcon className="h-3 w-3" />
                             Admin
                           </span>
+                        )}
+                        {deactivated && (
+                          <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] text-dark-gray">Deactivated</span>
                         )}
                       </div>
                       <div className="text-xs text-dark-gray break-all">{u.email}</div>
@@ -246,6 +275,30 @@ function AdminUsersPageInner() {
                           Reset password
                         </Button>
                       )}
+                      {/* 停用 / 恢复帐号：自己那一行不显示 */}
+                      {!isSelf && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          tone={deactivated ? "brand" : "danger"}
+                          className="w-fit"
+                          disabled={updating}
+                          onClick={() =>
+                            !deactivated && (u.created_groups?.length ?? 0) > 0
+                              ? setDeactivating(u)
+                              : deactivated && (u.member_groups?.length ?? 0) > 0
+                              ? setReactivating(u)
+                              : confirmActive.ask(
+                              { user: u, active: deactivated },
+                              deactivated
+                                ? `Reactivate ${u.firstName}'s account? They will be able to log in again.`
+                                : `Deactivate ${u.firstName}'s account? They will be logged out and can't log in. Their posts stay, shown as "Deleted user". You can reactivate it later.`
+                            )
+                          }
+                        >
+                          {deactivated ? "Reactivate" : "Deactivate"}
+                        </Button>
+                      )}
                       {u.must_change_password && (
                         <span className="text-xs text-amber-700">Must change password</span>
                       )}
@@ -292,6 +345,43 @@ function AdminUsersPageInner() {
         onClose={confirmReset.cancel}
         onConfirm={confirmReset.confirm(doResetPassword)}
       />
+      <ConfirmModal
+        isOpen={confirmActive.open}
+        title="Account status"
+        message={confirmActive.message}
+        confirmLabel="Confirm"
+        confirmVariant="danger"
+        cancelLabel="Cancel"
+        cancelVariant="outline"
+        onCancel={confirmActive.cancel}
+        onClose={confirmActive.cancel}
+        onConfirm={confirmActive.confirm(doSetActive)}
+      />
+      {reactivating && (
+        <ReactivateUserModal
+          user={reactivating}
+          onClose={() => setReactivating(null)}
+          onDone={(updated, leftGroups) => {
+            setReactivating(null);
+            setNotice(
+              `${updated.firstName}'s account has been reactivated.` +
+                (leftGroups.length ? ` They left: ${leftGroups.join(", ")}.` : "")
+            );
+          }}
+        />
+      )}
+      {deactivating && (
+        <DeactivateUserModal
+          user={deactivating}
+          onClose={() => setDeactivating(null)}
+          onDone={(updated, newOwner) => {
+            setDeactivating(null);
+            setNotice(
+              `${updated.firstName}'s account has been deactivated. Their groups now belong to ${newOwner.firstName}.`
+            );
+          }}
+        />
+      )}
     </>
   );
 }

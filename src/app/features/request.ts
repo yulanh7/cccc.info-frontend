@@ -36,8 +36,11 @@ export const setOnAccessTokenRefreshed = (fn: (token: string) => void) => {
 
 
 // ====== 小工具：统一的登录引导（弹提示 → 跳转 /auth?next=...）======
+/** 已经在跳去登录页（例如帐号被停用）：其他请求不要再弹“需要登录”的确认框 */
+let redirectingToAuth = false;
+
 const promptLoginRedirect = (msg?: string) => {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined' || redirectingToAuth) return;
 
   const next =
     window.location.pathname + window.location.search + window.location.hash;
@@ -48,6 +51,27 @@ const promptLoginRedirect = (msg?: string) => {
     window.location.href = `/auth?next=${encodeURIComponent(next)}`;
   }
 };
+
+// ====== 帐号被 admin 停用：已登录的设备任何请求（包括刷新 token）都会 401 + ACCOUNT_DEACTIVATED ======
+/** 登录页显示一次的提示（例如帐号已停用） */
+export const AUTH_NOTICE_KEY = 'authNotice';
+const ACCOUNT_DEACTIVATED = 'ACCOUNT_DEACTIVATED';
+
+const isDeactivated = (status: number | undefined, payload: any) =>
+  (status === 401 || status === 403) && payload?.code === ACCOUNT_DEACTIVATED;
+
+/** 统一登出并回到登录页，登录页显示后端的原因 */
+function handleDeactivated(payload: any) {
+  if (typeof window === 'undefined') return;
+  clearAuth();
+  redirectingToAuth = true;
+  try {
+    sessionStorage.setItem(AUTH_NOTICE_KEY, pickServerMessage(payload) || 'This account has been deactivated.');
+  } catch {
+    /* 忽略 */
+  }
+  if (!window.location.pathname.startsWith('/auth')) window.location.href = '/auth';
+}
 
 // ====== 带固定 code 的 403：必须先改密码 / 没有通过链接进入图书馆 ======
 export const CHANGE_PASSWORD_PATH = '/change-password';
@@ -137,6 +161,15 @@ api.interceptors.response.use(
 
     const status = error.response?.status;
 
+    // 帐号已停用：不要再刷新 token（也会被拒绝），直接登出。登录本身被拒（403）由登录表单显示原因
+    const isLogin = /^\/?auth\/login/i.test(url);
+    if (!isLogin && isDeactivated(status, error.response?.data)) {
+      const serverMsg = pickServerMessage(error.response?.data);
+      if (serverMsg) (error as any).message = serverMsg;
+      handleDeactivated(error.response?.data);
+      throw error;
+    }
+
     // 非 401 或已重试 或 鉴权端点 → 直接抛出（并在 5xx 时广播事件）
     if (error.response?.status !== 401 || originalRequest?._retry || isAuthEndpoint) {
       const serverMsg = pickServerMessage(error.response?.data);
@@ -193,6 +226,11 @@ api.interceptors.response.use(
       return api(originalRequest);
     } catch (err) {
       processQueue(err, null);
+      const refreshErr = err as AxiosError<any>;
+      if (isDeactivated(refreshErr.response?.status, refreshErr.response?.data)) {
+        handleDeactivated(refreshErr.response?.data);
+        throw err;
+      }
       clearAuth();
       promptLoginRedirect('Your session has expired. Log in again now?');
       throw err;

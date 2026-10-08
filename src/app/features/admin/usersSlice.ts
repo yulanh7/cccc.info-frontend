@@ -30,6 +30,7 @@ const ADMIN_ENDPOINTS = {
   USER_PERMISSIONS: (userId: number) => `/admin/users/${userId}/permissions`,
   USER_ADMIN: (userId: number) => `/admin/users/${userId}/admin`,
   RESET_PASSWORD: (userId: number) => `/admin/users/${userId}/reset-password`,
+  USER_ACTIVE: (userId: number) => `/admin/users/${userId}/active`,
 } as const;
 
 // ===== 用户列表：GET /api/admin/users（仅 admin）
@@ -80,6 +81,28 @@ export const setUserAdmin = createAsyncThunk<UserProps, { userId: number; admin:
 
 // ===== 重置为初始密码：POST /api/admin/users/{user_id}/reset-password（不能重置自己）
 // 返回更新后的 user（must_change_password: true）；初始密码由管理员线下告诉用户，前端不写死
+// ===== 停用 / 恢复帐号：PATCH /api/admin/users/{user_id}/active
+// 不能停用自己、最后一个 admin、小组创建者、有没还的书的人（后端 400，直接显示 message）
+// transfer_groups_to：停用时把他创建的小组一起转给这个人（同一个请求、全部成功或全部不改）
+export const setUserActive = createAsyncThunk<
+  UserProps,
+  { userId: number; active: boolean; transfer_groups_to?: number; keep_groups?: number[] }
+>(
+  'adminUsers/setUserActive',
+  async ({ userId, active, transfer_groups_to, keep_groups }, { rejectWithValue }) => {
+    try {
+      // keep_groups：恢复时要回去的小组（都是普通成员）；不传 = 退出所有原来的小组
+      const body: Record<string, unknown> = { active };
+      if (transfer_groups_to) body.transfer_groups_to = transfer_groups_to;
+      if (keep_groups) body.keep_groups = keep_groups;
+      const res = await apiRequest<UserProps>('PATCH', ADMIN_ENDPOINTS.USER_ACTIVE(userId), body);
+      return unwrapData(res);
+    } catch (e: any) {
+      return rejectWithValue(e.message || 'Update account status failed') as any;
+    }
+  }
+);
+
 export const resetUserPassword = createAsyncThunk<UserProps, number>(
   'adminUsers/resetUserPassword',
   async (userId, { rejectWithValue }) => {
@@ -135,6 +158,19 @@ const adminUsersSlice = createSlice({
         if (idx >= 0) s.users[idx] = a.payload;
       })
       .addCase(setUserAdmin.rejected, (s, a) => {
+        s.updatingIds = s.updatingIds.filter((id) => id !== a.meta.arg.userId);
+      });
+
+    builder
+      .addCase(setUserActive.pending, (s, a) => {
+        s.updatingIds.push(a.meta.arg.userId);
+      })
+      .addCase(setUserActive.fulfilled, (s, a) => {
+        s.updatingIds = s.updatingIds.filter((id) => id !== a.meta.arg.userId);
+        const idx = s.users.findIndex((u) => u.id === a.payload.id);
+        if (idx >= 0) s.users[idx] = a.payload;
+      })
+      .addCase(setUserActive.rejected, (s, a) => {
         s.updatingIds = s.updatingIds.filter((id) => id !== a.meta.arg.userId);
       });
 
