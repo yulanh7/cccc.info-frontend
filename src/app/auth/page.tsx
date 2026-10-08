@@ -59,8 +59,9 @@ Thanks.`
             priority
           />
           {/* 手机上置中、固定分成两行；sm 以上一行 */}
-          <h1 className="text-lg md:text-xl font-semibold">
-            Canberra Chinese Christian Chur Info
+          <h1 className="text-center text-lg md:text-xl font-semibold">
+            <span className="block sm:inline">Canberra Chinese</span>{" "}
+            <span className="block sm:inline">Christian Church Info</span>
           </h1>
         </div>
 
