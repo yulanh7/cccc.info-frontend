@@ -7,14 +7,14 @@ import {
   TrashIcon,
   CalendarIcon,
   UserPlusIcon,
-  LockOpenIcon,
-  LockClosedIcon,
   MegaphoneIcon,
   ChatBubbleLeftIcon
 } from "@heroicons/react/24/outline";
 import Button from "@/components/ui/Button";
 import IconButton from "@/components/ui/IconButton";
 import type { GroupApi } from "@/app/types/group";
+import { joinPolicyOf } from "@/app/types/group";
+import JoinPolicyBadge from "@/components/groups/JoinPolicyBadge";
 import SubscribeToggleButton from "@/components/groups/SubscribeToggleButton";
 
 type Props = {
@@ -32,6 +32,10 @@ type Props = {
   selectedCount: number;
   onToggleSelectMode: () => void;
   onBulkDeleteSelected: () => void;
+  /** 管理者：打开加入申请列表（request 组，或还有待处理申请时显示按钮） */
+  onShowJoinRequests?: () => void;
+  /** 申请状态过时（例如撤回时发现已经被处理）→ 重新拉小组 */
+  onGroupStale?: () => void;
 };
 
 export default function GroupInfoBar({
@@ -47,7 +51,12 @@ export default function GroupInfoBar({
   canManageGroup = false,
   canDeleteGroup = false,
   canShowCreateFab = false,
+  onShowJoinRequests,
+  onGroupStale,
 }: Props) {
+  const pendingRequests = group.pending_request_count ?? 0;
+  const showJoinRequests =
+    canManageGroup && !!onShowJoinRequests && (joinPolicyOf(group) === "request" || pendingRequests > 0);
 
   return (
     <>
@@ -62,17 +71,7 @@ export default function GroupInfoBar({
                   {group.name}
                 </h2>
 
-                {group.isPrivate ? (
-                  <span className="inline-flex items-center gap-1 text-white">
-                    <LockClosedIcon className="h-4 w-4 text-red" />
-                    <span className="text-[11px]">Private</span>
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-white">
-                    <LockOpenIcon className="h-4 w-4 text-green" />
-                    <span className="text-[11px]">Public</span>
-                  </span>
-                )}
+                <JoinPolicyBadge policy={joinPolicyOf(group)} onDark />
 
                 {/* 发帖权限：仅 leaders_only 时提示，members 为默认不显示 */}
                 {group.post_policy === "leaders_only" && (
@@ -150,6 +149,10 @@ export default function GroupInfoBar({
                   confirmOnLeave
                   className="w-fit"
                   size="md"
+                  joinPolicy={joinPolicyOf(group)}
+                  myJoinRequest={group.my_join_request}
+                  groupName={group.name}
+                  onStale={onGroupStale}
                 />
               )}
 
@@ -190,6 +193,20 @@ export default function GroupInfoBar({
                   <span className="tracking-wide">Members:</span>
                   <span className="ml-1">{subscriberCount}</span>
                 </span>
+              )}
+
+              {showJoinRequests && (
+                <Button
+                  onClick={onShowJoinRequests}
+                  className="border-white text-white"
+                  variant="outline"
+                  size="sm"
+                  title="Review join requests"
+                >
+                  <span className="text-[11px] uppercase tracking-wide">Join requests</span>
+                  <span className="ml-1 font-semibold">{pendingRequests}</span>
+                  {pendingRequests > 0 && <span className="ml-1 h-2 w-2 rounded-full bg-red" aria-hidden />}
+                </Button>
               )}
             </div>
 

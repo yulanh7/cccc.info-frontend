@@ -1,4 +1,4 @@
-import { notificationText, badgeText, mergeNotifications, notificationHref } from './notification';
+import { notificationText, notificationDetail, badgeText, mergeNotifications, notificationHref } from './notification';
 import type { AppNotification } from './notification';
 
 const n = (over: Partial<AppNotification>): AppNotification => ({
@@ -41,5 +41,38 @@ describe('notificationHref', () => {
   });
   it('returns null when the target is gone', () => {
     expect(notificationHref(n({ target_available: false }))).toBeNull();
+  });
+});
+
+describe('join request notifications', () => {
+  const jr = (over: Partial<AppNotification>): AppNotification =>
+    n({ type: 'join_request', post: null, group: { id: 4, name: 'Choir' },
+        join_request: { id: 31, status: 'pending', message: 'New here', handled_by: null }, ...over });
+
+  it('describes the three types', () => {
+    expect(notificationText(jr({}))).toBe('Bob asked to join Choir');
+    expect(notificationText(jr({ type: 'join_approved' }))).toBe('Your request to join Choir was approved');
+    expect(notificationText(jr({ type: 'join_declined', actor: null }))).toBe('Your request to join Choir was not approved');
+    expect(notificationText(jr({ type: 'join_declined', actor: null, group: null }))).toBe('Your request to join a group was not approved');
+  });
+
+  it('shows the message, and the result once handled', () => {
+    expect(notificationDetail(jr({}))).toEqual({ message: 'New here', result: null });
+    const handled = (status: any, handled_by: any = null) =>
+      notificationDetail(jr({ join_request: { id: 31, status, message: null, handled_by } })).result;
+    expect(handled('approved', { id: 3, firstName: 'Alice' })).toBe('Approved by Alice');
+    expect(handled('approved')).toBe('Joined via invite link');
+    expect(handled('declined', { id: 3, firstName: 'Alice' })).toBe('Declined by Alice');
+    expect(handled('withdrawn')).toBe('Request withdrawn');
+    expect(handled('cancelled')).toBe('Request cancelled');
+    // 申请人自己的通知不显示留言 / 结果
+    expect(notificationDetail(jr({ type: 'join_approved' }))).toEqual({ message: null, result: null });
+    expect(notificationDetail(n({}))).toEqual({ message: null, result: null });
+  });
+
+  it('links to the group (join requests list for managers)', () => {
+    expect(notificationHref(jr({}))).toBe('/groups/4?requests=1');
+    expect(notificationHref(jr({ type: 'join_approved' }))).toBe('/groups/4');
+    expect(notificationHref(jr({ type: 'join_declined', target_available: false, group: null }))).toBeNull();
   });
 });

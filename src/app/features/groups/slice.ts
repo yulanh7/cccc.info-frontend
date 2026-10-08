@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { apiRequest } from '../request';
+import { sendJoinRequest, withdrawJoinRequest } from './joinRequestSlice';
 import type {
   GroupApi,
   CreateOrUpdateGroupBody,
@@ -349,6 +350,15 @@ const setMemberFlagOnList = (arr: GroupApi[], id: number, val: boolean) => {
   if (i >= 0) arr[i] = { ...arr[i], is_member: val };
 };
 
+/** 同一个小组在各个列表里都改一下（例如发出 / 撤回加入申请后，返回列表时按钮状态要对） */
+const patchGroupEverywhere = (s: GroupsState, id: number, patch: Partial<GroupApi>) => {
+  for (const list of [s.availableGroups, s.userGroups, s.subscribedGroups, s.visibleGroups, s.visibleSearchResults, s.searchResults]) {
+    const i = list.findIndex(g => g.id === id);
+    if (i >= 0) list[i] = { ...list[i], ...patch };
+  }
+  if (s.currentGroup?.id === id) s.currentGroup = { ...s.currentGroup, ...patch };
+};
+
 const groupsSlice = createSlice({
   name: 'groups',
   initialState,
@@ -496,6 +506,18 @@ const groupsSlice = createSlice({
       .addCase(joinGroup.rejected, (s, a) => {
         setStatus(s, 'joinGroup', 'failed');
         setError(s, 'joinGroup', (a.payload as string) || 'Join group failed');
+      });
+
+    // 加入申请：只改 my_join_request
+    builder
+      .addCase(sendJoinRequest.fulfilled, (s, a) => {
+        const { groupId, join_request: r } = a.payload;
+        patchGroupEverywhere(s, groupId, {
+          my_join_request: { id: r.id, status: 'pending', created_at: r.created_at, message: r.message },
+        });
+      })
+      .addCase(withdrawJoinRequest.fulfilled, (s, a) => {
+        patchGroupEverywhere(s, a.payload.groupId, { my_join_request: null });
       });
 
     // leave（只影响订阅集合）

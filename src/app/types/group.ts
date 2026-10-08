@@ -14,6 +14,33 @@ export const COMMENT_POLICY_LABELS: Record<CommentPolicy, string> = {
   leaders_only: "Only leaders can comment",
 };
 
+/** 加入方式：open = 直接加入；request = 申请、组长批准；private = 只能被加进来或用邀请链接 */
+export type JoinPolicy = "open" | "request" | "private";
+export const DEFAULT_JOIN_POLICY: JoinPolicy = "open";
+export const JOIN_POLICY_OPTIONS: Array<{ value: JoinPolicy; label: string; hint: string }> = [
+  { value: "open", label: "Open", hint: "Anyone can find and join" },
+  { value: "request", label: "Request to join", hint: "Anyone can find it; leaders approve requests" },
+  { value: "private", label: "Private", hint: "Hidden; invite or invite link only" },
+];
+
+/** 我对这个组的待处理申请 */
+export type MyJoinRequest = { id: number; status: "pending"; created_at: string; message: string | null };
+
+export type JoinRequestStatus = "pending" | "approved" | "declined" | "withdrawn" | "cancelled";
+
+/** 加入申请（管理者的待处理列表、批准 / 拒绝的返回） */
+export interface JoinRequest {
+  id: number;
+  status: JoinRequestStatus;
+  message: string | null;
+  created_at: string;
+  handled_at: string | null;
+  handled_by: { id: number; firstName: string } | null;
+  /** 只有待处理列表、批准 / 拒绝的返回里有 */
+  user?: { id: number; firstName: string; email: string };
+}
+
+export const JOIN_REQUEST_MESSAGE_MAX = 200;
 
 export type PaginationProps = {
   currentPage: number;
@@ -32,7 +59,13 @@ export interface GroupApi {
   creator: number;
   creator_name?: string;
   time: string;
+  /** 旧字段，等于 join_policy === "private"；新代码用 join_policy */
   isPrivate: boolean;
+  join_policy?: JoinPolicy;
+  /** 当前用户的待处理申请，没有为 null */
+  my_join_request?: MyJoinRequest | null;
+  /** 仅能管理这个组的人有：待处理的加入申请数 */
+  pending_request_count?: number;
   subscriber_count: number;
   is_member: boolean;
   is_creator: boolean;
@@ -91,7 +124,7 @@ export interface GroupStats {
 export interface CreateOrUpdateGroupBody {
   name: string;
   description: string;
-  isPrivate: boolean;
+  join_policy: JoinPolicy;
   post_policy?: PostPolicy;
   comment_policy?: CommentPolicy;
 }
@@ -117,6 +150,14 @@ export type GroupStatsResponseApi = ApiResponseProps<GroupStats>;
 export const canEditGroup = (group: GroupApi, user?: UserProps | null): boolean =>
   isGroupManager(user) || group.is_creator || !!group.is_leader;
 
+/** 加入方式；旧响应没有 join_policy 时按 isPrivate 推断 */
+export const joinPolicyOf = (group: Pick<GroupApi, "join_policy" | "isPrivate">): JoinPolicy =>
+  group.join_policy ?? (group.isPrivate ? "private" : "open");
+
+/** request 组的非成员看不到帖子（小组管理员除外）：小组页不请求帖子，只显示申请按钮 */
+export const isLockedForMe = (group: GroupApi, user?: UserProps | null): boolean =>
+  joinPolicyOf(group) === "request" && !group.is_member && !isGroupManager(user);
+
 /** 转让创建者：仅小组管理员、当前创建者 */
 export const canTransferOwnership = (group: GroupApi, user?: UserProps | null): boolean =>
   isGroupManager(user) || group.is_creator;
@@ -133,6 +174,9 @@ export type RawUserGroup = {
   creator: { id: number; firstName: string };
   time: string;
   isPrivate: boolean;
+  join_policy?: JoinPolicy;
+  my_join_request?: MyJoinRequest | null;
+  pending_request_count?: number;
   subscriber_count: number;
   post_count: number;
   post_policy?: PostPolicy;
@@ -148,6 +192,9 @@ export type RawAllGroup = {
   creator_name?: string;
   time: string;
   isPrivate: boolean;
+  join_policy?: JoinPolicy;
+  my_join_request?: MyJoinRequest | null;
+  pending_request_count?: number;
   subscriber_count: number;
   is_member?: boolean;
   is_creator?: boolean;
@@ -167,6 +214,9 @@ export const normalizeFromUserGroups = (
   creator_name: g.creator.firstName,
   time: g.time,
   isPrivate: g.isPrivate,
+  join_policy: g.join_policy,
+  my_join_request: g.my_join_request ?? null,
+  ...(typeof g.pending_request_count === "number" ? { pending_request_count: g.pending_request_count } : {}),
   subscriber_count: g.subscriber_count,
   post_count: g.post_count,
   is_member: true, // 已订阅列表，恒为 true
@@ -186,6 +236,9 @@ export const normalizeFromAllGroups = (
   creator_name: g.creator_name,
   time: g.time,
   isPrivate: g.isPrivate,
+  join_policy: g.join_policy,
+  my_join_request: g.my_join_request ?? null,
+  ...(typeof g.pending_request_count === "number" ? { pending_request_count: g.pending_request_count } : {}),
   subscriber_count: g.subscriber_count,
   is_member: Boolean(g.is_member),
   is_creator: Boolean(g.is_creator),

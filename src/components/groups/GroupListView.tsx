@@ -2,9 +2,11 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { PencilSquareIcon, TrashIcon, CalendarIcon, LockClosedIcon, LockOpenIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { PencilSquareIcon, TrashIcon, CalendarIcon, PlusIcon } from "@heroicons/react/24/outline";
 import CardSkeleton from "@/components/feedback/CardSkeleton";
 import type { GroupApi } from "@/app/types";
+import { joinPolicyOf } from "@/app/types/group";
+import JoinPolicyBadge from "@/components/groups/JoinPolicyBadge";
 import InfiniteSentinel from "@/components/ui/InfiniteSentinel";
 import { ellipsize } from "@/app/ultility";
 import IconButton from "@/components/ui/IconButton";
@@ -111,18 +113,15 @@ export default function GroupListView({
 
                   <div className="flex justify-between align-middle space-x-2 border-b-1 border-border mb-2 pb-1">
 
-                    {group.isPrivate ? (
-                      <div className="flex items-center gap-1 text-dark-gray/80">
-                        <LockClosedIcon className="h-4 w-4 text-red" />
-                        <span className="text-[11px]">Private</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1 text-dark-gray/80">
-                        <LockOpenIcon className="h-4 w-4 text-dark-green" />
-                        <span className="text-[11px]">Public</span>
-                      </div>
-
-                    )}
+                    <div className="flex items-center gap-2">
+                      <JoinPolicyBadge policy={joinPolicyOf(group)} />
+                      {/* 管理者：有待处理的加入申请时提示 */}
+                      {(group.pending_request_count ?? 0) > 0 && (
+                        <span className="rounded-full bg-red px-1.5 text-[10px] font-semibold text-white" title="Pending join requests">
+                          {group.pending_request_count} request{group.pending_request_count === 1 ? "" : "s"}
+                        </span>
+                      )}
+                    </div>
 
                     {/* 顶部右侧操作（阻止冒泡） */}
                     {canEdit?.(group) && (
@@ -194,9 +193,11 @@ export default function GroupListView({
                       </span>
                     </span>
 
-                    {/* 创建者不能退出：置灰并提示先转让（title 放外层，禁用按钮在部分浏览器不显示 tooltip） */}
+                    {/* 创建者不能退出：置灰并提示先转让（title 放外层，禁用按钮在部分浏览器不显示 tooltip）。
+                        按钮里的弹窗（申请留言等）也在卡片里：点击和按键都不能冒泡到卡片，否则回车会打开小组页 */}
                     <div
                       onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
                       title={group.is_creator ? "You're the owner. Transfer ownership before leaving." : undefined}
                     >
                       <SubscribeToggleButton
@@ -204,6 +205,9 @@ export default function GroupListView({
                         isMemberHint={group.is_member}
                         mode="follow"
                         disabled={group.is_creator}
+                        joinPolicy={joinPolicyOf(group)}
+                        myJoinRequest={group.my_join_request}
+                        groupName={group.name}
                       />
                     </div>
                   </div>

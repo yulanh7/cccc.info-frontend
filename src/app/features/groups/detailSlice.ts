@@ -20,6 +20,7 @@ import { fetchGroupPostsList } from '@/app/features/posts/slice';
 import { appendUnique } from '@/app/lib/infiniteList';
 import { likePost, unlikePost } from "@/app/features/posts/likeSlice";
 import { setGroupInvite, resetGroupInvite } from './inviteSlice';
+import { sendJoinRequest, withdrawJoinRequest, approveJoinRequest, declineJoinRequest } from './joinRequestSlice';
 
 // 简单的订阅者 UI 形状（与后端 subscribers 项一致）
 type GroupSubscriberUi = { id: number; firstName: string; email: string; is_creator?: boolean; is_leader?: boolean };
@@ -236,6 +237,10 @@ const groupDetailSlice = createSlice({
   initialState,
   reducers: {
     clearGroupDetail: () => initialState,
+    /** 加入申请列表拉到 / 变化后，用列表的条数校正 pending_request_count */
+    setPendingRequestCount: (s, a: { payload: { groupId: number; count: number } }) => {
+      if (s.group?.id === a.payload.groupId) s.group.pending_request_count = a.payload.count;
+    },
   },
   extraReducers: (builder) => {
     // ===== 邀请链接：打开 / 关闭、重新生成后，同步到当前小组资料（再打开编辑弹窗时显示最新状态）
@@ -398,6 +403,26 @@ const groupDetailSlice = createSlice({
         s.group = { ...s.group, ...a.payload.group } as GroupApi;
       });
 
+    // ===== 加入申请：申请人看 my_join_request；管理者看 pending_request_count，批准后成员数 +1
+    builder
+      .addCase(sendJoinRequest.fulfilled, (s, a) => {
+        const { groupId, join_request: r } = a.payload;
+        if (s.group?.id !== groupId) return;
+        s.group.my_join_request = { id: r.id, status: 'pending', created_at: r.created_at, message: r.message };
+      })
+      .addCase(withdrawJoinRequest.fulfilled, (s, a) => {
+        if (s.group?.id === a.payload.groupId) s.group.my_join_request = null;
+      })
+      .addCase(approveJoinRequest.fulfilled, (s, a) => {
+        if (s.group?.id !== a.payload.groupId) return;
+        s.group.pending_request_count = a.payload.pending_request_count;
+        s.group.subscriber_count = (s.group.subscriber_count ?? 0) + 1;
+        if (s.subscriberCount !== null) s.subscriberCount += 1;
+      })
+      .addCase(declineJoinRequest.fulfilled, (s, a) => {
+        if (s.group?.id === a.payload.groupId) s.group.pending_request_count = a.payload.pending_request_count;
+      });
+
     // like覆盖当前 group 页面的post列表项（无需整页刷新）
     builder
       .addCase(likePost.fulfilled, (s, a) => {
@@ -411,5 +436,5 @@ const groupDetailSlice = createSlice({
   },
 });
 
-export const { clearGroupDetail } = groupDetailSlice.actions;
+export const { clearGroupDetail, setPendingRequestCount } = groupDetailSlice.actions;
 export default groupDetailSlice.reducer;

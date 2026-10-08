@@ -18,7 +18,7 @@ import type { GroupApi } from "@/app/types";
 import { canCreateGroup } from "@/app/types/user";
 import { useCameBack, useScrollRestoration } from "@/hooks/useBackNavigation";
 import { appendUnique } from "@/app/lib/infiniteList";
-import { canEditGroup as canEditGroupOf, canDeleteGroup as canDeleteGroupOf } from "@/app/types/group";
+import { canEditGroup as canEditGroupOf, canDeleteGroup as canDeleteGroupOf, joinPolicyOf } from "@/app/types/group";
 import type { CreateOrUpdateGroupBody, GroupListPaginationApi } from "@/app/types/group";
 import { mapApiErrorToFields } from "@/app/ultility";
 
@@ -262,7 +262,7 @@ export function useGroupListController(opts: UseGroupListControllerOptions = {})
     const body: CreateOrUpdateGroupBody = {
       name: updated.name.trim(),
       description: updated.description,
-      isPrivate: !!updated.isPrivate,
+      join_policy: joinPolicyOf(updated),
       ...(updated.post_policy ? { post_policy: updated.post_policy } : {}),
       ...(updated.comment_policy ? { comment_policy: updated.comment_policy } : {}),
     };

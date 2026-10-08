@@ -219,6 +219,9 @@ type GroupPostAccess = {
   is_creator?: boolean;
   is_leader?: boolean;
   post_policy?: PostPolicy;
+  is_member?: boolean;
+  join_policy?: 'open' | 'request' | 'private';
+  isPrivate?: boolean;
 };
 
 /** 创建者 / 组长。帖子内嵌的 group 没有 is_creator，用 creator id 兜底 */
@@ -237,7 +240,10 @@ function isGroupPrivileged(group: GroupPostAccess | null | undefined, user?: Use
 export function canWritePosts(group: GroupPostAccess | null | undefined, user?: UserProps | null): boolean {
   if (!user || !group) return false;
   if (isGroupPrivileged(group, user)) return true;
-  return group.post_policy !== 'leaders_only';
+  if (group.post_policy === 'leaders_only') return false;
+  // members 组：open 组任何登录用户；request / private 组只有成员
+  const joinPolicy = group.join_policy ?? (group.isPrivate ? 'private' : 'open');
+  return joinPolicy === 'open' || !!group.is_member;
 }
 
 /** 能否编辑帖子：leaders_only 组仅小组管理员 / 创建者 / 组长（旧帖子也不例外）；members 组仅作者本人 */

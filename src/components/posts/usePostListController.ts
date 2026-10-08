@@ -58,6 +58,9 @@ export type UsePostListControllerOptions<
 
   // —— 外部状态（用于“首次加载骨架”和“更新中提示”的判定）
   postsStatus: Status;
+
+  /** false = 先不请求帖子（例如还不知道能不能看，或 request 组的非成员）；默认 true */
+  enabled?: boolean;
 };
 
 export function usePostListController<
@@ -79,6 +82,7 @@ export function usePostListController<
     canEdit,
     canDelete,
     postsStatus,
+    enabled = true,
   } = opts;
 
   const router = useRouter();
@@ -109,12 +113,13 @@ export function usePostListController<
 
   // 列表变了（或第一次进来）：从第 1 页开始；通过“返回”回来且已有内容就沿用，不重新加载
   useEffect(() => {
+    if (!enabled) return;
     const reuse = firstLoad.current && cameBack && hasItems;
     firstLoad.current = false;
     if (reuse) return;
     dispatch(fetchPosts(firstArgs));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, dispatch]);
+  }, [key, dispatch, enabled]);
 
   const loading = postsStatus === "loading";
   const hasMore = loadedPage > 0 && loadedPage < totalPages;

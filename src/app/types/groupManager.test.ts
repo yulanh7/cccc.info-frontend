@@ -43,3 +43,17 @@ describe('group manager = admin + manage_groups', () => {
     expect(canDeletePost(post('members'), manager)).toBe(false);
   });
 });
+
+describe('canWritePosts in members groups depends on join_policy', () => {
+  const g = (over: Partial<GroupApi>) => ({ id: 5, is_creator: false, is_leader: false, post_policy: 'members', ...over }) as GroupApi;
+  const someone = user({});
+  it('open: any logged-in user', () => {
+    expect(canWritePosts(g({ join_policy: 'open', is_member: false }), someone)).toBe(true);
+  });
+  it('request / private: members only (or a group manager)', () => {
+    expect(canWritePosts(g({ join_policy: 'request', is_member: false }), someone)).toBe(false);
+    expect(canWritePosts(g({ join_policy: 'request', is_member: true }), someone)).toBe(true);
+    expect(canWritePosts(g({ join_policy: 'private', is_member: false }), someone)).toBe(false);
+    expect(canWritePosts(g({ join_policy: 'request', is_member: false }), manager)).toBe(true);
+  });
+});

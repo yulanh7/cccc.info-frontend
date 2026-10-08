@@ -2,9 +2,12 @@
 
 import { useState, useRef, useMemo, useEffect } from "react";
 import { mockUsers } from '@/app/data/mockData';
-import type { GroupApi, PostPolicy, CommentPolicy } from '@/app/types/group';
-import { DEFAULT_POST_POLICY, DEFAULT_COMMENT_POLICY, COMMENT_POLICY_LABELS } from '@/app/types/group';
-import { XMarkIcon, LockClosedIcon } from '@heroicons/react/24/outline';
+import type { GroupApi, PostPolicy, CommentPolicy, JoinPolicy } from '@/app/types/group';
+import {
+  DEFAULT_POST_POLICY, DEFAULT_COMMENT_POLICY, COMMENT_POLICY_LABELS,
+  DEFAULT_JOIN_POLICY, JOIN_POLICY_OPTIONS, joinPolicyOf,
+} from '@/app/types/group';
+import { XMarkIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import Button from "@/components/ui/Button";
 import SaveConfirmModal from "../SaveConfirmModal";
 import GroupInviteSection from "./GroupInviteSection";
@@ -41,10 +44,10 @@ export default function GroupEditModal({
     is_member: false,
     is_creator: true,
     isPrivate: false,
+    join_policy: DEFAULT_JOIN_POLICY,
     post_policy: DEFAULT_POST_POLICY,
     comment_policy: DEFAULT_COMMENT_POLICY,
   };
-  const privacyHelpId = "group-privacy-help";
   const postPolicyOptions: Array<{ value: PostPolicy; label: string }> = [
     { value: "members", label: "All members can post" },
     { value: "leaders_only", label: "Only group leaders can post, edit and delete posts" },
@@ -54,8 +57,10 @@ export default function GroupEditModal({
     label: COMMENT_POLICY_LABELS[value],
   }));
 
+  // 旧响应可能没有 join_policy：按 isPrivate 补上，表单只用 join_policy
+  const withJoinPolicy = (g: GroupApi): GroupApi => ({ ...g, join_policy: joinPolicyOf(g) });
   const [editedItem, setEditedItem] = useState<GroupApi>(
-    isNew ? defaultItem : { ...(group as GroupApi) }
+    isNew ? defaultItem : withJoinPolicy(group as GroupApi)
   );
 
   // ---- 确认弹窗控制 & 锚点
@@ -140,7 +145,7 @@ export default function GroupEditModal({
       id: it.id ?? 0,
       name: (it.name ?? "").trim(),
       description: (it.description ?? ""),
-      isPrivate: !!it.isPrivate,
+      join_policy: joinPolicyOf(it),
       post_policy: it.post_policy ?? null,
       comment_policy: it.comment_policy ?? null,
     });
@@ -148,7 +153,7 @@ export default function GroupEditModal({
   const initialSnapshotRef = useRef<string>(serialize(baseItem));
   useEffect(() => {
     // 当传入的 group 变化或 isNew 变化时，重置表单和快照
-    setEditedItem(isNew ? defaultItem : { ...(group as GroupApi) });
+    setEditedItem(isNew ? defaultItem : withJoinPolicy(group as GroupApi));
     initialSnapshotRef.current = serialize(isNew ? defaultItem : (group as GroupApi));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isNew, group?.id]);
@@ -209,6 +214,17 @@ export default function GroupEditModal({
   const nameId = "group-name";
   const descId = "group-description";
 
+  // 已保存的加入方式，和待处理申请数（只有管理者的响应里有）
+  const savedJoinPolicy: JoinPolicy = isNew ? DEFAULT_JOIN_POLICY : joinPolicyOf(group as GroupApi);
+  const pendingCount: number = isNew ? 0 : (group?.pending_request_count ?? 0);
+  const pendingWarning = (() => {
+    if (pendingCount <= 0 || editedItem.join_policy === savedJoinPolicy) return null;
+    const n = `${pendingCount} pending join request${pendingCount === 1 ? "" : "s"}`;
+    if (editedItem.join_policy === "open") return `${n} will be approved automatically when you save.`;
+    if (editedItem.join_policy === "private") return `${n} will be cancelled when you save. The people who asked will be told their request was not approved.`;
+    return null;
+  })();
+
   const isNameInvalid = Boolean(
     displayErrors.name ||
     nameLen < MIN_NAME ||
@@ -256,63 +272,50 @@ export default function GroupEditModal({
           </div>
           {displayErrors.name && <p className="text-red-600 text-sm mb-3">{displayErrors.name}</p>}
 
-          {/* Description */}
-          <label htmlFor={descId} className="block text-sm font-medium mb-1">
-            Description
-          </label>
-          <textarea
-            id={descId}
-            ref={descRef}
-            value={editedItem.description}
-            onChange={(e) => handleChange("description", e.target.value)}
-            className={`w-full p-2 mb-1 border rounded-sm ${displayErrors.description ? "border-red-500" : "border-border"}`}
-            rows={5}
-          />
-          <div className={`text-xs mb-1 ${overDesc ? "text-red-600" : "text-dark-gray"}`}>
-            {descLen}/{MAX_DESC}
-          </div>
-          {displayErrors.description && <p className="text-red-600 text-sm mb-3">{displayErrors.description}</p>}
+          {/* Who can join */}
+          <fieldset className="mb-4">
+            <legend className="block text-sm font-medium mb-1">Who can join</legend>
+            {JOIN_POLICY_OPTIONS.map((opt) => (
+              <label key={opt.value} className="flex items-start mb-1">
+                <input
+                  type="radio"
+                  name="group-join-policy"
+                  value={opt.value}
+                  checked={editedItem.join_policy === opt.value}
+                  onChange={() => handleChange("join_policy", opt.value)}
+                  className="mr-2 mt-1"
+                />
+                <span className="text-sm text-dark-gray">
+                  {opt.label}
+                  <span className="block text-xs text-dark-gray/70">{opt.hint}</span>
+                </span>
+              </label>
+            ))}
 
-          {/* Invite Only */}
-          {/* Invite Only */}
-          <div className="mb-4">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={editedItem.isPrivate}
-                onChange={(e) => handleChange("isPrivate", e.target.checked)}
-                className="mr-2"
-                aria-describedby={editedItem.isPrivate ? privacyHelpId : undefined}
-              />
-              <span className="text-sm text-dark-gray">Invite Only</span>
-            </label>
-
-            {editedItem.isPrivate && (
+            {/* 有待处理的申请时，改成 open / private 前先说清楚会发生什么 */}
+            {pendingWarning && (
               <div
-                id={privacyHelpId}
                 role="note"
                 aria-live="polite"
                 className="mt-2 flex items-start gap-1 rounded-sm border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"
               >
-                <LockClosedIcon className="h-5 w-5 shrink-0" />
-                <div>
-                  <p className="font-medium mb-1">This group is private</p>
-                  <ul className="list-disc pl-5 space-y-1">
-                    <li>Invite-only — members are added by a group leader, or join with an invite link.</li>
-                    <li>Not discoverable — registered users can’t search or follow it.</li>
-                  </ul>
-                </div>
+                <ExclamationTriangleIcon className="h-5 w-5 shrink-0" />
+                <p>{pendingWarning}</p>
               </div>
             )}
 
-            {/* 邀请链接：只有已保存为私密的小组、且响应里有 invite_enabled（= 创建者 / 组长）才显示 */}
-            {!isNew && editedItem.isPrivate && group?.isPrivate && typeof group?.invite_enabled === "boolean" && (
-              <GroupInviteSection
-                groupId={group.id}
-                initial={{ invite_enabled: group.invite_enabled, invite_code: group.invite_code ?? null }}
-              />
+            {/* 邀请链接：编辑时、request / private 组才有；响应里有 invite_enabled（= 能管理）才显示 */}
+            {!isNew && editedItem.join_policy !== "open" && typeof group?.invite_enabled === "boolean" && (
+              savedJoinPolicy !== "open" ? (
+                <GroupInviteSection
+                  groupId={group.id}
+                  initial={{ invite_enabled: group.invite_enabled, invite_code: group.invite_code ?? null }}
+                />
+              ) : (
+                <p className="mt-2 text-xs text-dark-gray/70">Save first, then you can turn on an invite link here.</p>
+              )
             )}
-          </div>
+          </fieldset>
 
           {/* Post permission */}
           <fieldset className="mb-4">
@@ -349,6 +352,23 @@ export default function GroupEditModal({
               </label>
             ))}
           </fieldset>
+
+          {/* Description */}
+          <label htmlFor={descId} className="block text-sm font-medium mb-1">
+            Description
+          </label>
+          <textarea
+            id={descId}
+            ref={descRef}
+            value={editedItem.description}
+            onChange={(e) => handleChange("description", e.target.value)}
+            className={`w-full p-2 mb-1 border rounded-sm ${displayErrors.description ? "border-red-500" : "border-border"}`}
+            rows={5}
+          />
+          <div className={`text-xs mb-1 ${overDesc ? "text-red-600" : "text-dark-gray"}`}>
+            {descLen}/{MAX_DESC}
+          </div>
+          {displayErrors.description && <p className="text-red-600 text-sm mb-3">{displayErrors.description}</p>}
 
         </div>
 

@@ -29,12 +29,14 @@ import {
 import { fetchGroupPostsList, createPost, deletePost as deletePostThunk } from "@/app/features/posts/slice";
 import { updateGroup, deleteGroup } from "@/app/features/groups/slice";
 import type { CreateOrUpdateGroupBody } from "@/app/types/group";
+import { joinPolicyOf, isLockedForMe } from "@/app/types/group";
 import { isPostAuthor, canEditPost, canDeletePost, canWritePosts, canEditGroup, canDeleteGroup, canTransferOwnership } from "@/app/types";
 import { PlusIcon } from "@heroicons/react/24/outline";
 import { useConfirm } from "@/hooks/useConfirm";
 import { useScrollRestoration } from "@/hooks/useBackNavigation";
 import { POSTS_PER_PAGE, MEMBERS_PER_PAGE } from "@/app/constants";
 import SubscribeToggleButton from "@/components/groups/SubscribeToggleButton";
+import JoinRequestsModal from "@/components/groups/JoinRequestsModal";
 
 export default function GroupDetailPage() {
   return (
@@ -97,6 +99,10 @@ function GroupDetailPageInner() {
   const membersLoading = status.members === 'loading';
   const headerItem = safeGroup ? { id: safeGroup.id, author: safeGroup.creator_name } : undefined;
   const totalPages = safePagination?.total_pages ?? 1;
+  // request 组的非成员：不请求帖子，只显示申请按钮
+  const locked = safeGroup ? isLockedForMe(safeGroup, user) : false;
+  const groupReady = groupMatchesRoute && status.group === "succeeded";
+  const [showJoinRequests, setShowJoinRequests] = useState(false);
 
   // Load group detail
   useEffect(() => {
@@ -129,7 +135,21 @@ function GroupDetailPageInner() {
     canEdit: (p) => canEditPost(p, user),
     canDelete: (p) => canDeletePost(p, user),
     postsStatus: status.posts as any,
+    // 先拿到小组，确认能看帖子再请求
+    enabled: groupReady && !locked,
   });
+
+  const reloadGroup = useCallback(() => {
+    if (Number.isFinite(groupId)) dispatch(fetchGroupDetail(groupId));
+  }, [dispatch, groupId]);
+
+  // 从 join_request 通知点进来（?requests=1）：管理者直接打开加入申请列表，然后把参数去掉
+  const wantsRequests = searchParams.get("requests") === "1";
+  useEffect(() => {
+    if (!wantsRequests || !groupReady) return;
+    if (canManageGroup) setShowJoinRequests(true);
+    router.replace(`/groups/${groupId}`, { scroll: false });
+  }, [wantsRequests, groupReady, canManageGroup, groupId, router]);
 
   // Event handlers
   const handleDeleteGroup = useCallback(async () => {
@@ -200,7 +220,7 @@ function GroupDetailPageInner() {
     const body: CreateOrUpdateGroupBody = {
       name: updatedGroup.name.trim(),
       description: (updatedGroup.description ?? "").replace(/\r\n/g, "\n"),
-      isPrivate: updatedGroup.isPrivate,
+      join_policy: joinPolicyOf(updatedGroup),
       ...(updatedGroup.post_policy ? { post_policy: updatedGroup.post_policy } : {}),
       ...(updatedGroup.comment_policy ? { comment_policy: updatedGroup.comment_policy } : {}),
     };
@@ -331,6 +351,10 @@ function GroupDetailPageInner() {
               confirmOnLeave
               className="w-fit"
               isMemberHint={safeGroup.is_member}
+              joinPolicy={joinPolicyOf(safeGroup)}
+              myJoinRequest={safeGroup.my_join_request}
+              groupName={safeGroup.name}
+              onStale={reloadGroup}
             />
           ) : null
         }
@@ -347,6 +371,8 @@ function GroupDetailPageInner() {
           canDeleteGroup={canRemoveGroup}
           canShowCreateFab={canPost}
           onDeleteGroup={() => confirmGroupDelete.ask()}
+          onShowJoinRequests={() => setShowJoinRequests(true)}
+          onGroupStale={reloadGroup}
           selectMode={selectMode}
           selectedCount={selectedIds.size}
           onToggleSelectMode={toggleSelectMode}
@@ -362,6 +388,30 @@ function GroupDetailPageInner() {
         />
       )}
 
+      {safeGroup && locked ? (
+        <div className="container mx-auto md:p-6 p-4">
+          <div className="mx-auto max-w-md rounded-md border border-border bg-white p-6 text-center">
+            <p className="text-sm text-dark-gray">Join this group to see its posts.</p>
+            <div className="mt-4 flex justify-center">
+              <SubscribeToggleButton
+                groupId={safeGroup.id}
+                mode="follow"
+                size="md"
+                isMemberHint={safeGroup.is_member}
+                joinPolicy={joinPolicyOf(safeGroup)}
+                myJoinRequest={safeGroup.my_join_request}
+                groupName={safeGroup.name}
+                onStale={reloadGroup}
+              />
+            </div>
+            {safeGroup.my_join_request && (
+              <p className="mt-3 text-xs text-dark-gray/70">
+                Your request is waiting for a group leader. You&apos;ll get a notification when it&apos;s handled.
+              </p>
+            )}
+          </div>
+        </div>
+      ) : (
       <div className="container mx-auto md:p-6 p-1">
         <PostListSection
           rows={safePosts}
@@ -384,6 +434,11 @@ function GroupDetailPageInner() {
           emptyText={canPost ? "No posts here yet. Be the first to post." : "No posts yet"}
         />
       </div>
+      )}
+
+      {showJoinRequests && safeGroup && (
+        <JoinRequestsModal groupId={safeGroup.id} onClose={() => setShowJoinRequests(false)} />
+      )}
 
       {/* Modals */}
       <SubscribersModal

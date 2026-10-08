@@ -15,7 +15,7 @@ import {
 } from "@/app/features/notifications/slice";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import ConfirmModal from "@/components/ConfirmModal";
-import { notificationText, notificationHref } from "@/app/types/notification";
+import { notificationText, notificationDetail, notificationHref } from "@/app/types/notification";
 import type { AppNotification } from "@/app/types/notification";
 import { formatDate } from "@/app/ultility";
 import PageTitle from "@/components/layout/PageTitle";
@@ -157,7 +157,9 @@ export default function NotificationsPage() {
         {loaded && list.length === 0 && !loading && <p className="text-sm text-dark-gray">No notifications yet.</p>}
 
         <ul className="divide-y divide-border rounded-md border border-border bg-white">
-          {list.map((n) => (
+          {list.map((n) => {
+            const detail = notificationDetail(n);
+            return (
             <li key={n.id} className="flex items-start">
               <button
                 type="button"
@@ -167,7 +169,14 @@ export default function NotificationsPage() {
                 {/* 未读圆点 */}
                 <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${n.read ? "bg-transparent" : "bg-red"}`} aria-hidden />
                 <span className="min-w-0 flex-1">
-                  <span className={`block break-words ${n.read ? "" : "font-semibold"}`}>{notificationText(n)}</span>
+                  <span className={`block break-words ${n.read ? "" : "font-semibold"}`}>
+                    {notificationText(n)}
+                    {detail.result && <span className="font-normal text-dark-gray/60"> · {detail.result}</span>}
+                  </span>
+                  {/* 加入申请的留言：灰色，最多两行 */}
+                  {detail.message && (
+                    <span className="mt-0.5 block break-words text-xs text-dark-gray/70 line-clamp-2">{detail.message}</span>
+                  )}
                   <span className="mt-0.5 block text-xs text-dark-gray/60">
                     {formatDate(n.created_at, true)}
                     {!n.target_available && " · No longer available"}
@@ -185,7 +194,8 @@ export default function NotificationsPage() {
                 <XMarkIcon className="h-4 w-4" />
               </button>
             </li>
-          ))}
+            );
+          })}
         </ul>
 
         {/* 无限滚动的哨兵；失败时显示重试 */}
