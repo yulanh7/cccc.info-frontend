@@ -38,6 +38,16 @@ const write = (k: string, v: string) => {
 };
 
 const currentHref = () => window.location.pathname + window.location.search;
+
+/**
+ * 换到另一个页面时要不要滚到顶部。通过"返回"进来的不滚（交给 useScrollRestoration 恢复位置）。
+ * Next.js 自己的判断不可靠：新页面加载中很短，浏览器先把滚动位置截短，页面开头"看起来在屏幕里"，
+ * 它就不滚了，内容出来后页面停在中间。
+ */
+export function shouldScrollToTop(prevPath: string | null, nextPath: string, returnAt: number, now: number): boolean {
+  if (!prevPath || prevPath === nextPath) return false;
+  return now - returnAt >= RETURN_WINDOW_MS;
+}
 const markReturning = () => write(RETURN_AT_KEY, String(Date.now()));
 
 /** 在全局布局里调用一次：记录上一个页面的路径，以及浏览器后退 / 前进 */
@@ -47,6 +57,9 @@ export function useNavigationTracker() {
 
   useEffect(() => {
     if (lastPath.current && lastPath.current !== pathname) write(PREV_PATH_KEY, lastPath.current);
+    if (shouldScrollToTop(lastPath.current, pathname, Number(read(RETURN_AT_KEY) || 0), Date.now())) {
+      window.scrollTo(0, 0);
+    }
     lastPath.current = pathname;
   }, [pathname]);
 
