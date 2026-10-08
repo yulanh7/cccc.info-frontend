@@ -10,7 +10,13 @@ const NOTIFICATION_ENDPOINTS = {
   UNREAD_COUNT: '/notifications/unread-count',
   READ: (id: number) => `/notifications/${id}/read`,
   READ_ALL: '/notifications/read-all',
+  ONE: (id: number) => `/notifications/${id}`,
+  CLEAR_READ: '/notifications/clear-read',
+  SETTINGS: '/notifications/settings',
 } as const;
+
+/** 个人通知设定 */
+export type NotificationSettings = { auto_delete_read_after_90_days: boolean };
 
 export const NOTIFICATIONS_PAGE_SIZE = 20;
 
@@ -23,6 +29,8 @@ interface NotificationsState {
   loaded: boolean;
   status: LoadStatus;
   error: string | null;
+  /** null = 还没读取 */
+  settings: NotificationSettings | null;
 }
 
 const initialState: NotificationsState = {
@@ -32,6 +40,7 @@ const initialState: NotificationsState = {
   loaded: false,
   status: 'idle',
   error: null,
+  settings: null,
 };
 
 const errMsg = (e: any, fallback: string) => (typeof e === 'string' ? e : e?.message) || fallback;
@@ -86,6 +95,54 @@ export const markAllNotificationsRead = createAsyncThunk<number, void>(
   }
 );
 
+// ===== 删除单条：DELETE /api/notifications/<id>
+export const deleteNotification = createAsyncThunk<{ id: number; unread_count: number }, number>(
+  'notifications/delete',
+  async (id, { rejectWithValue }) => {
+    try {
+      const data = unwrapData(await apiRequest<{ unread_count: number }>('DELETE', NOTIFICATION_ENDPOINTS.ONE(id)));
+      return { id, unread_count: data.unread_count };
+    } catch (e: any) {
+      return rejectWithValue(errMsg(e, 'Delete failed')) as any;
+    }
+  }
+);
+
+// ===== 删除所有已读：POST /api/notifications/clear-read（未读的不动）
+export const clearReadNotifications = createAsyncThunk<{ deleted: number; unread_count: number }, void>(
+  'notifications/clearRead',
+  async (_, { rejectWithValue }) => {
+    try {
+      return unwrapData(await apiRequest<{ deleted: number; unread_count: number }>('POST', NOTIFICATION_ENDPOINTS.CLEAR_READ));
+    } catch (e: any) {
+      return rejectWithValue(errMsg(e, 'Clear failed')) as any;
+    }
+  }
+);
+
+// ===== 个人设定：GET / PUT /api/notifications/settings
+export const fetchNotificationSettings = createAsyncThunk<NotificationSettings, void>(
+  'notifications/fetchSettings',
+  async (_, { rejectWithValue }) => {
+    try {
+      return unwrapData(await apiRequest<NotificationSettings>('GET', NOTIFICATION_ENDPOINTS.SETTINGS));
+    } catch (e: any) {
+      return rejectWithValue(errMsg(e, 'Failed to load settings')) as any;
+    }
+  }
+);
+
+export const updateNotificationSettings = createAsyncThunk<NotificationSettings, NotificationSettings>(
+  'notifications/updateSettings',
+  async (body, { rejectWithValue }) => {
+    try {
+      return unwrapData(await apiRequest<NotificationSettings>('PUT', NOTIFICATION_ENDPOINTS.SETTINGS, body));
+    } catch (e: any) {
+      return rejectWithValue(errMsg(e, 'Failed to save settings')) as any;
+    }
+  }
+);
+
 const notificationsSlice = createSlice({
   name: 'notifications',
   initialState,
@@ -125,6 +182,24 @@ const notificationsSlice = createSlice({
       s.unread = a.payload;
       s.list = s.list.map((x) => ({ ...x, read: true }));
     });
+
+    // 删除：从列表拿掉，角标用后端返回的未读数
+    builder.addCase(deleteNotification.fulfilled, (s, a) => {
+      s.list = s.list.filter((x) => x.id !== a.payload.id);
+      s.unread = a.payload.unread_count;
+    });
+    builder.addCase(clearReadNotifications.fulfilled, (s, a) => {
+      s.list = s.list.filter((x) => !x.read);
+      s.unread = a.payload.unread_count;
+    });
+
+    builder
+      .addCase(fetchNotificationSettings.fulfilled, (s, a) => {
+        s.settings = a.payload;
+      })
+      .addCase(updateNotificationSettings.fulfilled, (s, a) => {
+        s.settings = a.payload;
+      });
   },
 });
 
