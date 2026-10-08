@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import { PencilSquareIcon, TrashIcon, CalendarIcon, PlusIcon } from "@heroicons/react/24/outline";
 import CardSkeleton from "@/components/feedback/CardSkeleton";
 import type { GroupApi } from "@/app/types";
-import { joinPolicyOf } from "@/app/types/group";
+import type { MyJoinRequest } from "@/app/types/group";
+import { joinPolicyOf, isLockedForMe } from "@/app/types/group";
+import { useAppSelector } from "@/app/features/hooks";
+import JoinRequestModal from "@/components/groups/JoinRequestModal";
 import JoinPolicyBadge from "@/components/groups/JoinPolicyBadge";
 import InfiniteSentinel from "@/components/ui/InfiniteSentinel";
 import { ellipsize } from "@/app/ultility";
@@ -58,8 +61,25 @@ export default function GroupListView({
   formatDate,
 }: Props) {
   const router = useRouter();
-  // 公开小组不需要先关注就能进入；关注用卡片 / 小组页上的 Follow 按钮
+  const user = useAppSelector((s) => s.auth.user);
+  // 点了 request 组（我还不是成员）：不进小组，弹出申请框
+  const [requestGroupId, setRequestGroupId] = React.useState<number | null>(null);
+  // 列表数据是列表页自己存的（不在 store 里）：发出 / 撤回申请后在这里记下，显示时盖上去
+  const [requestOverrides, setRequestOverrides] = React.useState<Record<number, MyJoinRequest | null>>({});
+  const setMyRequest = (groupId: number, r: MyJoinRequest | null) =>
+    setRequestOverrides((prev) => ({ ...prev, [groupId]: r }));
+  const withMyRequest = (g: GroupApi): GroupApi =>
+    g.id in requestOverrides ? { ...g, my_join_request: requestOverrides[g.id] } : g;
+  const requestGroupRow = requestGroupId === null ? null : rows.find((g) => g.id === requestGroupId);
+  const requestGroup = requestGroupRow ? withMyRequest(requestGroupRow) : null;
+
+  // 公开小组不需要先关注就能进入；关注用卡片 / 小组页上的 Follow 按钮。
+  // request 组的非成员看不到帖子，进去也没用：直接弹出"需要组长批准"和申请按钮
   const handleCardClick = (group: GroupApi) => {
+    if (isLockedForMe(group, user)) {
+      setRequestGroupId(group.id);
+      return;
+    }
     router.push(`/groups/${group.id}`);
   };
 
@@ -96,7 +116,8 @@ export default function GroupListView({
         </div>
       ) : (
         <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-[3px]">
-          {rows.map((group) => {
+          {rows.map((row) => {
+            const group = withMyRequest(row);
             return (
               <div key={group.id} className="mb-4" style={{ breakInside: "avoid" }}>
                 <div
@@ -208,6 +229,7 @@ export default function GroupListView({
                         joinPolicy={joinPolicyOf(group)}
                         myJoinRequest={group.my_join_request}
                         groupName={group.name}
+                        onJoinRequestChange={(r) => setMyRequest(group.id, r)}
                       />
                     </div>
                   </div>
@@ -217,6 +239,23 @@ export default function GroupListView({
           })}
         </div>
       )}
+      {requestGroup && (
+        <JoinRequestModal
+          groupId={requestGroup.id}
+          groupName={requestGroup.name}
+          pending={!!requestGroup.my_join_request}
+          onClose={() => setRequestGroupId(null)}
+          onSent={(r) => {
+            setMyRequest(requestGroup.id, r);
+            setRequestGroupId(null);
+          }}
+          onWithdrawn={() => {
+            setMyRequest(requestGroup.id, null);
+            setRequestGroupId(null);
+          }}
+        />
+      )}
+
       {!listLoading && rows.length > 0 && (
         <InfiniteSentinel
           hasMore={hasMore}

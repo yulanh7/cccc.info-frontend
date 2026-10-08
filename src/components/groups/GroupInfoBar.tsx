@@ -153,6 +153,7 @@ export default function GroupInfoBar({
                   myJoinRequest={group.my_join_request}
                   groupName={group.name}
                   onStale={onGroupStale}
+                  onDark
                 />
               )}
 

@@ -47,6 +47,10 @@ type Props = {
   groupName?: string;
   /** 申请状态和页面上的不一致（例如刚被批准）时通知父级刷新 */
   onStale?: () => void;
+  /** 发出 / 撤回申请后通知父级（列表页的数据不在 store 里，要自己更新） */
+  onJoinRequestChange?: (request: MyJoinRequest | null) => void;
+  /** 放在深色背景上（小组页顶部）：描边按钮加白底，免得看不清 */
+  onDark?: boolean;
 };
 
 export default function SubscribeToggle({
@@ -65,6 +69,8 @@ export default function SubscribeToggle({
   myJoinRequest,
   groupName,
   onStale,
+  onDark = false,
+  onJoinRequestChange,
 }: Props) {
   const dispatch = useAppDispatch();
   // 单一真相来自 store；若尚未加载，用 hint 兜底
@@ -127,10 +133,12 @@ export default function SubscribeToggle({
     setBusy(true);
     try {
       await dispatch(withdrawJoinRequest(groupId)).unwrap();
+      onJoinRequestChange?.(null);
     } catch (e: any) {
       const err = e as JoinRequestError;
       if (err?.code === 404) {
         setLocalPending(false);
+        onJoinRequestChange?.(null);
         onStale?.();
       }
       alert(err?.message || "Failed to withdraw the request");
@@ -139,6 +147,14 @@ export default function SubscribeToggle({
       setShowWithdraw(false);
     }
   };
+
+  // 退出 request / private 组：提醒再加入没那么容易
+  const leaveMsg =
+    joinPolicy === "request"
+      ? `${defaults.confirmMsg} To join again, you'll need to send a request and wait for a leader to approve it.`
+      : joinPolicy === "private"
+      ? `${defaults.confirmMsg} To join again, a leader will need to add you or send you an invite link.`
+      : defaults.confirmMsg;
 
   const finalOnLabel = labelUnsubscribe ?? defaults.onLabel;
   const finalOffLabel = labelSubscribe ?? defaults.offLabel;
@@ -191,7 +207,7 @@ export default function SubscribeToggle({
         {requested ? (
           <Button
             size={size}
-            className={className}
+            className={`${className ?? ""} ${onDark ? "bg-white" : ""}`}
             variant="outline"
             disabled={disabled || busy}
             onClick={() => setShowWithdraw(true)}
@@ -218,9 +234,10 @@ export default function SubscribeToggle({
             groupId={groupId}
             groupName={groupName ?? "this group"}
             onClose={() => setShowRequestModal(false)}
-            onSent={() => {
+            onSent={(r) => {
               setLocalPending(true);
               setShowRequestModal(false);
+              onJoinRequestChange?.(r);
             }}
           />
         )}
@@ -247,6 +264,8 @@ export default function SubscribeToggle({
         <Button
           {...common}
           variant={variantWhenSubbed}
+          tone="brand"
+          className={`${className ?? ""} ${onDark ? "bg-white" : ""}`}
           aria-pressed
           aria-label={finalOnLabel}
           leftIcon={busy ? <Spinner className="h-4 w-4" /> : defaults.onIcon}
@@ -272,7 +291,7 @@ export default function SubscribeToggle({
           onCancel={() => setShowConfirm(false)}
           onClose={() => setShowConfirm(false)}
           title={defaults.confirmTitle}
-          message={defaults.confirmMsg}
+          message={leaveMsg}
           confirmLabel={defaults.confirmBtn}
           cancelLabel="Cancel"
           confirmVariant="danger"
